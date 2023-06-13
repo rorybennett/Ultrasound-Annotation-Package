@@ -5,13 +5,17 @@ import sys
 from pathlib import Path
 
 import qdarktheme
-from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
+    QLabel, QGridLayout, QSpacerItem, QSizePolicy
 
 from classes import Scan
 from classes.FrameCanvas import FrameCanvas
 
 
 class MainWindow(QMainWindow):
+    labelFont = QFont('Arial', 22)
 
     def __init__(self):
         """Initialise MainWindow."""
@@ -20,25 +24,32 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Ultrasound Scan Editing")
         # Display 2 scans side-by-side as central widget.
         self.mainWidget = QWidget(self)
-        self.layoutMain = QHBoxLayout(self.mainWidget)
+        self.mainLayout = QHBoxLayout(self.mainWidget)
         self.mainWidget.installEventFilter(self)
 
         self.left = QVBoxLayout()
+        self.leftTitle = self._createTitle()
         self.leftButtons = self._createTopButtons(1)
         self.axis1 = FrameCanvas(self)
         self.cidButton1 = self.axis1.mpl_connect('button_press_event', self._axisButtonPressEvent)
+        self.left.addLayout(self.leftTitle)
         self.left.addLayout(self.leftButtons)
         self.left.addWidget(self.axis1)
+        spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.left.addItem(spacer)
 
         self.right = QVBoxLayout()
+        self.rightTitle = self._createTitle()
         self.rightButtons = self._createTopButtons(2)
         self.axis2 = FrameCanvas(self)
         self.cidButton2 = self.axis2.mpl_connect('button_press_event', self._axisButtonPressEvent)
+        self.right.addLayout(self.rightTitle)
         self.right.addLayout(self.rightButtons)
         self.right.addWidget(self.axis2)
+        self.right.addItem(spacer)
 
-        self.layoutMain.addLayout(self.left)
-        self.layoutMain.addLayout(self.right)
+        self.mainLayout.addLayout(self.left)
+        self.mainLayout.addLayout(self.right)
 
         self.setCentralWidget(self.mainWidget)
 
@@ -51,18 +62,51 @@ class MainWindow(QMainWindow):
         # Scan 2.
         self.s2: Scan = None
 
-    def _createTopButtons(self, scanNumber: int):
+    def _createTopButtons(self, scan: int):
         """Create the layout for the top row of buttons"""
         layout = QHBoxLayout()
         cineButton = QPushButton('Cine', self)
-        cineButton.clicked.connect(lambda: self._onCineClicked(scanNumber))
+        cineButton.clicked.connect(lambda: self._onCineClicked(scan))
         layout.addWidget(cineButton)
 
         return layout
 
-    def _onCineClicked(self, scanNumber: int):
+    def _createTitle(self):
+        """Create title layout area."""
+        layout = QGridLayout()
+
+        patientLabel = QLabel(f'Patient: ')
+        patientLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        patientLabel.setFont(MainWindow.labelFont)
+        scanLabel = QLabel(f'Scan Type:')
+        scanLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        scanLabel.setFont(MainWindow.labelFont)
+        frameLabel = QLabel(f'Total Frames:')
+        frameLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        frameLabel.setFont(MainWindow.labelFont)
+
+        layout.addWidget(patientLabel, 0, 0)
+        layout.addWidget(scanLabel, 0, 1)
+        layout.addWidget(frameLabel, 0, 2)
+
+        return layout
+
+    def _updateTitle(self, scan: int):
+        """Update title information."""
+        if scan == 1:
+            patient, scanType, frameCount = self.s1.getScanDetails()
+            self.leftTitle.itemAt(0).widget().setText(f'Patient: {patient}')
+            self.leftTitle.itemAt(1).widget().setText(f'Scan Type: {scanType}')
+            self.leftTitle.itemAt(2).widget().setText(f'Total Frames: {frameCount}')
+        else:
+            patient, scanType, frameCount = self.s2.getScanDetails()
+            self.rightTitle.itemAt(0).widget().setText(f'Patient: {patient}')
+            self.rightTitle.itemAt(1).widget().setText(f'Scan Type: {scanType}')
+            self.rightTitle.itemAt(2).widget().setText(f'Total Frames: {frameCount}')
+
+    def _onCineClicked(self, scan: int):
         """Play a cine of the scan in a separate window."""
-        if scanNumber == 1:
+        if scan == 1:
             print("Play Cine of Scan 1")
         else:
             print("Play Cine of Scan 2")
@@ -92,34 +136,36 @@ class MainWindow(QMainWindow):
         self.menuScan2.addAction("Select Scan Folder", lambda: self._selectScanDialog(2))
         self.menuScan2.addAction("Open Scan Directory", lambda: self._openScanDirectory(2)).setDisabled(True)
 
-    def _selectScanDialog(self, scanNumber: int):
+    def _selectScanDialog(self, scan: int):
         """Show dialog for selecting a scan folder."""
-        scanPath = QFileDialog.getExistingDirectory(self, caption=f'Select Scan {scanNumber}',
+        scanPath = QFileDialog.getExistingDirectory(self, caption=f'Select Scan {scan}',
                                                     directory=str(self.scansPath))
 
-        if scanNumber == 1:
+        if scan == 1:
             self.s1 = Scan.Scan(scanPath)
             self.menuScan1.actions()[1].setEnabled(True)
-            self.left.itemAt(1).widget().setFixedSize(self.s1.displayDimensions[0],
+            self.left.itemAt(2).widget().setFixedSize(self.s1.displayDimensions[0],
                                                       self.s1.displayDimensions[1])
+            self._updateTitle(1)
         else:
             self.s2 = Scan.Scan(scanPath)
             self.menuScan2.actions()[1].setEnabled(True)
-            self.right.itemAt(1).widget().setFixedSize(self.s2.displayDimensions[0],
+            self.right.itemAt(2).widget().setFixedSize(self.s2.displayDimensions[0],
                                                        self.s2.displayDimensions[1])
+            self._updateTitle(2)
 
-        self._updateDisplay(scanNumber)
+        self._updateDisplay(scan)
 
-    def _openScanDirectory(self, scanNumber: int):
+    def _openScanDirectory(self, scan: int):
         """Open directory of Scan."""
-        if scanNumber == 1:
+        if scan == 1:
             self.s1.openDirectory()
         else:
             self.s2.openDirectory()
 
-    def _updateDisplay(self, scanNumber: int):
+    def _updateDisplay(self, scan: int):
         """Update the shown frame."""
-        if scanNumber == 1:
+        if scan == 1:
             self.s1.drawFrameOnAxis(self.axis1)
         else:
             self.s2.drawFrameOnAxis(self.axis2)

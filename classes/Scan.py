@@ -52,6 +52,7 @@ class Scan:
         frame[-1][-1], frame[-1][0], frame[0][-1], frame[0][0] = 255, 255, 255, 255
         # Prepare axis and draw frame.
         su.drawFrameOnAxis(canvas.axes, frame)
+
         canvas.draw()
 
     def navigate(self, navCommand):
@@ -92,6 +93,17 @@ class Scan:
         displayDimensions = [int(width), int(height)]
 
         return displayDimensions
+
+    def getScanDetails(self):
+        """
+        Return information about the scan, including patient number, scan type, and total frames.
+
+        :return: patient, scanType, frameCount.
+        """
+        patient = self.path.split('/')[-3]
+        scanType = self.path.split('/')[-2].lower().capitalize()
+
+        return patient, scanType, self.frameCount
 
     def openDirectory(self):
         """
