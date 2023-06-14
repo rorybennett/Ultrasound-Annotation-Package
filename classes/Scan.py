@@ -34,20 +34,25 @@ class Scan:
         # Current frame being displayed
         self.currentFrame = 1
         # IMU data.txt file information.
-        self.accelerations, self.quaternions, self.depths, self.duration = su.getIMUDataFromFile(self.path)
+        self.frameNames, self.accelerations, self.quaternions, self.depths, self.duration = su.getIMUDataFromFile(
+            self.path)
         # EditingData.txt file information.
         self.editPath, self.imuOffset, self.imuPosition = su.getEditDataFromFile(self.path)
         # Type of scan.
         self.scanType = su.getScanType(self.path)
         # Display dimensions.
         self.displayDimensions = self.getDisplayDimensions()
+        # Point data from PointData.txt.
+        self.pointPath, self.pointsMm = su.getPointDataFromFile(self.path)
 
-    def drawFrameOnAxis(self, canvas: FrameCanvas):
+    def drawFrameOnAxis(self, canvas: FrameCanvas, showPoints: bool):
         """
         Draw the current frame on the provided canvas with all supplementary available data.
 
         :param canvas: Canvas to drawn frame on.
+        :param showPoints: Show points on frame?
         """
+        axis = canvas.axes
         frame = self.frames[self.currentFrame - 1].copy()
         framePosition = self.currentFrame
         count = self.frameCount
@@ -60,11 +65,28 @@ class Scan:
         # Corner markers.
         frame[-1][-1], frame[-1][0], frame[0][-1], frame[0][0] = 255, 255, 255, 255
         # Prepare axis and draw frame.
-        su.drawFrameOnAxis(canvas.axes, frame)
+        su.drawFrameOnAxis(axis, frame)
         # Draw scan details on axis.
-        su.drawScanDataOnAxis(canvas.axes, frame, framePosition, count, depths, imuOffset, imuPosition, dd)
+        su.drawScanDataOnAxis(axis, frame, framePosition, count, depths, imuOffset, imuPosition, dd)
+        # Show points on frame.
+        if showPoints:
+            su.drawPointDataOnAxis(axis, self.getPointsOnFrame(), depths, imuOffset, imuPosition, dd)
         # Finalise canvas with draw.
         canvas.draw()
+
+    def getPointsOnFrame(self, position=None):
+        """
+        Return a list of points on the frame at 'position'. If index is None, use the current frame.
+
+        :param position: Index of frame.
+        :return: List of points on frame.
+        """
+        if position:
+            points = [[p[1], p[2]] for p in self.pointsMm if p[0] == self.frameNames[position]]
+        else:
+            points = [[p[1], p[2]] for p in self.pointsMm if p[0] == self.frameNames[self.currentFrame - 1]]
+
+        return points
 
     def navigate(self, navCommand):
         """

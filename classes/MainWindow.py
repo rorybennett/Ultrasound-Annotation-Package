@@ -8,14 +8,14 @@ import qdarktheme
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
-    QLabel, QGridLayout, QSpacerItem, QSizePolicy
+    QLabel, QGridLayout, QSpacerItem, QSizePolicy, QCheckBox
 
 from classes import Scan
 from classes.FrameCanvas import FrameCanvas
 
 
 class MainWindow(QMainWindow):
-    labelFont = QFont('Arial', 22)
+    labelFont = QFont('Arial', 18)
 
     def __init__(self):
         """Initialise MainWindow."""
@@ -27,15 +27,18 @@ class MainWindow(QMainWindow):
         self.mainLayout = QHBoxLayout(self.mainWidget)
         self.mainWidget.installEventFilter(self)
 
+        spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
         self.left = QVBoxLayout()
         self.leftTitle = self._createTitle()
         self.leftButtons = self._createTopButtons(1)
         self.axis1 = FrameCanvas(self)
         self.cidButton1 = self.axis1.mpl_connect('button_press_event', self._axisButtonPressEvent)
+        self.leftBoxes = self._createBoxes(1)
         self.left.addLayout(self.leftTitle)
         self.left.addLayout(self.leftButtons)
         self.left.addWidget(self.axis1)
-        spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.left.addLayout(self.leftBoxes)
         self.left.addItem(spacer)
 
         self.right = QVBoxLayout()
@@ -43,9 +46,11 @@ class MainWindow(QMainWindow):
         self.rightButtons = self._createTopButtons(2)
         self.axis2 = FrameCanvas(self)
         self.cidButton2 = self.axis2.mpl_connect('button_press_event', self._axisButtonPressEvent)
+        self.rightBoxes = self._createBoxes(2)
         self.right.addLayout(self.rightTitle)
         self.right.addLayout(self.rightButtons)
         self.right.addWidget(self.axis2)
+        self.right.addLayout(self.rightBoxes)
         self.right.addItem(spacer)
 
         self.mainLayout.addLayout(self.left)
@@ -103,6 +108,17 @@ class MainWindow(QMainWindow):
             self.rightTitle.itemAt(0).widget().setText(f'Patient: {patient}')
             self.rightTitle.itemAt(1).widget().setText(f'Scan Type: {scanType}')
             self.rightTitle.itemAt(2).widget().setText(f'Total Frames: {frameCount}')
+
+    def _createBoxes(self, scan: int):
+        """Create checkboxes below canvas."""
+        layout = QHBoxLayout()
+
+        points = QCheckBox('Show Points')
+        points.stateChanged.connect(lambda: self._updateDisplay(scan))
+        layout.addWidget(points)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        return layout
 
     def _onCineClicked(self, scan: int):
         """Play a cine of the scan in a separate window."""
@@ -166,9 +182,9 @@ class MainWindow(QMainWindow):
     def _updateDisplay(self, scan: int):
         """Update the shown frame."""
         if scan == 1:
-            self.s1.drawFrameOnAxis(self.axis1)
+            self.s1.drawFrameOnAxis(self.axis1, self.leftBoxes.itemAt(0).widget().isChecked())
         else:
-            self.s2.drawFrameOnAxis(self.axis2)
+            self.s2.drawFrameOnAxis(self.axis2, self.rightBoxes.itemAt(0).widget().isChecked())
 
     def keyPressEvent(self, event):
         """Handle key press events."""
