@@ -4,6 +4,7 @@
 import subprocess
 
 import cv2
+from natsort import natsorted
 from screeninfo import get_monitors
 
 import ScanUtil as su
@@ -17,6 +18,15 @@ NAVIGATION = {
     'w': 'UP',
     's': 'DOWN',
 }
+# Add or remove points.
+ADD_POINT = '-ADD-POINT-'
+REMOVE_POINT = '-REMOVE-POINT-'
+# Save data to disk.
+SAVE_EDITING_DATA = '-SAVE-EDITING-DATA-'
+SAVE_POINT_DATA = '-SAVE-POINT-DATA-'
+SAVE_PLANE_DATA = '-SAVE-PLANE-DATA-'
+SAVE_IPV_DATA = '-SAVE-IPV-DATA-'
+SAVE_ALL = '-SAVE-ALL-'
 
 
 class Scan:
@@ -147,3 +157,66 @@ class Scan:
             subprocess.Popen(f'explorer "{path}"')
         except Exception as e:
             print(f'Error opening Windows explorer: {e}')
+
+    def addOrRemovePoint(self, pointDisplay: list):
+        """
+        Add or remove a point to/from self.points. Point data is saved as real world x and y coordinates on the
+        frame, taking the top offset and left offset as zero (ignoring imuOffset). If the new point is within
+        a radius of an old point, the old point is removed.
+
+        Args:
+            pointDisplay: x/width-, and y/height-coordinates returned by the Graph elements' event.
+
+        Returns:
+            Nothing, adds points directly to self.pointsMm.
+        """
+        pointMm = su.displayToMm(pointDisplay, self.depths[self.currentFrame - 1], self.imuOffset,
+                                 self.imuPosition, self.displayDimensions)
+
+        pointRemoved = False
+
+        for point in self.pointsMm:
+            if self.frameNames[self.currentFrame - 1] == point[0]:
+                # If within radius of another point, remove that point.
+                if su.pointInRadius(point[1:], pointMm, 2):
+                    self.pointsMm.remove(point)
+                    pointRemoved = True
+                    break
+        # If no point was removed, add the new point.
+        if not pointRemoved:
+            self.pointsMm.append([self.frameNames[self.currentFrame - 1], pointMm[0], pointMm[1]])
+        # Save point data to disk.
+        self.__saveToDisk(SAVE_POINT_DATA)
+
+    def __saveToDisk(self, saveType: str):
+        """
+        Save all in memory data to relevant .txt files. This should be called whenever a value is changed. All previous
+        values are overwritten and the current values stored.
+
+        Args:
+            saveType: Which data to save to disk.
+        """
+        try:
+            if saveType in [SAVE_EDITING_DATA, SAVE_ALL]:
+                with open(self.editPath, 'w') as editingFile:
+                    editingFile.write(f'imuOffset:{self.imuOffset}\n')
+                    editingFile.write(f'imuPosition:{self.imuPosition}\n')
+
+            if saveType in [SAVE_POINT_DATA, SAVE_ALL]:
+                with open(self.pointPath, 'w') as pointFile:
+                    self.pointsMm = natsorted(self.pointsMm, key=lambda l: l[0])
+                    for point in self.pointsMm:
+                        pointFile.write(f'{point[0]},{point[1]},{point[2]}\n')
+
+            # if saveType in [SAVE_PLANE_DATA, SAVE_ALL]:
+            #     with open(self.plane_path, 'w') as plane_file:
+            #         json.dump(self.plane_mm, plane_file, indent=4)
+            #
+            # if saveType in [SAVE_IPV_DATA, SAVE_ALL]:
+            #     with open(self.ipv_path, 'w') as ipv_file:
+            #         json.dump(self.ipv_data, ipv_file, indent=4)
+
+        except Exception as e:
+            print(f'\tError saving details to file: {e}')
+
+

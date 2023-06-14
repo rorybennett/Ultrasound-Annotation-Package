@@ -321,3 +321,60 @@ def ratioToDisplay(pointRatio: list, dd: list):
                     int(pointRatio[1] * dd[1])]
 
     return pointDisplay
+
+
+def displayToMm(pointDisplay: list, depths: list, imuOffset: float, imuPosition: int, dd: list):
+    """
+    Convert a point in display coordinates to mm. Include the offset in the y direction.
+
+    Args:
+        pointDisplay (list): x and y coordinates of the point in display dimensions.
+        depths (list): Scan depth.
+        imuOffset (float): IMU offset.
+        imuPosition (int): Position of IMU shown by ticks.
+        dd (list): Dimensions of display, based on frame.
+
+    Returns:
+        point_mm (list): Point coordinates in mm.
+    """
+    point_ratio = displayToRatio(pointDisplay, dd)
+
+    # Point in mm using depth of scan as reference.
+    point_mm = [point_ratio[0] * depths[1] - (depths[1] / (depths[1] * (imuPosition / 100))),
+                point_ratio[1] * depths[0] + imuOffset]
+
+    return point_mm
+
+
+def displayToRatio(pointDisplay: list, dd: list):
+    """
+    Convert a point in display coordinates into a ratio of the display dimensions.
+
+    Args:
+        pointDisplay (list): x and y coordinates of the point in display dimensions.
+        dd (list): Dimensions of frame being displayed.
+
+    Returns:
+        pointRatio (list): Point as a ratio of the display dimensions.
+    """
+    pointRatio = [pointDisplay[0] / dd[0], (dd[1] - pointDisplay[1]) / dd[1]]
+
+    return pointRatio
+
+def pointInRadius(centre: list, point: list, radius: int) -> bool:
+    """
+    Checks whether the point is within the constant radius of the centre, if it is return True, else False.
+
+    Args:
+        centre (float, float): Location of centre point, as a percentage.
+        point (float, float): Location of test point, as a percentage.
+
+    Returns:
+        withinRadius (bool): True if within radius, else False.
+    """
+    withinRadius = False
+
+    if (point[0] - centre[0]) ** 2 + (point[1] - centre[1]) ** 2 < radius ** 2:
+        withinRadius = True
+
+    return withinRadius
