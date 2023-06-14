@@ -35,6 +35,8 @@ class Scan:
         self.currentFrame = 1
         # IMU data.txt file information.
         self.accelerations, self.quaternions, self.depths, self.duration = su.getIMUDataFromFile(self.path)
+        # EditingData.txt file information.
+        self.editPath, self.imuOffset, self.imuPosition = su.getEditDataFromFile(self.path)
         # Type of scan.
         self.scanType = su.getScanType(self.path)
         # Display dimensions.
@@ -47,6 +49,11 @@ class Scan:
         :param canvas: Canvas to drawn frame on.
         """
         frame = self.frames[self.currentFrame - 1].copy()
+        framePosition = self.currentFrame
+        count = self.frameCount
+        depths = self.depths[self.currentFrame - 1]
+        imuOffset = self.imuOffset
+        imuPosition = self.imuPosition
         dd = self.displayDimensions
         # Resize frame to fit display dimensions.
         frame = cv2.resize(frame, dd, cv2.INTER_CUBIC)
@@ -55,8 +62,8 @@ class Scan:
         # Prepare axis and draw frame.
         su.drawFrameOnAxis(canvas.axes, frame)
         # Draw scan details on axis.
-        su.drawScanDataOnAxis()
-        # todo Get imu offset, and imu position from file.
+        su.drawScanDataOnAxis(canvas.axes, frame, framePosition, count, depths, imuOffset, imuPosition, dd)
+        # Finalise canvas with draw.
         canvas.draw()
 
     def navigate(self, navCommand):

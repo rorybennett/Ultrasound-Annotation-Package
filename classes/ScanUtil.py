@@ -1,5 +1,6 @@
 import csv
 import os
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -77,13 +78,13 @@ def drawScanDataOnAxis(axis: Axes, frame: np.ndarray, fNo: int, fCount: int, dep
     :param dd: Display dimensions - shape of the frame, first and second value swapped.
     """
     # Scan width and depth in mm.
-    axis.text(dd[0] - 80, 30, f'{int(depths[1])}mm', color='white')
-    axis.text(dd[0] - 30, 90, f'{int(depths[0])}mm', color='white', rotation=-90)
+    axis.text(dd[0] - 120, 30, f'<- {int(depths[1])}mm ->', color='white')
+    axis.text(dd[0] - 30, 130, f'<- {int(depths[0])}mm ->', color='white', rotation=-90)
     # IMU offset and position details.
-    axis.text(20, 40, f'IMU Offset: {imuOff:.1f}mm', color='blue')
-    axis.text(20, 60, f'IMU Position: {imuPos:.1f}%', color='blue')
+    axis.text(20, 40, f'IMU Offset: {imuOff:.1f}mm', color='lightblue')
+    axis.text(20, 60, f'IMU Position: {imuPos:.1f}%', color='lightblue')
     # Current frame number over total frames.
-    axis.text(dd[0] - 70, frame.shape[0] - 20, f'{fNo}/{fCount}', color='white')
+    axis.text(dd[0] - 120, frame.shape[0] - 20, f'Frame {fNo} of {fCount}', color='white')
     # Scan position indicator.
     axis.plot([dd[0] - 20, dd[0] - 20], [dd[1] - 40, dd[1] - 240], color='white', linewidth=1)
     axis.plot([dd[0] - 22, dd[0] - 16], [dd[1] - 40 - 201 * (fNo - 1) / fCount, dd[1] - 40 - 201 * (fNo - 1) / fCount],
@@ -125,3 +126,53 @@ def getIMUDataFromFile(scanPath: str):
             duration = 1
 
     return accelerations, quaternions, depths, duration
+
+
+def getEditDataFromFile(scanPath: str):
+    """
+    Helper function to get any editing details that are already stored. If there is no file it is created. Values
+    stored in the file:
+        imuOffset      ->      Offset between probe end and IMU.
+        imuPosition    ->      Position of IMU as percentage of width of scan.
+
+    :param scanPath: String representation of the scan path.
+    :return:
+    """
+    editPath = checkEditDataFile(scanPath)
+    imuOffset = 0
+    imuPosition = 50
+
+    with open(editPath, 'r') as editFile:
+        for line in editFile.readlines():
+            lineSplit = line.split(':')
+            parameter = lineSplit[0]
+            value = lineSplit[1]
+
+            if parameter == 'imuOffset':
+                imuOffset = float(value)
+            elif parameter == 'imuPosition':
+                imuPosition = float(value)
+                if imuPosition == 0:
+                    print('IMU Position is 0, changing it to 50.')
+                    imuPosition = 50
+
+        return editPath, imuOffset, imuPosition
+
+
+def checkEditDataFile(scanPath: str) -> Path:
+    """
+    Check if the given folder contains an EditingData.txt file, if True return a Path object to it, else create
+    the file and return a Path object to it. When creating the file add some default values to it.
+
+    :param scanPath: String representation of the scan path.
+
+    :return editPath: Path object to existing or newly created EditingData.txt file.
+    """
+    editPath = Path(scanPath, 'EditingData.txt')
+    if not editPath.is_file():
+        print(f'EditingData.txt does not exist, creating now.')
+        with open(editPath, 'a') as editingFile:
+            editingFile.write('imuOffset:0\n')
+            editingFile.write('imuPosition:50\n')
+
+    return editPath
