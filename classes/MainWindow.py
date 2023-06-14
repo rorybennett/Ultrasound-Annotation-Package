@@ -138,7 +138,7 @@ class MainWindow(QMainWindow):
                 self._updateDisplay(1)
                 return
 
-            if self.s2:
+            if self.s2 and self.rightBoxes.itemAt(0).widget().isChecked():
                 self.s2.addOrRemovePoint(displayPoint)
                 self._updateDisplay(2)
                 return
