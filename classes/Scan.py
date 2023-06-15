@@ -1,7 +1,9 @@
 # Scan.py
 
 """Scan class with variables and methods for working with a single scan."""
+import shutil
 import subprocess
+from pathlib import Path
 
 import cv2
 from natsort import natsorted
@@ -226,3 +228,52 @@ class Scan:
         self.pointsMm = [p for p in self.pointsMm if not p[0] == self.frameNames[self.currentFrame - 1]]
 
         self.__saveToDisk(SAVE_POINT_DATA)
+
+    def loadSaveData(self, saveName: str):
+        """
+        Load the saved PointData.txt, BulletData.JSON, Editing.txt, and IPV.JSON  files from the directory selected.
+        This will overwrite the current files in the recording directory.
+
+        Args:
+            saveName (str): Directory containing files to be loaded.
+
+        Return:
+            successFlags (bool): True if the load was successful, else False.
+        """
+        successFlags = [True, True, True, True]
+        # try:
+        #     shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.plane_path.name), self.plane_path)
+        # except Exception as e:
+        #     print(f'\tError loading plane data: {e}.')
+        #     successFlags[0] = False
+
+        try:
+            shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.pointPath.name), self.pointPath)
+        except Exception as e:
+            print(f'\tError loading point data: {e}.')
+            successFlags[1] = False
+
+        try:
+            shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.editPath.name), self.editPath)
+        except Exception as e:
+            print(f'\tError loading editing data: {e}.')
+            successFlags[2] = False
+        #
+        # try:
+        #     shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.ipv_path.name), self.ipv_path)
+        # except Exception as e:
+        #     print(f'\tError loading ipv data: {e}.')
+        #     successFlags[3] = False
+
+        return successFlags
+
+    def getSaveData(self):
+        """
+        Return a list of all the sub folders stored in the Save Data directory.
+
+        Returns:
+            folders (list): List of sub folders as strings.
+        """
+        folders = [vd.stem for vd in Path(f'{self.path}/Save Data').iterdir() if vd.is_dir()]
+
+        return folders

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import qdarktheme
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QAction
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
     QLabel, QGridLayout, QSpacerItem, QSizePolicy, QCheckBox, QMenu
 
@@ -133,18 +133,52 @@ class MainWindow(QMainWindow):
     def _createMainMenu(self):
         """Create menus."""
         # Load scans menu.
-        self.menuLoadScan = self.menuBar().addMenu("Load Scans")
-        self.menuLoadScan.addAction("Select Scan 1 Folder...", lambda: self._selectScanDialog(1))
-        self.menuLoadScan.addAction("Open Scan 1 Directory...", lambda: self._openScanDirectory(1)).setDisabled(True)
-        self.menuLoadScan.addSeparator()
-        self.menuLoadScan.addAction("Select Scan 2 Folder...", lambda: self._selectScanDialog(2))
-        self.menuLoadScan.addAction("Open Scan 2 Directory...", lambda: self._openScanDirectory(2)).setDisabled(True)
+        self.menuLoadScans = self.menuBar().addMenu("Load Scans")
+        self.menuLoadScans.addAction("Select Scan 1 Folder...", lambda: self._selectScanDialog(1))
+        self.menuLoadScans.addAction("Open Scan 1 Directory...", lambda: self._openScanDirectory(1)).setDisabled(True)
+        self.menuLoadScans.addSeparator()
+        self.menuLoadScans.addAction("Select Scan 2 Folder...", lambda: self._selectScanDialog(2))
+        self.menuLoadScans.addAction("Open Scan 2 Directory...", lambda: self._openScanDirectory(2)).setDisabled(True)
 
         # Load data menu
-        self.menuLoad = self.menuBar().addMenu("Load Data")
-        self.menuLoad.addAction('Load Scan 1 Data', lambda: None).setDisabled(True)
-        self.menuLoad.addSeparator()
-        self.menuLoad.addAction('Load Scan 2 Data', lambda: None).setDisabled(True)
+        menuLoadData = self.menuBar().addMenu("Load Data")
+        self.menuLoadData1 = menuLoadData.addMenu('Load Scan 1 Data')
+        self.menuLoadData1.setDisabled(True)
+        self.menuLoadData1.aboutToShow.connect(lambda: self._populateLoadScanData(1))
+        menuLoadData.addSeparator()
+        self.menuLoadData2 = menuLoadData.addMenu('Load Scan 2 Data')
+        self.menuLoadData2.setDisabled(True)
+        self.menuLoadData2.aboutToShow.connect(lambda: self._populateLoadScanData(2))
+
+    def _loadSaveData(self, scan: int, fileName: str):
+        """Load save data of scan and update display."""
+        if scan == 1:
+            self.s1.loadSaveData(fileName)
+            self.s1 = Scan.Scan(self.s1.path)
+        else:
+            self.s2.loadSaveData(fileName)
+            self.s2 = Scan.Scan(self.s2.path)
+
+        self._updateDisplay(scan)
+
+    def _populateLoadScanData(self, scan: int):
+        """Populate the load submenu just before opening."""
+        if scan == 1:
+            self.menuLoadData1.clear()
+            actions = []
+            for fileName in self.s1.getSaveData():
+                action = QAction(fileName, self)
+                action.triggered.connect(lambda: self._loadSaveData(scan, fileName))
+                actions.append(action)
+            self.menuLoadData1.addActions(actions)
+        else:
+            self.menuLoadData2.clear()
+            actions = []
+            for fileName in self.s2.getSaveData():
+                action = QAction(fileName, self)
+                action.triggered.connect(lambda: self._loadSaveData(scan, fileName))
+                actions.append(action)
+            self.menuLoadData2.addActions(actions)
 
     def _selectScanDialog(self, scan: int):
         """Show dialog for selecting a scan folder."""
@@ -153,18 +187,18 @@ class MainWindow(QMainWindow):
 
         if scan == 1:
             self.s1 = Scan.Scan(scanPath)
-            self.menuLoadScan.actions()[1].setEnabled(True)
+            self.menuLoadScans.actions()[1].setEnabled(True)
+            self.menuLoadData1.setEnabled(True)
             self.left.itemAt(2).widget().setFixedSize(self.s1.displayDimensions[0],
                                                       self.s1.displayDimensions[1])
             self._updateTitle(1)
-            self.menuLoad.actions()[0].setEnabled(True)
         else:
             self.s2 = Scan.Scan(scanPath)
-            self.menuLoadScan.actions()[3].setEnabled(True)
+            self.menuLoadScans.actions()[3].setEnabled(True)
+            self.menuLoadData2.setEnabled(True)
             self.right.itemAt(2).widget().setFixedSize(self.s2.displayDimensions[0],
                                                        self.s2.displayDimensions[1])
             self._updateTitle(2)
-            self.menuLoad.actions()[2].setEnabled(True)
 
         self._updateDisplay(scan)
 
