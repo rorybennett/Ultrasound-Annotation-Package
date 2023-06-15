@@ -2,7 +2,6 @@
 
 """Main Window for viewing and editing ultrasound scans."""
 import sys
-from functools import partial
 from pathlib import Path
 
 import qdarktheme
@@ -11,7 +10,7 @@ from PyQt6.QtGui import QFont, QAction
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
     QLabel, QGridLayout, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog
 
-from classes import Scan
+import Scan
 from classes.FrameCanvas import FrameCanvas
 
 
@@ -68,6 +67,7 @@ class MainWindow(QMainWindow):
         self.s1: Scan = None
         # Scan 2.
         self.s2: Scan = None
+
 
     def _createTopButtons(self, scan: int):
         """Create the layout for the top row of buttons"""
@@ -250,6 +250,11 @@ class MainWindow(QMainWindow):
         else:
             self.s2.drawFrameOnAxis(self.axis2, self.rightBoxes.itemAt(0).widget().isChecked())
 
+    def _clearFramePoints(self, scan: int):
+        """Clear frame points from scan, then update display."""
+        self.s1.clearFramePoints() if scan == 1 else self.s2.clearFramePoints()
+        self._updateDisplay(scan)
+
     def keyPressEvent(self, event):
         """Handle key press events."""
         if self.s1 and self.axis1.underMouse():
@@ -264,11 +269,6 @@ class MainWindow(QMainWindow):
             elif event.text() == 's':
                 self.s2.navigate(Scan.NAVIGATION['s'])
             self._updateDisplay(2)
-
-    def _clearFramePoints(self, scan: int):
-        """Clear frame points from scan, then update display."""
-        self.s1.clearFramePoints() if scan == 1 else self.s2.clearFramePoints()
-        self._updateDisplay(scan)
 
     def contextMenuEvent(self, event):
         if self.s1 and self.axis1.underMouse():
