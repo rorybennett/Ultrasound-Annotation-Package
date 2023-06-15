@@ -5,11 +5,10 @@ import sys
 from pathlib import Path
 
 import qdarktheme
-from PyQt6.QtCore import Qt, QEvent
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
     QLabel, QGridLayout, QSpacerItem, QSizePolicy, QCheckBox, QMenu
-from PyQt6.uic.properties import QtCore
 
 from classes import Scan
 from classes.FrameCanvas import FrameCanvas
@@ -23,13 +22,13 @@ class MainWindow(QMainWindow):
         # Setup GUI.
         super().__init__()
         self.setWindowTitle("Ultrasound Scan Editing")
-        # Display 2 scans side-by-side as central widget.
+        # Display 2 scans side-by-side inside central widget.
         self.mainWidget = QWidget(self)
         self.mainLayout = QHBoxLayout(self.mainWidget)
         self.mainWidget.installEventFilter(self)
 
         spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-
+        # Left side.
         self.left = QVBoxLayout()
         self.leftTitle = self._createTitle()
         self.leftButtons = self._createTopButtons(1)
@@ -41,7 +40,7 @@ class MainWindow(QMainWindow):
         self.left.addWidget(self.axis1)
         self.left.addLayout(self.leftBoxes)
         self.left.addItem(spacer)
-
+        # Right side.
         self.right = QVBoxLayout()
         self.rightTitle = self._createTitle()
         self.rightButtons = self._createTopButtons(2)
@@ -56,7 +55,6 @@ class MainWindow(QMainWindow):
 
         self.mainLayout.addLayout(self.left)
         self.mainLayout.addLayout(self.right)
-
         self.setCentralWidget(self.mainWidget)
 
         self._createMainMenu()
@@ -67,9 +65,6 @@ class MainWindow(QMainWindow):
         self.s1: Scan = None
         # Scan 2.
         self.s2: Scan = None
-
-
-
 
     def _createTopButtons(self, scan: int):
         """Create the layout for the top row of buttons"""
@@ -116,11 +111,12 @@ class MainWindow(QMainWindow):
     def _createBoxes(self, scan: int):
         """Create checkboxes below canvas."""
         layout = QHBoxLayout()
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         points = QCheckBox('Show Points')
+        points.setChecked(True)
         points.stateChanged.connect(lambda: self._updateDisplay(scan))
         layout.addWidget(points)
-        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         return layout
 
@@ -164,8 +160,6 @@ class MainWindow(QMainWindow):
         self.menuLoad.addAction('Load Scan 1 Data', lambda: None).setDisabled(True)
         self.menuLoad.addSeparator()
         self.menuLoad.addAction('Load Scan 2 Data', lambda: None).setDisabled(True)
-
-
 
     def _selectScanDialog(self, scan: int):
         """Show dialog for selecting a scan folder."""
@@ -227,9 +221,6 @@ class MainWindow(QMainWindow):
             menu = QMenu()
             menu.addAction('Clear Points', lambda: None)
             menu.exec(event.globalPos())
-
-
-
 
 
 def except_hook(cls, exception, traceback):
