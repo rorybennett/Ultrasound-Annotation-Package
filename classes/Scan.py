@@ -219,4 +219,10 @@ class Scan:
         except Exception as e:
             print(f'\tError saving details to file: {e}')
 
+    def clearFramePoints(self):
+        """
+        Clear points on the currently displayed frame, then save to disk.
+        """
+        self.pointsMm = [p for p in self.pointsMm if not p[0] == self.frameNames[self.currentFrame - 1]]
 
+        self.__saveToDisk(SAVE_POINT_DATA)

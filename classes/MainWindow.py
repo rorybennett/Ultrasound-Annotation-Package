@@ -30,10 +30,11 @@ class MainWindow(QMainWindow):
         spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
         # Left side.
         self.left = QVBoxLayout()
+        self.left.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.leftTitle = self._createTitle()
         self.leftButtons = self._createTopButtons(1)
         self.axis1 = FrameCanvas(self)
-        self.cidButton1 = self.axis1.mpl_connect('button_press_event', self._axisButtonPressEvent)
+        self.axis1.mpl_connect('button_press_event', self._axis1PressEvent)
         self.leftBoxes = self._createBoxes(1)
         self.left.addLayout(self.leftTitle)
         self.left.addLayout(self.leftButtons)
@@ -42,10 +43,11 @@ class MainWindow(QMainWindow):
         self.left.addItem(spacer)
         # Right side.
         self.right = QVBoxLayout()
+        self.right.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.rightTitle = self._createTitle()
         self.rightButtons = self._createTopButtons(2)
         self.axis2 = FrameCanvas(self)
-        self.cidButton2 = self.axis2.mpl_connect('button_press_event', self._axisButtonPressEvent)
+        self.axis2.mpl_connect('button_press_event', self._axis2PressEvent)
         self.rightBoxes = self._createBoxes(2)
         self.right.addLayout(self.rightTitle)
         self.right.addLayout(self.rightButtons)
@@ -75,7 +77,8 @@ class MainWindow(QMainWindow):
 
         return layout
 
-    def _createTitle(self):
+    @staticmethod
+    def _createTitle():
         """Create title layout area."""
         layout = QGridLayout()
 
@@ -127,33 +130,15 @@ class MainWindow(QMainWindow):
         else:
             print("Play Cine of Scan 2")
 
-    def _axisButtonPressEvent(self, event):
-        """Handle clicks on axes (canvas displaying image)."""
-        displayPoint = [event.x - 1 if event.x > 0 else 0,
-                        event.y - 1 if event.y > 0 else 0]
-        # Left click.
-        if event.button == 1:
-            if self.s1 and self.leftBoxes.itemAt(0).widget().isChecked():
-                self.s1.addOrRemovePoint(displayPoint)
-                self._updateDisplay(1)
-                return
-
-            if self.s2 and self.rightBoxes.itemAt(0).widget().isChecked():
-                self.s2.addOrRemovePoint(displayPoint)
-                self._updateDisplay(2)
-                return
-
     def _createMainMenu(self):
         """Create menus."""
-        # First scan menu.
-        self.menuScan1 = self.menuBar().addMenu("Scan 1")
-        self.menuScan1.addAction("Select Scan Folder", lambda: self._selectScanDialog(1))
-        self.menuScan1.addAction("Open Scan Directory", lambda: self._openScanDirectory(1)).setDisabled(True)
-
-        # Second scan menu.
-        self.menuScan2 = self.menuBar().addMenu("Scan 2")
-        self.menuScan2.addAction("Select Scan Folder", lambda: self._selectScanDialog(2))
-        self.menuScan2.addAction("Open Scan Directory", lambda: self._openScanDirectory(2)).setDisabled(True)
+        # Load scans menu.
+        self.menuLoadScan = self.menuBar().addMenu("Load Scans")
+        self.menuLoadScan.addAction("Select Scan 1 Folder...", lambda: self._selectScanDialog(1))
+        self.menuLoadScan.addAction("Open Scan 1 Directory...", lambda: self._openScanDirectory(1)).setDisabled(True)
+        self.menuLoadScan.addSeparator()
+        self.menuLoadScan.addAction("Select Scan 2 Folder...", lambda: self._selectScanDialog(2))
+        self.menuLoadScan.addAction("Open Scan 2 Directory...", lambda: self._openScanDirectory(2)).setDisabled(True)
 
         # Load data menu
         self.menuLoad = self.menuBar().addMenu("Load Data")
@@ -168,20 +153,40 @@ class MainWindow(QMainWindow):
 
         if scan == 1:
             self.s1 = Scan.Scan(scanPath)
-            self.menuScan1.actions()[1].setEnabled(True)
+            self.menuLoadScan.actions()[1].setEnabled(True)
             self.left.itemAt(2).widget().setFixedSize(self.s1.displayDimensions[0],
                                                       self.s1.displayDimensions[1])
             self._updateTitle(1)
             self.menuLoad.actions()[0].setEnabled(True)
         else:
             self.s2 = Scan.Scan(scanPath)
-            self.menuScan2.actions()[1].setEnabled(True)
+            self.menuLoadScan.actions()[3].setEnabled(True)
             self.right.itemAt(2).widget().setFixedSize(self.s2.displayDimensions[0],
                                                        self.s2.displayDimensions[1])
             self._updateTitle(2)
             self.menuLoad.actions()[2].setEnabled(True)
 
         self._updateDisplay(scan)
+
+    def _axis1PressEvent(self, event):
+        """Handle left clicks on axis 1 (canvas displaying image)."""
+        displayPoint = [event.x - 1 if event.x > 0 else 0,
+                        event.y - 1 if event.y > 0 else 0]
+        # Left click.
+        if event.button == 1 and self.s1 and self.leftBoxes.itemAt(0).widget().isChecked():
+            self.s1.addOrRemovePoint(displayPoint)
+            self._updateDisplay(1)
+            return
+
+    def _axis2PressEvent(self, event):
+        """Handle left clicks on axis 2 (canvas displaying image)."""
+        displayPoint = [event.x - 1 if event.x > 0 else 0,
+                        event.y - 1 if event.y > 0 else 0]
+        # Left click.
+        if event.button == 1 and self.s2 and self.rightBoxes.itemAt(0).widget().isChecked():
+            self.s2.addOrRemovePoint(displayPoint)
+            self._updateDisplay(2)
+            return
 
     def _openScanDirectory(self, scan: int):
         """Open directory of Scan."""
@@ -212,14 +217,19 @@ class MainWindow(QMainWindow):
                 self.s2.navigate(Scan.NAVIGATION['s'])
             self._updateDisplay(2)
 
+    def _clearFramePoints(self, scan: int):
+        """Clear frame points from scan, then update display."""
+        self.s1.clearFramePoints() if scan == 1 else self.s2.clearFramePoints()
+        self._updateDisplay(scan)
+
     def contextMenuEvent(self, event):
         if self.s1 and self.axis1.underMouse():
             menu = QMenu()
-            menu.addAction('Clear Points', lambda: None)
+            menu.addAction('Clear Points', lambda: self._clearFramePoints(1))
             menu.exec(event.globalPos())
         elif self.s2 and self.axis2.underMouse():
             menu = QMenu()
-            menu.addAction('Clear Points', lambda: None)
+            menu.addAction('Clear Points', lambda: self._clearFramePoints(2))
             menu.exec(event.globalPos())
 
 
