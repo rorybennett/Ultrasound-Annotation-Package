@@ -378,3 +378,19 @@ def pointInRadius(centre: list, point: list, radius: int) -> bool:
         withinRadius = True
 
     return withinRadius
+
+def checkSaveDataDirectory(scanPath: str):
+    """
+    Check if the given directory contains a Save Data folder, if not then it must be created. This folder is used to
+    save BulletData, PointData, and EditingData for a user.
+
+    Args:
+        scanPath (str): Path to a recording directory.
+
+    Returns:
+        saveDataPath (Path): Path to the newly created directory.
+    """
+    saveDataPath = Path(scanPath, 'Save Data')
+    saveDataPath.mkdir(parents=True, exist_ok=True)
+
+    return saveDataPath

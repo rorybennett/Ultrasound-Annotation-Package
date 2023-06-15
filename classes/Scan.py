@@ -3,6 +3,7 @@
 """Scan class with variables and methods for working with a single scan."""
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 import cv2
@@ -32,7 +33,7 @@ SAVE_ALL = '-SAVE-ALL-'
 
 
 class Scan:
-    def __init__(self, path: str):
+    def __init__(self, path: str, startingFrame=1):
         """
         Initialise a Scan object using the given path string.
 
@@ -44,7 +45,7 @@ class Scan:
         self.frames = su.loadFrames(self.path)
         self.frameCount = len(self.frames)
         # Current frame being displayed
-        self.currentFrame = 1
+        self.currentFrame = startingFrame
         # IMU data.txt file information.
         self.frameNames, self.accelerations, self.quaternions, self.depths, self.duration = su.getIMUDataFromFile(
             self.path)
@@ -247,6 +248,8 @@ class Scan:
         #     print(f'\tError loading plane data: {e}.')
         #     successFlags[0] = False
 
+        print(f'Loading Data: {saveName}')
+
         try:
             shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.pointPath.name), self.pointPath)
         except Exception as e:
@@ -277,3 +280,27 @@ class Scan:
         folders = [vd.stem for vd in Path(f'{self.path}/Save Data').iterdir() if vd.is_dir()]
 
         return folders
+
+    def saveUserData(self, username: str):
+        """
+        Save the current PointData.txt, BulletData.JSON, Editing.txt, and IPV.JSON files to the Save Data folder
+        under the entered userName + time.
+
+        Args:
+            username (str): Username entered by user, will have time appended.
+        """
+        try:
+            # Create Save Data directory if not present.
+            saveDataPath = su.checkSaveDataDirectory(self.path)
+
+            userPath = Path(saveDataPath, f'{username}_{int(time.time() * 1000)}')
+            # Create directory with username and current time in milliseconds.
+            userPath.mkdir(parents=True, exist_ok=True)
+            # Copy current files to new user directory.
+            # shutil.copy(self.plane_path, Path(userPath, self.plane_path.name))
+            shutil.copy(self.pointPath, Path(userPath, self.pointPath.name))
+            shutil.copy(self.editPath, Path(userPath, self.editPath.name))
+            # shutil.copy(self.ipv_path, Path(userPath, self.ipv_path.name))
+
+        except Exception as e:
+            print(f'\tError saving user data: {e}.')

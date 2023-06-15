@@ -2,13 +2,14 @@
 
 """Main Window for viewing and editing ultrasound scans."""
 import sys
+from functools import partial
 from pathlib import Path
 
 import qdarktheme
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QAction
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
-    QLabel, QGridLayout, QSpacerItem, QSizePolicy, QCheckBox, QMenu
+    QLabel, QGridLayout, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog
 
 from classes import Scan
 from classes.FrameCanvas import FrameCanvas
@@ -139,7 +140,6 @@ class MainWindow(QMainWindow):
         self.menuLoadScans.addSeparator()
         self.menuLoadScans.addAction("Select Scan 2 Folder...", lambda: self._selectScanDialog(2))
         self.menuLoadScans.addAction("Open Scan 2 Directory...", lambda: self._openScanDirectory(2)).setDisabled(True)
-
         # Load data menu
         menuLoadData = self.menuBar().addMenu("Load Data")
         self.menuLoadData1 = menuLoadData.addMenu('Load Scan 1 Data')
@@ -149,15 +149,27 @@ class MainWindow(QMainWindow):
         self.menuLoadData2 = menuLoadData.addMenu('Load Scan 2 Data')
         self.menuLoadData2.setDisabled(True)
         self.menuLoadData2.aboutToShow.connect(lambda: self._populateLoadScanData(2))
+        # Save data menu.
+        self.menuSaveData = self.menuBar().addMenu("Save Data")
+        self.menuSaveData.addAction('Save Scan 1 Data', lambda: self._saveData(1)).setDisabled(True)
+        self.menuSaveData.addSeparator()
+        self.menuSaveData.addAction('Save Scan 2 Data', lambda: self._saveData(2)).setDisabled(True)
+
+    def _saveData(self, scan: int):
+        """Save Scan point data."""
+        userName, ok = QInputDialog.getText(self, 'Save Current Data', 'Enter User Name:')
+        if ok:
+            self.s1.saveUserData(userName) if scan == 1 else self.s2.saveUserData(userName)
 
     def _loadSaveData(self, scan: int, fileName: str):
         """Load save data of scan and update display."""
+        print(fileName)
         if scan == 1:
             self.s1.loadSaveData(fileName)
-            self.s1 = Scan.Scan(self.s1.path)
+            self.s1 = Scan.Scan(self.s1.path, self.s1.currentFrame)
         else:
             self.s2.loadSaveData(fileName)
-            self.s2 = Scan.Scan(self.s2.path)
+            self.s2 = Scan.Scan(self.s2.path, self.s2.currentFrame)
 
         self._updateDisplay(scan)
 
@@ -168,7 +180,7 @@ class MainWindow(QMainWindow):
             actions = []
             for fileName in self.s1.getSaveData():
                 action = QAction(fileName, self)
-                action.triggered.connect(lambda: self._loadSaveData(scan, fileName))
+                action.triggered.connect(lambda _, x=fileName: self._loadSaveData(scan, x))
                 actions.append(action)
             self.menuLoadData1.addActions(actions)
         else:
@@ -176,7 +188,7 @@ class MainWindow(QMainWindow):
             actions = []
             for fileName in self.s2.getSaveData():
                 action = QAction(fileName, self)
-                action.triggered.connect(lambda: self._loadSaveData(scan, fileName))
+                action.triggered.connect(lambda _, x=fileName: self._loadSaveData(scan, x))
                 actions.append(action)
             self.menuLoadData2.addActions(actions)
 
@@ -189,6 +201,7 @@ class MainWindow(QMainWindow):
             self.s1 = Scan.Scan(scanPath)
             self.menuLoadScans.actions()[1].setEnabled(True)
             self.menuLoadData1.setEnabled(True)
+            self.menuSaveData.actions()[0].setEnabled(True)
             self.left.itemAt(2).widget().setFixedSize(self.s1.displayDimensions[0],
                                                       self.s1.displayDimensions[1])
             self._updateTitle(1)
@@ -196,6 +209,7 @@ class MainWindow(QMainWindow):
             self.s2 = Scan.Scan(scanPath)
             self.menuLoadScans.actions()[3].setEnabled(True)
             self.menuLoadData2.setEnabled(True)
+            self.menuSaveData.actions()[1].setEnabled(True)
             self.right.itemAt(2).widget().setFixedSize(self.s2.displayDimensions[0],
                                                        self.s2.displayDimensions[1])
             self._updateTitle(2)
