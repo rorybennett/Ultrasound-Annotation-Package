@@ -5,10 +5,11 @@ import sys
 from pathlib import Path
 
 import qdarktheme
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QEvent
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
     QLabel, QGridLayout, QSpacerItem, QSizePolicy, QCheckBox, QMenu
+from PyQt6.uic.properties import QtCore
 
 from classes import Scan
 from classes.FrameCanvas import FrameCanvas
@@ -58,7 +59,7 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.mainWidget)
 
-        self._createMenu()
+        self._createMainMenu()
 
         # Scan directory Path.
         self.scansPath = Path(Path.cwd().parent, 'Scans')
@@ -66,6 +67,9 @@ class MainWindow(QMainWindow):
         self.s1: Scan = None
         # Scan 2.
         self.s2: Scan = None
+
+
+
 
     def _createTopButtons(self, scan: int):
         """Create the layout for the top row of buttons"""
@@ -143,7 +147,7 @@ class MainWindow(QMainWindow):
                 self._updateDisplay(2)
                 return
 
-    def _createMenu(self):
+    def _createMainMenu(self):
         """Create menus."""
         # First scan menu.
         self.menuScan1 = self.menuBar().addMenu("Scan 1")
@@ -160,6 +164,8 @@ class MainWindow(QMainWindow):
         self.menuLoad.addAction('Load Scan 1 Data', lambda: None).setDisabled(True)
         self.menuLoad.addSeparator()
         self.menuLoad.addAction('Load Scan 2 Data', lambda: None).setDisabled(True)
+
+
 
     def _selectScanDialog(self, scan: int):
         """Show dialog for selecting a scan folder."""
@@ -211,6 +217,19 @@ class MainWindow(QMainWindow):
             elif event.text() == 's':
                 self.s2.navigate(Scan.NAVIGATION['s'])
             self._updateDisplay(2)
+
+    def contextMenuEvent(self, event):
+        if self.s1 and self.axis1.underMouse():
+            menu = QMenu()
+            menu.addAction('Clear Points', lambda: None)
+            menu.exec(event.globalPos())
+        elif self.s2 and self.axis2.underMouse():
+            menu = QMenu()
+            menu.addAction('Clear Points', lambda: None)
+            menu.exec(event.globalPos())
+
+
+
 
 
 def except_hook(cls, exception, traceback):
