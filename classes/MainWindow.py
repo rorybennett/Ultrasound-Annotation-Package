@@ -219,6 +219,9 @@ class MainWindow(QMainWindow):
         scanPath = QFileDialog.getExistingDirectory(self, caption=f'Select Scan {scan}',
                                                     directory=str(self.scansPath))
 
+        if not scanPath:
+            return
+
         if scan == 1:
             self.s1 = Scan.Scan(scanPath)
             self.menuLoadScans.actions()[1].setEnabled(True)
