@@ -1,4 +1,5 @@
 import csv
+import math
 import os
 from pathlib import Path
 
@@ -7,6 +8,8 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.markers import MarkerStyle
 from natsort import natsorted
+from numpy.lib.stride_tricks import sliding_window_view
+from pyquaternion import Quaternion
 
 from classes import Scan
 
@@ -361,6 +364,7 @@ def displayToRatio(pointDisplay: list, dd: list):
 
     return pointRatio
 
+
 def pointInRadius(centre: list, point: list, radius: int) -> bool:
     """
     Checks whether the point is within the constant radius of the centre, if it is return True, else False.
@@ -379,6 +383,7 @@ def pointInRadius(centre: list, point: list, radius: int) -> bool:
 
     return withinRadius
 
+
 def checkSaveDataDirectory(scanPath: str):
     """
     Check if the given directory contains a Save Data folder, if not then it must be created. This folder is used to
@@ -394,3 +399,61 @@ def checkSaveDataDirectory(scanPath: str):
     saveDataPath.mkdir(parents=True, exist_ok=True)
 
     return saveDataPath
+
+
+def estimateSlopeStartAndEnd(axisAngles: list):
+    """
+    Estimate where the scan starts and stops, based on the gradient of the axis angle. The average of a sliding window
+    is used as the average mean of the gradient. This is compared with a threshold to find when the gradient goes
+    above a certain value, and when it drops below the same value. The section in between the threshold is considered
+    the scan of the prostate. Very rough estimate.
+
+    Args:
+        axisAngles (list): All axis angles of the recording (degrees).
+
+    Returns:
+        slopeIndexStart (int): Index of the start of the slope/scan.
+        slopeIndexEnd (int): Index of the end of the slope/scan.
+    """
+    threshold = 0.15
+    window = 5
+    mean = np.average(sliding_window_view(np.gradient(axisAngles), window_shape=window), axis=1)
+    aboveThreshold = np.argwhere(mean > threshold)
+    # Slope started when threshold first passed, add in half window size, -1 as threshold has already been passed.
+    slopeStartIndex = aboveThreshold[0] + int(math.floor(window / 2)) - 1
+    slopeStartIndex = max(0, slopeStartIndex[0])
+    # Slope ended when threshold last passed, add in half window size, +1 so that we are passed threshold.
+    slopeEndIndex = aboveThreshold[-1] + int(math.floor(window / 2)) + 1
+    slopeEndIndex = min(len(axisAngles) - 1, slopeEndIndex[0])
+
+    return slopeStartIndex, slopeEndIndex
+
+def quaternionsToAxisAngles(quaternions: list) -> list:
+    """
+    Convert the given list of quaternions to a list of axis angles (in degrees) in the following manner:
+        1. Get the initial quaternion, to be used as the reference quaternion.
+        2. Calculate the difference between all subsequent quaternions and the initial quaternion using:
+                r = p * conj(q)
+           where r is the difference quaternion, p is the initial quaternion, and conj(q) is the conjugate of the
+           current quaternion.
+        3. Calculate the axis angle of r (the difference quaternion).
+
+    Converting the raw quaternions to their axis angle representation for rotation comparisons is not the correct way
+    to do it, the axis angle has to be calculated from the quaternion difference.
+
+    Args:
+        quaternions (list): List of quaternion values.
+
+    Returns:
+        axisAngles (list): List of axis angles (in degrees) relative to the first rotation (taken as 0 degrees).
+    """
+    initialQ = Quaternion(quaternions[0])
+    axisAngles = []
+    # Get angle differences (as quaternion rotations).
+    for row in quaternions:
+        q = Quaternion(row)
+        r = initialQ * q.conjugate
+
+        axisAngles.append(180 / np.pi * 2 * np.arctan2(np.sqrt(r[1] ** 2 + r[2] ** 2 + r[3] ** 2), r[0]))
+
+    return axisAngles

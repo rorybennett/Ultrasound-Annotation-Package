@@ -69,15 +69,31 @@ class MainWindow(QMainWindow):
         # Scan 2.
         self.s2: Scan = None
 
-
     def _createTopButtons(self, scan: int):
         """Create the layout for the top row of buttons"""
         layout = QHBoxLayout()
+        layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+
         cineButton = QPushButton('Cine', self)
         cineButton.clicked.connect(lambda: self._onCineClicked(scan))
+        cineButton.setDisabled(True)
         layout.addWidget(cineButton)
 
+        nav50Button = QPushButton('50%')
+        nav50Button.setToolTip('Show frame at 50% (based on IMU data).')
+        nav50Button.clicked.connect(lambda: self._onNav50Clicked(scan))
+        nav50Button.setDisabled(True)
+        layout.addWidget(nav50Button)
+
         return layout
+    def _onNav50Clicked(self, scan: int):
+        """Travel to the frame at 50%."""
+        if scan == 1:
+            self.s1.navigate(self.s1.frameAtScanPercent(50))
+        else:
+            self.s2.navigate(self.s2.frameAtScanPercent(50))
+
+        self._updateDisplay(scan)
 
     @staticmethod
     def _createTitle():
@@ -121,6 +137,7 @@ class MainWindow(QMainWindow):
         points = QCheckBox('Show Points')
         points.setChecked(True)
         points.stateChanged.connect(lambda: self._updateDisplay(scan))
+        points.setDisabled(True)
         layout.addWidget(points)
 
         return layout
@@ -207,16 +224,22 @@ class MainWindow(QMainWindow):
             self.menuLoadScans.actions()[1].setEnabled(True)
             self.menuLoadData1.setEnabled(True)
             self.menuSaveData.actions()[0].setEnabled(True)
+            for i in range(self.leftButtons.count()):
+                self.leftButtons.itemAt(i).widget().setEnabled(True)
             self.left.itemAt(2).widget().setFixedSize(self.s1.displayDimensions[0],
                                                       self.s1.displayDimensions[1])
+            self.leftBoxes.itemAt(0).widget().setEnabled(True)
             self._updateTitle(1)
         else:
             self.s2 = Scan.Scan(scanPath)
             self.menuLoadScans.actions()[3].setEnabled(True)
             self.menuLoadData2.setEnabled(True)
             self.menuSaveData.actions()[1].setEnabled(True)
+            for i in range(self.rightButtons.count()):
+                self.rightButtons.itemAt(i).widget().setEnabled(True)
             self.right.itemAt(2).widget().setFixedSize(self.s2.displayDimensions[0],
                                                        self.s2.displayDimensions[1])
+            self.rightBoxes.itemAt(0).widget().setEnabled(True)
             self._updateTitle(2)
 
         self._updateDisplay(scan)

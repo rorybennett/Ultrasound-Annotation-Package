@@ -105,13 +105,22 @@ class Scan:
         """
         Navigate through the frames according to the navCommand parameter.
 
-        :param navCommand: Navigation command (NAVIGATION).
+        :param navCommand: Navigation command (NAVIGATION) or index value.
         """
         # Navigate.
-        if navCommand == NAVIGATION['w']:
-            self.currentFrame += 1
-        elif navCommand in NAVIGATION['s']:
-            self.currentFrame -= 1
+        try:
+            goToFrame = int(navCommand)
+            if self.frameCount >= goToFrame > 0:
+                self.currentFrame = goToFrame
+            elif goToFrame > self.frameCount:
+                self.currentFrame = self.frameCount
+            elif goToFrame < 1:
+                self.currentFrame = 1
+        except ValueError:
+            if navCommand == NAVIGATION['w']:
+                self.currentFrame += 1
+            elif navCommand in NAVIGATION['s']:
+                self.currentFrame -= 1
 
         # If the frame position goes beyond max or min, cycle around.
         if self.currentFrame <= 0:
@@ -304,3 +313,28 @@ class Scan:
 
         except Exception as e:
             print(f'\tError saving user data: {e}.')
+
+    def frameAtScanPercent(self, percentage: int):
+        """
+        Find the frame at a percentage of the scan, using the axisAngles/quaternion of the frames. NB: The result is
+        based on indexing, and must be incremented by 1 to match frames stored from 0. The current frame is changed
+        to the found index.
+
+        Args:
+            percentage (int): Percentage of scan to return as index.
+
+        """
+        index_at_percentage = 0
+        # Find index.
+        try:
+            axisAngles = su.quaternionsToAxisAngles(self.quaternions)
+
+            index_start, index_end = su.estimateSlopeStartAndEnd(axisAngles)
+
+            index_from_start = int((index_end - index_start) * (percentage / 100))
+
+            index_at_percentage = index_start + index_from_start
+        except Exception as e:
+            print(f'\tError finding axis angle centre: {e}.')
+
+        return index_at_percentage
