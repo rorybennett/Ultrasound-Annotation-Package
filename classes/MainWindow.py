@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout,
 
 import Scan
 from classes.FrameCanvas import FrameCanvas
+from processes import PlayCine
 
 
 class MainWindow(QMainWindow):
@@ -127,7 +128,9 @@ class MainWindow(QMainWindow):
     def _onCineClicked(self, scan: int):
         """Play a cine of the scan in a separate window."""
         if scan == 1:
-            print("Play Cine of Scan 1")
+            patient, scanType, _ = self.s1.getScanDetails()
+            cine = PlayCine.PlayCine(self.s1.frames, f'Patient: {patient}, Scan Type: {scanType}, Cine Loop...')
+            cine.startProcess()
         else:
             print("Play Cine of Scan 2")
 
