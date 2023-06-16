@@ -129,10 +129,12 @@ class MainWindow(QMainWindow):
         """Play a cine of the scan in a separate window."""
         if scan == 1:
             patient, scanType, _ = self.s1.getScanDetails()
-            cine = PlayCine.PlayCine(self.s1.frames, f'Patient: {patient}, Scan Type: {scanType}, Cine Loop...')
+            cine = PlayCine.PlayCine(self.s1.frames, patient, scanType)
             cine.startProcess()
         else:
-            print("Play Cine of Scan 2")
+            patient, scanType, _ = self.s2.getScanDetails()
+            cine = PlayCine.PlayCine(self.s2.frames, patient, scanType)
+            cine.startProcess()
 
     def _createMainMenu(self):
         """Create menus."""

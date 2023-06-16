@@ -2,101 +2,115 @@
 """Play a Cine of the given Scan."""
 import multiprocessing
 import sys
+import time
 
-import cv2
+import numpy as np
 import pyqtgraph as pg
-from PyQt6.QtCore import QRectF, QTimer
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QApplication
+import qdarktheme
+from PyQt6.QtCore import QTimer, Qt
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QApplication, QSlider, QLabel
 
 
 class Window(QMainWindow):
-
-    def __init__(self, frames, dimensions, title):
+    def __init__(self, frames: np.ndarray, dimensions: list, patient: str, scanType: str):
         super().__init__()
-        self.frames = frames
+        # Flip frames to match MainWindow axis display.
+        self.frames = []
+        for frame in frames:
+            self.frames.append(np.flipud(frame))
+
         self.dimensions = dimensions
-        self.setWindowTitle(f'{title}')
+        # Create heading above Cine.
+        self.title = f'Patient: {patient}       Scan Type: {scanType}'
 
-        self.setGeometry(100, 100, self.dimensions[1], self.dimensions[0])
+        self.setWindowTitle('Cine Playback')
+        self._createUI()
 
-        self.UiComponents()
-
-    def UiComponents(self):
+    def _createUI(self):
         widget = QWidget(self)
 
-        pg.setConfigOptions(antialias=True)
+        titleLabel = QLabel(self.title)
+        titleLabel.setFont(QFont('Arial', 16))
+        titleLabel.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
         win = pg.GraphicsLayoutWidget()
-
         view = win.addViewBox()
 
-        # Create image item
+        slider = QSlider(Qt.Orientation.Horizontal)
+        slider.setMinimum(1)
+        slider.setMaximum(100)
+        slider.setSliderPosition(50)
+
+        sliderLabel = QLabel('Adjust Cine Speed')
+        sliderLabel.setFont(QFont('Arial', 12))
+        sliderLabel.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+
+        # Create imageItem view.
         self.img = pg.ImageItem(border='w')
         view.addItem(self.img)
-
-        # Set initial view bounds
-        view.setRange(QRectF(0, 0, self.dimensions[1], self.dimensions[0]))
 
         self.i = 0
 
         def updateFrame():
             # Display the data
-            self.img.setImage(self.frames[self.i])
-
-            # creating a qtimer
+            self.img.setImage(self.frames[self.i].T)
+            # Creating a qtimer to call this updateFrame again.
             QTimer.singleShot(1, updateFrame)
-
+            # Automatically cycle through all frames.
             self.i += 1
-
             if self.i >= len(self.frames):
                 self.i = 0
+            # Delay function based on slider value.
+            sleepTime = slider.value()
+            time.sleep(1 / sleepTime)
 
-        # call the update method
+        # Call the update method
         updateFrame()
 
-        # Creating a grid layout
+        # Creating and fill the layout.
         layout = QVBoxLayout(self)
 
-        # setting this layout to the widget
         widget.setLayout(layout)
-
-        # plot window goes on right side, spanning 3 rows
+        layout.addWidget(titleLabel)
         layout.addWidget(win)
+        layout.addWidget(slider)
+        layout.addWidget(sliderLabel)
 
-        # setting this widget as central widget of the main window
         self.setCentralWidget(widget)
 
 
 class PlayCine:
-    def __init__(self, frames, title):
+    def __init__(self, frames: np.ndarray, patient: str, scanType: str):
         """
-        Initialise a ProcessCine object.
+        Initialise a PlayCine object.
         """
         self.async_process = None
         self.queue = None
         self.pool = None
         self.dimensions = [frames[0].shape[1], frames[0].shape[0]]
         self.frames = frames
-        self.title = title
+        self.patient = patient
+        self.scanType = scanType
 
     def startProcess(self):
         """
-        Start the process that will display the frames on a loop. Convert all frames to byte representation - for Graph.
+        Start the process that will display the frames on a loop.
         """
         self.pool = multiprocessing.Pool(1)
-        self.async_process = self.pool.apply_async(process, args=(self.frames, self.dimensions, self.title))
+        self.async_process = self.pool.apply_async(process,
+                                                   args=(self.frames, self.dimensions, self.patient, self.scanType))
 
 
-def process(framesAsBytes, dimensions, title):
+def process(frames: np.ndarray, dimensions: list, patient: str, scanType: str):
     try:
-        # create pyqt5 app
         App = QApplication(sys.argv)
 
-        # create the instance of our Window
-        window = Window(framesAsBytes, dimensions, title)
+        qdarktheme.setup_theme()
+
+        window = Window(frames, dimensions, patient, scanType)
         window.show()
 
-        # start the app
         sys.exit(App.exec())
     except Exception as e:
-        print(e)
+        print(f'Error playing cine: {e}.')
