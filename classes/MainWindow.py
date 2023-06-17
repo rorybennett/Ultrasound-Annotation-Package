@@ -8,7 +8,7 @@ import qdarktheme
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QAction
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
-    QLabel, QGridLayout, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog
+    QLabel, QGridLayout, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle
 
 import Scan
 from classes.FrameCanvas import FrameCanvas
@@ -74,7 +74,9 @@ class MainWindow(QMainWindow):
         layout = QHBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
-        cineButton = QPushButton('Cine', self)
+        cineButton = QPushButton('', self)
+        cineButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))
+        cineButton.setToolTip('Play Cine of Scan')
         cineButton.clicked.connect(lambda: self._onCineClicked(scan))
         cineButton.setDisabled(True)
         layout.addWidget(cineButton)
