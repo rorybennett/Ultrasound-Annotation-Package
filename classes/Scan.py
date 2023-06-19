@@ -68,8 +68,10 @@ class Scan:
         """
         Draw the current frame on the provided canvas with all supplementary available data.
 
-        :param canvas: Canvas to drawn frame on.
-        :param showPoints: Show points on frame?
+        Args:
+            canvas: Canvas to drawn frame on.
+            showPoints: Show points on frame?
+            showIPV: Show IPV data on frame?
         """
         axis = canvas.axes
         cfi = self.currentFrame - 1
@@ -320,7 +322,7 @@ class Scan:
             # shutil.copy(self.plane_path, Path(userPath, self.plane_path.name))
             shutil.copy(self.pointPath, Path(userPath, self.pointPath.name))
             shutil.copy(self.editPath, Path(userPath, self.editPath.name))
-            # shutil.copy(self.ipv_path, Path(userPath, self.ipv_path.name))
+            shutil.copy(self.ipvPath, Path(userPath, self.ipvPath.name))
 
         except Exception as e:
             print(f'\tError saving user data: {e}.')
@@ -367,3 +369,49 @@ class Scan:
             self.ipvData['centre'] = ['', 0, 0],
 
         self.__saveToDisk(SAVE_IPV_DATA)
+
+    def updateIPVInferredPoints(self, inferredPoints: list):
+        """
+        Update inferred points of IPV data.
+
+        Args:
+            inferredPoints: Either 4 points (transverse) or  2 points (sagittal)
+        """
+        points = []
+        if self.scanType == TYPE_TRANSVERSE:
+            for i in range(0, 7, 2):
+                points.append([inferredPoints[i], inferredPoints[i + 1]])
+        else:
+            for i in range(0, 3, 2):
+                points.append([inferredPoints[i], inferredPoints[i + 1]])
+        self.ipvData['inferred_points'] = [self.ipvData['centre'][0], points]
+
+        self.__saveToDisk(SAVE_IPV_DATA)
+
+    def updateIPVRadius(self, radius: int):
+        """
+        Update the IPV radius for the region of interest.
+
+        Args:
+            radius: Size of radius (in pixels).
+        """
+        self.ipvData['radius'] = radius
+
+        self.__saveToDisk(SAVE_IPV_DATA)
+
+    def getIPVCentreInFrameDimensions(self):
+        """
+        Return the IPV data in display dimensions, for use in inference.
+
+        Returns:
+            pointDisplay (list): Point in display dimensions.
+        """
+        centre = self.ipvData['centre'][1:]
+        depths = self.depths[self.frameNames.index(self.ipvData['centre'][0])]
+        imuPos = self.imuPosition
+        imuOff = self.imuOffset
+        fd = [self.frames[0].shape[1], self.frames[0].shape[0]]
+
+        pointFrame = su.mmToFrame(centre, depths, imuOff, imuPos, fd)
+
+        return pointFrame

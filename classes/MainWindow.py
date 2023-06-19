@@ -12,7 +12,10 @@ from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout,
 
 import Scan
 from classes.FrameCanvas import FrameCanvas
-from processes import PlayCine
+from processes import PlayCine, IPVInference
+
+INFER_LOCAL = 'INFER-LOCAL'
+INFER_ONLINE = 'INFER-ONLINE'
 
 
 class MainWindow(QMainWindow):
@@ -74,6 +77,8 @@ class MainWindow(QMainWindow):
         self.s1: Scan = None
         # Scan 2.
         self.s2: Scan = None
+        # IPV Inference Process
+        self.inferIPV = IPVInference.IPVInference()
 
     def _createTopButtons(self, scan: int):
         """Create the layout for the top row of buttons"""
@@ -182,12 +187,12 @@ class MainWindow(QMainWindow):
         menuIPV = menuInference.addMenu('IPV Inference')
         self.menuIPV1 = menuIPV.addMenu('Scan 1')
         self.menuIPV1.setDisabled(True)
-        self.menuIPV1.addAction('Infer Points Locally', lambda: None)
-        self.menuIPV1.addAction('Infer Points Online', lambda: None)
+        self.menuIPV1.addAction('Infer Points Locally', lambda: self._ipvInference(1, INFER_LOCAL))
+        self.menuIPV1.addAction('Infer Points Online', lambda: self._ipvInference(1, INFER_ONLINE))
         self.menuIPV2 = menuIPV.addMenu('Scan 2')
         self.menuIPV2.setDisabled(True)
-        self.menuIPV2.addAction('Infer Points Locally', lambda: None)
-        self.menuIPV2.addAction('Infer Points Online', lambda: None)
+        self.menuIPV2.addAction('Infer Points Locally', lambda: self._ipvInference(2, INFER_LOCAL))
+        self.menuIPV2.addAction('Infer Points Online', lambda: self._ipvInference(2, INFER_ONLINE))
         # Load data menu
         menuLoadData = self.menuBar().addMenu("Load Data")
         self.menuLoadData1 = menuLoadData.addMenu('Load Scan 1 Data')
@@ -202,6 +207,13 @@ class MainWindow(QMainWindow):
         self.menuSaveData.addAction('Save Scan 1 Data', lambda: self._saveData(1)).setDisabled(True)
         self.menuSaveData.addSeparator()
         self.menuSaveData.addAction('Save Scan 2 Data', lambda: self._saveData(2)).setDisabled(True)
+
+    def _ipvInference(self, scan: int, site: str):
+        """Send current frame for IPV inference, either online or locally."""
+        if site == INFER_LOCAL:
+            self.inferIPV.start(self.s1.path, False) if scan == 1 else self.inferIPV.start(self.s2.path, False)
+        else:
+            print('Need to implement online inference, not quite ready.')
 
     def _saveData(self, scan: int):
         """Save Scan point data."""
@@ -284,7 +296,6 @@ class MainWindow(QMainWindow):
                         event.y - 1 if event.y > 0 else 0]
         # Left click.
         if event.button == 1 and self.s1 and self.leftBoxes.itemAt(0).widget().isChecked():
-            print(displayPoint)
             self.s1.addOrRemovePoint(displayPoint)
             self._updateDisplay(1)
             return
@@ -328,6 +339,27 @@ class MainWindow(QMainWindow):
         self.s1.updateIPVCentre(position, addOrRemove) if scan == 1 else self.s2.updateIPVCentre(position, addOrRemove)
         self._updateDisplay(scan)
 
+    def _updateIPVRadius(self, scan: int):
+        """Dialog for updating IPV centre radius."""
+        radius, ok = QInputDialog.getText(self, 'Update IPV Radius', 'Enter Radius:')
+
+        if ok:
+            try:
+                radius = int(radius)
+                self.s1.updateIPVRadius(radius) if scan == 1 else self.s2.updateIPVRadius(radius)
+                self._updateDisplay(scan)
+            except Exception as e:
+                print(f'Error converting radius to int: {e}.')
+
+    def _refreshScanData(self, scan: int):
+        """Refresh scan data by re-reading files."""
+        if scan == 1:
+            self.s1 = Scan.Scan(self.s1.path, self.s1.currentFrame)
+        else:
+            self.s2 = Scan.Scan(self.s2.path, self.s2.currentFrame)
+
+        self._updateDisplay(scan)
+
     def keyPressEvent(self, event):
         """Handle key press events."""
         if self.s1 and self.axis1.underMouse():
@@ -347,22 +379,28 @@ class MainWindow(QMainWindow):
         if self.s1 and self.axis1.underMouse():
             menu = QMenu()
             menu.addAction('Clear Points', lambda: self._clearFramePoints(1))
-            menuIPV = menu.addMenu('IPV Centre')
+            menuIPV = menu.addMenu('IPV')
             menuIPV.addAction('Add Center',
                               lambda: self._ipvCentre(1, Scan.ADD_POINT, self.axis1.mapFromGlobal(event.globalPos())))
             menuIPV.addSeparator()
             menuIPV.addAction('Remove Center', lambda: self._ipvCentre(1, Scan.REMOVE_POINT,
                                                                        self.axis1.mapFromGlobal(event.globalPos())))
+            menuIPV.addSeparator()
+            menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(1))
+            menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(1))
             menu.exec(event.globalPos())
         elif self.s2 and self.axis2.underMouse():
             menu = QMenu()
             menu.addAction('Clear Points', lambda: self._clearFramePoints(2))
-            menuIPV = menu.addMenu('IPV Centre')
+            menuIPV = menu.addMenu('IPV')
             menuIPV.addAction('Add Center',
                               lambda: self._ipvCentre(2, Scan.ADD_POINT, self.axis2.mapFromGlobal(event.globalPos())))
             menuIPV.addSeparator()
             menuIPV.addAction('Remove Center', lambda: self._ipvCentre(1, Scan.REMOVE_POINT,
                                                                        self.axis2.mapFromGlobal(event.globalPos())))
+            menuIPV.addSeparator()
+            menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(2))
+            menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(2))
             menu.exec(event.globalPos())
 
 

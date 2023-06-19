@@ -134,8 +134,19 @@ def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, depths: list, imuOff: fl
         # Plot the centre circle.
         pointDisplay = mmToDisplay(ipv['centre'][1:], depths, imuOff, imuPos, dd)
         axis.plot(pointDisplay[0], pointDisplay[1], marker='+', color='white', markersize=5)
-        circle = plt.Circle((pointDisplay[0], pointDisplay[1]), 200, fill=False, color='white', linestyle='--')
+        circle = plt.Circle((pointDisplay[0], pointDisplay[1]), ipv['radius'], fill=False, color='white', linestyle='--')
         axis.add_artist(circle)
+
+    if name == ipv['inferred_points'][0]:
+        for point in ipv['inferred_points'][1]:
+            # If a point is [1, 1] it failed inference.
+            if not (point[0] == 1 and point[1] == 1):
+                # Inferred points are in relation to the original image dimensions, not the resized frame
+                # that is displayed.
+                point_display = (dd[0] / fd[0] * point[0], dd[1] / fd[1] * point[1])
+                # circle = plt.Circle(point_display, 40, fill=False, color='red', linestyle='--')
+                # ax.add_artist(circle)
+                axis.plot(point_display[0], point_display[1], marker='o', color='red')
 
 
 def getIMUDataFromFile(scanPath: str):
@@ -313,6 +324,26 @@ def mmToDisplay(pointMM: list, depths: list, imuOffset: float, imuPosition: floa
     return pointDisplay
 
 
+def mmToFrame(pointMM: list, depths: list, imuOffset: float, imuPosition: float, fd: list):
+    """
+    Convert a point in mm to a point in the frame coordinates. First convert the point in mm to a display ratio,
+    then to frame coordinates.
+
+    Args:
+        pointMM: x and y coordinates of the point in mm.
+        depths: Scan depth.
+        imuOffset: IMU offset.
+        imuPosition: Position of IMU shown by ticks.
+        fd: Frame dimensions
+
+    Returns:
+        Point coordinates in display dimensions.
+    """
+    pointDisplay = ratioToFrame(mmToRatio(pointMM, depths, imuOffset, imuPosition), fd)
+
+    return pointDisplay
+
+
 def mmToRatio(pointMm: list, depths: list, imuOffset: float, imuPosition: float):
     """
     Convert the given point in mm to a display ratio. Calculated using the imu offset and the depths of the scan. Remove
@@ -333,6 +364,24 @@ def mmToRatio(pointMm: list, depths: list, imuOffset: float, imuPosition: float)
     return point_ratio
 
 
+def ratioToFrame(pointRatio: list, fd: list):
+    """
+    Convert a point given as a ratio of the display dimensions to frame coordinates. Rounding is done as frame
+    coordinates have to be integers.
+
+    Args:
+        pointRatio: Width and Height ratio of a point in relation to the display dimensions.
+        fd: Frame dimensions, based on frame.
+
+    Returns:
+        Point coordinates in frame dimensions (int rounding).
+    """
+    pointDisplay = [int(pointRatio[0] * fd[0]),
+                    int(pointRatio[1] * fd[1])]
+
+    return pointDisplay
+
+
 def ratioToDisplay(pointRatio: list, dd: list):
     """
     Convert a point given as a ratio of the display dimensions to display coordinates. Rounding is done as display
@@ -340,7 +389,7 @@ def ratioToDisplay(pointRatio: list, dd: list):
 
     Args:
         pointRatio: Width and Height ratio of a point in relation to the display dimensions.
-        dd: Display dimensions, based on frame.
+        dd: Display dimensions, based on screen size.
 
     Returns:
         Point coordinates in display dimensions (int rounding).
@@ -500,6 +549,8 @@ def getIPVDataFromFile(scanPath: str):
 
     with open(ipvPath, 'r') as ipvFile:
         ipv_data = json.load(ipvFile)
+        if 'radius' not in ipv_data:
+            ipv_data['radius'] = 50
 
     return ipvPath, ipv_data
 
@@ -520,6 +571,7 @@ def checkIPVDataFile(scanPath: str) -> Path:
         print('\tNo IPV data found. Creating...')
         initialIPV = {
             'centre': ['', 0, 0],
+            'radius': 50,
             'inferred_points': ['', []]
         }
         with open(ipvPath, 'w') as ipvFile:
