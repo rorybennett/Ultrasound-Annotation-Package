@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 import qdarktheme
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtGui import QFont, QAction
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
     QLabel, QGridLayout, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle
@@ -23,6 +23,12 @@ class MainWindow(QMainWindow):
         # Setup GUI.
         super().__init__()
         self.setWindowTitle("Ultrasound Scan Editing")
+        # Tooltip style.
+        self.setStyleSheet("""QToolTip { 
+                                   background-color: black; 
+                                   color: white; 
+                                   border: black solid 1px
+                                   }""")
         # Display 2 scans side-by-side inside central widget.
         self.mainWidget = QWidget(self)
         self.mainLayout = QHBoxLayout(self.mainWidget)
@@ -88,6 +94,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(nav50Button)
 
         return layout
+
     def _onNav50Clicked(self, scan: int):
         """Travel to the frame at 50%."""
         if scan == 1:
@@ -142,6 +149,12 @@ class MainWindow(QMainWindow):
         points.setDisabled(True)
         layout.addWidget(points)
 
+        ipv = QCheckBox('Show IPV Data')
+        ipv.setChecked(False)
+        ipv.stateChanged.connect(lambda: self._updateDisplay(scan))
+        ipv.setDisabled(True)
+        layout.addWidget(ipv)
+
         return layout
 
     def _onCineClicked(self, scan: int):
@@ -164,6 +177,17 @@ class MainWindow(QMainWindow):
         self.menuLoadScans.addSeparator()
         self.menuLoadScans.addAction("Select Scan 2 Folder...", lambda: self._selectScanDialog(2))
         self.menuLoadScans.addAction("Open Scan 2 Directory...", lambda: self._openScanDirectory(2)).setDisabled(True)
+        # Inference menu.
+        menuInference = self.menuBar().addMenu('Inference')
+        menuIPV = menuInference.addMenu('IPV Inference')
+        self.menuIPV1 = menuIPV.addMenu('Scan 1')
+        self.menuIPV1.setDisabled(True)
+        self.menuIPV1.addAction('Infer Points Locally', lambda: None)
+        self.menuIPV1.addAction('Infer Points Online', lambda: None)
+        self.menuIPV2 = menuIPV.addMenu('Scan 2')
+        self.menuIPV2.setDisabled(True)
+        self.menuIPV2.addAction('Infer Points Locally', lambda: None)
+        self.menuIPV2.addAction('Infer Points Online', lambda: None)
         # Load data menu
         menuLoadData = self.menuBar().addMenu("Load Data")
         self.menuLoadData1 = menuLoadData.addMenu('Load Scan 1 Data')
@@ -227,17 +251,20 @@ class MainWindow(QMainWindow):
         if scan == 1:
             self.s1 = Scan.Scan(scanPath)
             self.menuLoadScans.actions()[1].setEnabled(True)
+            self.menuIPV1.setEnabled(True)
             self.menuLoadData1.setEnabled(True)
             self.menuSaveData.actions()[0].setEnabled(True)
             for i in range(self.leftButtons.count()):
                 self.leftButtons.itemAt(i).widget().setEnabled(True)
             self.left.itemAt(2).widget().setFixedSize(self.s1.displayDimensions[0],
                                                       self.s1.displayDimensions[1])
-            self.leftBoxes.itemAt(0).widget().setEnabled(True)
+            for i in range(self.leftBoxes.count()):
+                self.leftBoxes.itemAt(i).widget().setEnabled(True)
             self._updateTitle(1)
         else:
             self.s2 = Scan.Scan(scanPath)
             self.menuLoadScans.actions()[3].setEnabled(True)
+            self.menuIPV2.setEnabled(True)
             self.menuLoadData2.setEnabled(True)
             self.menuSaveData.actions()[1].setEnabled(True)
             for i in range(self.rightButtons.count()):
@@ -245,6 +272,8 @@ class MainWindow(QMainWindow):
             self.right.itemAt(2).widget().setFixedSize(self.s2.displayDimensions[0],
                                                        self.s2.displayDimensions[1])
             self.rightBoxes.itemAt(0).widget().setEnabled(True)
+            for i in range(self.rightBoxes.count()):
+                self.rightBoxes.itemAt(i).widget().setEnabled(True)
             self._updateTitle(2)
 
         self._updateDisplay(scan)
@@ -255,6 +284,7 @@ class MainWindow(QMainWindow):
                         event.y - 1 if event.y > 0 else 0]
         # Left click.
         if event.button == 1 and self.s1 and self.leftBoxes.itemAt(0).widget().isChecked():
+            print(displayPoint)
             self.s1.addOrRemovePoint(displayPoint)
             self._updateDisplay(1)
             return
@@ -279,13 +309,23 @@ class MainWindow(QMainWindow):
     def _updateDisplay(self, scan: int):
         """Update the shown frame."""
         if scan == 1:
-            self.s1.drawFrameOnAxis(self.axis1, self.leftBoxes.itemAt(0).widget().isChecked())
+            self.s1.drawFrameOnAxis(self.axis1,
+                                    showPoints=self.leftBoxes.itemAt(0).widget().isChecked(),
+                                    showIPV=self.leftBoxes.itemAt(1).widget().isChecked())
         else:
-            self.s2.drawFrameOnAxis(self.axis2, self.rightBoxes.itemAt(0).widget().isChecked())
+            self.s2.drawFrameOnAxis(self.axis2,
+                                    showPoints=self.rightBoxes.itemAt(0).widget().isChecked(),
+                                    showIPV=self.rightBoxes.itemAt(1).widget().isChecked())
 
     def _clearFramePoints(self, scan: int):
         """Clear frame points from scan, then update display."""
         self.s1.clearFramePoints() if scan == 1 else self.s2.clearFramePoints()
+        self._updateDisplay(scan)
+
+    def _ipvCentre(self, scan: int, addOrRemove: str, position: QPoint):
+        """Add or remove IPV centre then update display."""
+        position = [position.x(), self.s1.displayDimensions[1] - position.y()]
+        self.s1.updateIPVCentre(position, addOrRemove) if scan == 1 else self.s2.updateIPVCentre(position, addOrRemove)
         self._updateDisplay(scan)
 
     def keyPressEvent(self, event):
@@ -307,10 +347,22 @@ class MainWindow(QMainWindow):
         if self.s1 and self.axis1.underMouse():
             menu = QMenu()
             menu.addAction('Clear Points', lambda: self._clearFramePoints(1))
+            menuIPV = menu.addMenu('IPV Centre')
+            menuIPV.addAction('Add Center',
+                              lambda: self._ipvCentre(1, Scan.ADD_POINT, self.axis1.mapFromGlobal(event.globalPos())))
+            menuIPV.addSeparator()
+            menuIPV.addAction('Remove Center', lambda: self._ipvCentre(1, Scan.REMOVE_POINT,
+                                                                       self.axis1.mapFromGlobal(event.globalPos())))
             menu.exec(event.globalPos())
         elif self.s2 and self.axis2.underMouse():
             menu = QMenu()
             menu.addAction('Clear Points', lambda: self._clearFramePoints(2))
+            menuIPV = menu.addMenu('IPV Centre')
+            menuIPV.addAction('Add Center',
+                              lambda: self._ipvCentre(2, Scan.ADD_POINT, self.axis2.mapFromGlobal(event.globalPos())))
+            menuIPV.addSeparator()
+            menuIPV.addAction('Remove Center', lambda: self._ipvCentre(1, Scan.REMOVE_POINT,
+                                                                       self.axis2.mapFromGlobal(event.globalPos())))
             menu.exec(event.globalPos())
 
 

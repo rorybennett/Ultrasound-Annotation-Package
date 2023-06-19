@@ -1,6 +1,7 @@
 # Scan.py
 
 """Scan class with variables and methods for working with a single scan."""
+import json
 import shutil
 import subprocess
 import time
@@ -43,9 +44,12 @@ class Scan:
         self.path = path
         # Recording frames, stored in working memory.
         self.frames = su.loadFrames(self.path)
+        # Shape of frames, assumed equal for all frames.
+        self.frameShape = self.frames[0].shape
+        # Total number of frames.
         self.frameCount = len(self.frames)
-        # Current frame being displayed
-        self.currentFrame = startingFrame
+        # Current frame being displayed.
+        self.currentFrame = startingFrame if startingFrame < self.frameCount else 1
         # IMU data.txt file information.
         self.frameNames, self.accelerations, self.quaternions, self.depths, self.duration = su.getIMUDataFromFile(
             self.path)
@@ -57,8 +61,10 @@ class Scan:
         self.displayDimensions = self.getDisplayDimensions()
         # Point data from PointData.txt.
         self.pointPath, self.pointsMm = su.getPointDataFromFile(self.path)
+        # IPV data from IPV.JSON.
+        self.ipvPath, self.ipvData = su.getIPVDataFromFile(self.path)
 
-    def drawFrameOnAxis(self, canvas: FrameCanvas, showPoints: bool):
+    def drawFrameOnAxis(self, canvas: FrameCanvas, showPoints=False, showIPV=False):
         """
         Draw the current frame on the provided canvas with all supplementary available data.
 
@@ -66,10 +72,12 @@ class Scan:
         :param showPoints: Show points on frame?
         """
         axis = canvas.axes
-        frame = self.frames[self.currentFrame - 1].copy()
+        cfi = self.currentFrame - 1
+        frame = self.frames[cfi].copy()
         framePosition = self.currentFrame
+        name = self.frameNames[cfi]
         count = self.frameCount
-        depths = self.depths[self.currentFrame - 1]
+        depths = self.depths[cfi]
         imuOffset = self.imuOffset
         imuPosition = self.imuPosition
         dd = self.displayDimensions
@@ -84,6 +92,9 @@ class Scan:
         # Show points on frame.
         if showPoints:
             su.drawPointDataOnAxis(axis, self.getPointsOnFrame(), depths, imuOffset, imuPosition, dd)
+        # Show IPV data.
+        if showIPV:
+            su.drawIPVDataOnAxis(axis, self.ipvData, name, depths, imuOffset, imuPosition, dd, self.frames[0].shape)
         # Finalise canvas with draw.
         canvas.draw()
 
@@ -224,9 +235,9 @@ class Scan:
             #     with open(self.plane_path, 'w') as plane_file:
             #         json.dump(self.plane_mm, plane_file, indent=4)
             #
-            # if saveType in [SAVE_IPV_DATA, SAVE_ALL]:
-            #     with open(self.ipv_path, 'w') as ipv_file:
-            #         json.dump(self.ipv_data, ipv_file, indent=4)
+            if saveType in [SAVE_IPV_DATA, SAVE_ALL]:
+                with open(self.ipvPath, 'w') as ipvFile:
+                    json.dump(self.ipvData, ipvFile, indent=4)
 
         except Exception as e:
             print(f'\tError saving details to file: {e}')
@@ -338,3 +349,21 @@ class Scan:
             print(f'\tError finding axis angle centre: {e}.')
 
         return index_at_percentage
+
+    def updateIPVCentre(self, pointDisplay: list, addOrRemove: str):
+        """
+        Add or remove the IPV centre circle. This circle is used to reduce inference time by limiting the total patch
+        window to within the circle.
+
+        Args:
+            pointDisplay: Centre of the circle.
+            addOrRemove: Either add or remove the currently placed circle.
+        """
+        if addOrRemove == ADD_POINT:
+            pointMm = su.displayToMm(pointDisplay, self.depths[self.currentFrame - 1], self.imuOffset, self.imuPosition,
+                                     self.displayDimensions)
+            self.ipvData['centre'] = [self.frameNames[self.currentFrame - 1], pointMm[0], pointMm[1]]
+        else:
+            self.ipvData['centre'] = ['', 0, 0],
+
+        self.__saveToDisk(SAVE_IPV_DATA)

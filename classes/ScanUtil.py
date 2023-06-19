@@ -1,10 +1,12 @@
 import csv
+import json
 import math
 import os
 from pathlib import Path
 
 import cv2
 import numpy as np
+from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.markers import MarkerStyle
 from natsort import natsorted
@@ -111,6 +113,29 @@ def drawScanDataOnAxis(axis: Axes, frame: np.ndarray, fNo: int, fCount: int, dep
               color='white')
     # Location of IMU in relation to width, a percentage of width.
     axis.plot([imuPos / 100 * dd[0], imuPos / 100 * dd[0]], [0, 10], color='white', linewidth=2)
+
+
+def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, depths: list, imuOff: float, imuPos: float, dd: list, fd: list):
+    """
+        Plot the IPV data onto the frame.
+
+        Args:
+            axis: Axis displaying frame.
+            ipv: Dictionary of ipv data.
+            name: Frame name as a string.
+            depths: Height and Width of recording in mm.
+            imuOff: Offset of the imu from the end of the probe.
+            imuPos: IMU position as a percent of frame width.
+            dd: Display dimension - shape of the displayed frame.
+            fd: Dimensions of original frame (x, y).
+    """
+    fd = [fd[1], fd[0]]
+    if name == ipv['centre'][0]:
+        # Plot the centre circle.
+        pointDisplay = mmToDisplay(ipv['centre'][1:], depths, imuOff, imuPos, dd)
+        axis.plot(pointDisplay[0], pointDisplay[1], marker='+', color='white', markersize=5)
+        circle = plt.Circle((pointDisplay[0], pointDisplay[1]), 200, fill=False, color='white', linestyle='--')
+        axis.add_artist(circle)
 
 
 def getIMUDataFromFile(scanPath: str):
@@ -428,6 +453,7 @@ def estimateSlopeStartAndEnd(axisAngles: list):
 
     return slopeStartIndex, slopeEndIndex
 
+
 def quaternionsToAxisAngles(quaternions: list) -> list:
     """
     Convert the given list of quaternions to a list of axis angles (in degrees) in the following manner:
@@ -442,10 +468,10 @@ def quaternionsToAxisAngles(quaternions: list) -> list:
     to do it, the axis angle has to be calculated from the quaternion difference.
 
     Args:
-        quaternions (list): List of quaternion values.
+        quaternions: List of quaternion values.
 
     Returns:
-        axisAngles (list): List of axis angles (in degrees) relative to the first rotation (taken as 0 degrees).
+        axisAngles: List of axis angles (in degrees) relative to the first rotation (taken as 0 degrees).
     """
     initialQ = Quaternion(quaternions[0])
     axisAngles = []
@@ -457,3 +483,46 @@ def quaternionsToAxisAngles(quaternions: list) -> list:
         axisAngles.append(180 / np.pi * 2 * np.arctan2(np.sqrt(r[1] ** 2 + r[2] ** 2 + r[3] ** 2), r[0]))
 
     return axisAngles
+
+
+def getIPVDataFromFile(scanPath: str):
+    """
+    Helper function to get IPV data from file.
+
+    Args:
+        scanPath (str): String representation of the current recording path.
+
+    Returns:
+        ipvPath: Path to IPV.JSON file.
+        ipvData: IPV data stored in IPV.JSON file.
+    """
+    ipvPath = checkIPVDataFile(scanPath)
+
+    with open(ipvPath, 'r') as ipvFile:
+        ipv_data = json.load(ipvFile)
+
+    return ipvPath, ipv_data
+
+
+def checkIPVDataFile(scanPath: str) -> Path:
+    """
+    Check if the given folder contains an IPV.JSON file, if True return a Path object to it, else create the file
+    and return a Path object to it.
+
+    Args:
+        scanPath: Path to a recording directory.
+
+    Returns:
+        ipvPath: Path object to existing or newly created IPV.json file.
+    """
+    ipvPath = Path(scanPath, 'IPV.json')
+    if not ipvPath.is_file():
+        print('\tNo IPV data found. Creating...')
+        initialIPV = {
+            'centre': ['', 0, 0],
+            'inferred_points': ['', []]
+        }
+        with open(ipvPath, 'w') as ipvFile:
+            json.dump(initialIPV, ipvFile, indent=4)
+
+    return ipvPath
