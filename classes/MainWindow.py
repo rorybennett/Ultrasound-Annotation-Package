@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout,
     QLabel, QGridLayout, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle
 
 import Scan
+from classes import ExportTraining
 from classes.FrameCanvas import FrameCanvas
 from processes import PlayCine, IPVInference
 
@@ -27,11 +28,9 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Ultrasound Scan Editing")
         # Tooltip style.
-        self.setStyleSheet("""QToolTip { 
-                                   background-color: black; 
+        self.setStyleSheet("""QToolTip { background-color: black; 
                                    color: white; 
-                                   border: black solid 1px
-                                   }""")
+                                   border: black solid 1px }""")
         # Display 2 scans side-by-side inside central widget.
         self.mainWidget = QWidget(self)
         self.mainLayout = QHBoxLayout(self.mainWidget)
@@ -72,13 +71,15 @@ class MainWindow(QMainWindow):
         self._createMainMenu()
 
         # Scan directory Path.
-        self.scansPath = Path(Path.cwd().parent, 'Scans')
+        self.scansPath = str(Path(Path.cwd().parent, 'Scans'))
         # Scan 1.
         self.s1: Scan = None
         # Scan 2.
         self.s2: Scan = None
         # IPV Inference Process
         self.inferIPV = IPVInference.IPVInference()
+        # Class for exporting data for training.
+        self.export = ExportTraining.ExportTraining(self.scansPath)
 
     def _createTopButtons(self, scan: int):
         """Create the layout for the top row of buttons"""
@@ -207,6 +208,21 @@ class MainWindow(QMainWindow):
         self.menuSaveData.addAction('Save Scan 1 Data', lambda: self._saveData(1)).setDisabled(True)
         self.menuSaveData.addSeparator()
         self.menuSaveData.addAction('Save Scan 2 Data', lambda: self._saveData(2)).setDisabled(True)
+        # Export data menu.
+        self.menuExport = self.menuBar().addMenu("Export Data")
+        menuExportIPV = self.menuExport.addMenu('IPV')
+        menuExportIPV.addAction('Transverse', lambda: self._exportDataIPV(Scan.TYPE_TRANSVERSE))
+        menuExportIPV.addAction('Sagittal', lambda: self._exportDataIPV(Scan.TYPE_SAGITTAL))
+
+    def _exportDataIPV(self, scanType: str):
+        """Export save data for model training."""
+        if scanType == Scan.TYPE_TRANSVERSE:
+            # Not yet ready.
+            pass
+        else:
+            self.export.createSagittalData(self)
+
+
 
     def _ipvInference(self, scan: int, site: str):
         """Send current frame for IPV inference, either online or locally."""
@@ -223,7 +239,6 @@ class MainWindow(QMainWindow):
 
     def _loadSaveData(self, scan: int, fileName: str):
         """Load save data of scan and update display."""
-        print(fileName)
         if scan == 1:
             self.s1.loadSaveData(fileName)
             self.s1 = Scan.Scan(self.s1.path, self.s1.currentFrame)
@@ -255,7 +270,7 @@ class MainWindow(QMainWindow):
     def _selectScanDialog(self, scan: int):
         """Show dialog for selecting a scan folder."""
         scanPath = QFileDialog.getExistingDirectory(self, caption=f'Select Scan {scan}',
-                                                    directory=str(self.scansPath))
+                                                    directory=self.scansPath)
 
         if not scanPath:
             return
