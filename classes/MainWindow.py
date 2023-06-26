@@ -79,7 +79,7 @@ class MainWindow(QMainWindow):
         # IPV Inference Process
         self.inferIPV = IPVInference.IPVInference()
         # Class for exporting data for training.
-        self.export = ExportTraining.Export(self.scansPath)
+        self.export = Export.Export(self.scansPath)
 
     def _createTopButtons(self, scan: int):
         """Create the layout for the top row of buttons"""

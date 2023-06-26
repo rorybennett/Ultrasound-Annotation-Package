@@ -15,10 +15,11 @@ class Export:
         self.patients = [f'{x:03d}' for x in range(1, self.totalPatients + 1)]
 
     def exportIPVSagittalData(self, mainWindow: QWidget):
+        print(f'Exporting Sagittal frames for IPV inference...')
         # Get Save prefix.
         prefix, ok = QInputDialog.getText(mainWindow, 'Select Save for Sagittal Export', 'Enter Prefix:')
         if not ok:
-            print('Create Sagittal Data Cancelled.')
+            print('\tCreate Sagittal Data Cancelled.')
             return
         # Create directories for sagittal training data.
         savePath = eu.createTrainingDirs(Scan.TYPE_SAGITTAL)
@@ -31,8 +32,7 @@ class Export:
             saveDir = eu.getSaveDirName(scanPath, prefix)
 
             if not saveDir:
-                print(f'Patient {patient} does not have a matching Save directory with prefix {prefix}.')
-                return
+                print(f'\tPatient {patient} does not have a matching Save directory with prefix {prefix}.')
             # Path to PointData.txt file.
             pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.txt'
             # Get point data in mm from file.
@@ -44,14 +44,13 @@ class Export:
             # Get frames with points on them.
             framesWithPoints = eu.getFramesWithPoints(scanPath, pointDataMm)
             if not framesWithPoints:
-                print(f'No frames with point data available.')
+                print(f'\tNo frames with point data available.')
                 return
             # Loop through frames with points on them.
             for index, frame in enumerate(framesWithPoints, start=1):
                 saveName = f'{patient}_{index}.png'
-                savePath = f'DATA/Sagittal/{saveName}'
                 # Save frame to disk.
-                cv2.imwrite(savePath, frame)
+                cv2.imwrite(f'{savePath}/Sagittal/{saveName}', frame)
                 # Convert points from mm to display/pixel coordinates.
                 pointDataDisplay = []
                 for point in pointDataMm:
@@ -59,7 +58,8 @@ class Export:
                                                              [frame.shape[1], frame.shape[0]])
                     pointDataDisplay.append([point[0], pointDisplay[1], pointDisplay[1]])
                 # Save point data.
-                with open(f'DATA/Sagittal_mark_list.txt', 'a') as pointFile:
+                with open(f'{savePath}/Sagittal_mark_list.txt', 'a') as pointFile:
                     pointFile.write(
                         f'{saveName} ({pointDataDisplay[0][1]}, {pointDataDisplay[0][2]}) '
                         f'({pointDataDisplay[1][1]}, {pointDataDisplay[1][2]})\n')
+        print(f'\tExporting completed.')
