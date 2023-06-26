@@ -8,7 +8,7 @@ import cv2
 from classes import Scan
 
 
-def createTrainingDirs(scanType: str):
+def createIPVTrainingDirs(scanType: str):
     """
     Create directories using training structure.
 
@@ -21,7 +21,7 @@ def createTrainingDirs(scanType: str):
     """
     # Create new, empty directories.
     try:
-        dataPath = f'../Export/IPV/{int(time.time())}/DATA'
+        dataPath = f'../Export/IPV/{int(time.time())}_IPV_{scanType}_export/DATA'
         Path(f'{dataPath}/fold_lists').mkdir(parents=True, exist_ok=False)
         if scanType == Scan.TYPE_TRANSVERSE:
             Path(f'{dataPath}/Transverse').mkdir(exist_ok=False)
@@ -211,6 +211,22 @@ def mmToRatio(pointMm: list, depths: list, imuOffset: float, imuPosition: float)
         pointRatio (list): x and y coordinates of the point as a ratio of the display.
     """
     pointRatio = [(pointMm[0] + depths[1] / (depths[1] * imuPosition / 100)) / depths[1],
-                   (pointMm[1] - imuOffset) / depths[0]]
+                  (pointMm[1] - imuOffset) / depths[0]]
 
     return pointRatio
+
+
+def createSaveDataExportDir():
+    """
+    Create a directory where all patient Save Data can be stored.
+
+    Returns:
+        path: Path (str) to newly created directory, else False if there was a problem.
+    """
+    try:
+        path = f'../Export/Save Data Exports/{int(time.time())}_save_data_export'
+        Path(f'{path}').mkdir(parents=True, exist_ok=False)
+    except Exception as e:
+        print(f'Error creating Save Data Export Directory: {e}.')
+        return False
+    return path

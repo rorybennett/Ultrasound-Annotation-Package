@@ -213,6 +213,7 @@ class MainWindow(QMainWindow):
         menuExportIPV = self.menuExport.addMenu('IPV')
         menuExportIPV.addAction('Transverse', lambda: self._exportDataIPV(Scan.TYPE_TRANSVERSE))
         menuExportIPV.addAction('Sagittal', lambda: self._exportDataIPV(Scan.TYPE_SAGITTAL))
+        self.menuExport.addAction('Save Data', lambda: self.export.exportAllSaveData(self))
 
     def _exportDataIPV(self, scanType: str):
         """Export save data for model training."""
