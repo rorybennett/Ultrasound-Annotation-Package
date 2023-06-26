@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout,
     QLabel, QGridLayout, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle
 
 import Scan
-from classes import ExportTraining
+from classes import Export
 from classes.FrameCanvas import FrameCanvas
 from processes import PlayCine, IPVInference
 
@@ -79,7 +79,7 @@ class MainWindow(QMainWindow):
         # IPV Inference Process
         self.inferIPV = IPVInference.IPVInference()
         # Class for exporting data for training.
-        self.export = ExportTraining.ExportTraining(self.scansPath)
+        self.export = ExportTraining.Export(self.scansPath)
 
     def _createTopButtons(self, scan: int):
         """Create the layout for the top row of buttons"""
@@ -220,7 +220,7 @@ class MainWindow(QMainWindow):
             # Not yet ready.
             pass
         else:
-            self.export.createSagittalData(self)
+            self.export.exportIPVSagittalData(self)
 
 
 
