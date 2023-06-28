@@ -8,6 +8,7 @@ import time
 from pathlib import Path
 
 import cv2
+import requests
 from natsort import natsorted
 from screeninfo import get_monitors
 
@@ -15,8 +16,8 @@ import ScanUtil as su
 from classes import FrameCanvas
 
 # Scan types.
-TYPE_TRANSVERSE = 'TRANSVERSE'
-TYPE_SAGITTAL = 'SAGITTAL'
+TYPE_TRANSVERSE = 'transverse'
+TYPE_SAGITTAL = 'sagittal'
 # Navigation commands.
 NAVIGATION = {
     'w': 'UP',
@@ -366,7 +367,8 @@ class Scan:
                                      self.displayDimensions)
             self.ipvData['centre'] = [self.frameNames[self.currentFrame - 1], pointMm[0], pointMm[1]]
         else:
-            self.ipvData['centre'] = ['', 0, 0],
+            self.ipvData['centre'] = ['', 0, 0]
+            self.ipvData['radius'] = 0
 
         self.__saveToDisk(SAVE_IPV_DATA)
 
@@ -415,3 +417,40 @@ class Scan:
         pointFrame = su.mmToFrame(centre, depths, imuOff, imuPos, fd)
 
         return pointFrame
+
+    def ipvOnlineInference(self, address: str):
+        """
+        Send the current IPV centre frame for inference at the given address.
+
+        Args:
+            address: Address of online IPV inference server.
+
+        Returns:
+
+        """
+        address = f'{address.strip()}/infer'
+        print(f'Sending frame for IPV inference at: {address}')
+        if self.ipvData['centre'][0]:
+            print(f"\tSending IPV centre frame ({self.ipvData['centre'][0].split('-')[0]}) for inference...")
+            with open(f"{self.path}/{self.ipvData['centre'][0]}.png", 'rb') as imageFile:
+                frame = imageFile.read()
+            centre = self.getIPVCentreInFrameDimensions()
+            data = {'image': frame,
+                    'x': centre[0],
+                    'y': centre[1],
+                    'radius': self.ipvData['radius'],
+                    'scanType': self.scanType}
+        else:
+            print(f'Sending currently displayed frame ({self.currentFrame}) for inference...')
+            with open(f"{self.path}/{self.frameNames[self.currentFrame - 1]}.png", 'rb') as imageFile:
+                frame = imageFile.read()
+            data = {'image': frame,
+                    'x': 0,
+                    'y': 0,
+                    'radius': 0,
+                    'scanType': self.scanType}
+
+        result = requests.post(address, files=data, timeout=60)
+
+        print(result.ok)
+        print(result.json())

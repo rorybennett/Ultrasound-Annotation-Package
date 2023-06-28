@@ -446,6 +446,7 @@ def pointInRadius(centre: list, point: list, radius: int) -> bool:
     Args:
         centre (float, float): Location of centre point, as a percentage.
         point (float, float): Location of test point, as a percentage.
+        radius: Radius around point.
 
     Returns:
         withinRadius (bool): True if within radius, else False.

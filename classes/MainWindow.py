@@ -76,8 +76,6 @@ class MainWindow(QMainWindow):
         self.s1: Scan = None
         # Scan 2.
         self.s2: Scan = None
-        # IPV Inference Process
-        self.inferIPV = IPVInference.IPVInference()
         # Class for exporting data for training.
         self.export = Export.Export(self.scansPath)
 
@@ -223,14 +221,18 @@ class MainWindow(QMainWindow):
         else:
             self.export.exportIPVSagittalData(self)
 
-
-
     def _ipvInference(self, scan: int, site: str):
         """Send current frame for IPV inference, either online or locally."""
         if site == INFER_LOCAL:
-            self.inferIPV.start(self.s1.path, False) if scan == 1 else self.inferIPV.start(self.s2.path, False)
+            IPVInference.IPVInference().start(self.s1.path if scan == 1 else self.s2.path, False)
         else:
-            print('Need to implement online inference, not quite ready.')
+            address, ok = QInputDialog.getText(self, 'Online IPV Inference', 'Enter Address:',
+                                               text='https://77d6-138-37-225-43.ngrok-free.app')
+
+            if not ok or not address:
+                return
+
+            self.s1.ipvOnlineInference(address) if scan == 1 else self.s2.ipvOnlineInference(address)
 
     def _saveData(self, scan: int):
         """Save Scan point data."""
