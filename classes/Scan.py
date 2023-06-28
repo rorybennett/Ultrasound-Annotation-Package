@@ -433,16 +433,15 @@ class Scan:
 
     def inferenceIPV(self, address: str):
         """
-        Send the current IPV centre frame for inference at the given address.
+        Send the current IPV centre frame for inference at the given address. This address can either be online
+        or local (if local the server must be running on localhost (http://127.0.0.1:5000/)).
 
         Args:
             address: Address of online IPV inference server.
-
-        Returns:
-
         """
         address = f'{address.strip()}/infer'
         print(f'Sending frame for IPV inference at: {address}')
+        # If IPV centre has been placed, else use currently displayed frame with no ROI.
         if self.ipvData['centre'][0]:
             print(f"\tSending IPV centre frame ({self.ipvData['centre'][0].split('-')[0]}) for inference...")
             with open(f"{self.path}/{self.ipvData['centre'][0]}.png", 'rb') as imageFile:
