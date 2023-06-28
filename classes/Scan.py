@@ -431,7 +431,7 @@ class Scan:
 
         return pointFrame
 
-    def ipvOnlineInference(self, address: str):
+    def inferenceIPV(self, address: str):
         """
         Send the current IPV centre frame for inference at the given address.
 

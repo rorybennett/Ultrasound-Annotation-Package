@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout,
 import Scan
 from classes import Export
 from classes.FrameCanvas import FrameCanvas
-from processes import PlayCine, IPVInference
+from processes import PlayCine
 
 INFER_LOCAL = 'INFER-LOCAL'
 INFER_ONLINE = 'INFER-ONLINE'
@@ -184,14 +184,10 @@ class MainWindow(QMainWindow):
         # Inference menu.
         menuInference = self.menuBar().addMenu('Inference')
         menuIPV = menuInference.addMenu('IPV Inference')
-        self.menuIPV1 = menuIPV.addMenu('Scan 1')
+        self.menuIPV1 = menuIPV.addAction('Infer Scan 1', lambda: self._ipvInference(1))
         self.menuIPV1.setDisabled(True)
-        self.menuIPV1.addAction('Infer Points Locally', lambda: self._ipvInference(1, INFER_LOCAL))
-        self.menuIPV1.addAction('Infer Points Online', lambda: self._ipvInference(1, INFER_ONLINE))
-        self.menuIPV2 = menuIPV.addMenu('Scan 2')
+        self.menuIPV2 = menuIPV.addAction('Infer Scan 2', lambda: self._ipvInference(2))
         self.menuIPV2.setDisabled(True)
-        self.menuIPV2.addAction('Infer Points Locally', lambda: self._ipvInference(2, INFER_LOCAL))
-        self.menuIPV2.addAction('Infer Points Online', lambda: self._ipvInference(2, INFER_ONLINE))
         # Load data menu
         menuLoadData = self.menuBar().addMenu("Load Data")
         self.menuLoadData1 = menuLoadData.addMenu('Load Scan 1 Data')
@@ -221,23 +217,21 @@ class MainWindow(QMainWindow):
         else:
             self.export.exportIPVSagittalData(self)
 
-    def _ipvInference(self, scan: int, site: str):
+    def _ipvInference(self, scan: int):
         """Send current frame for IPV inference, either online or locally."""
-        if site == INFER_LOCAL:
-            IPVInference.IPVInference().start(self.s1.path if scan == 1 else self.s2.path, False)
-        else:
-            dlg = QInputDialog(self)
-            dlg.resize(500, 200)
-            dlg.setWindowTitle('Online IPV Inference')
-            dlg.setLabelText('Enter Address:')
-            dlg.setTextValue('https://77d6-138-37-225-43.ngrok-free.app')
-            ok = dlg.exec()
-            address = dlg.textValue()
 
-            if not ok or not address:
-                return
+        dlg = QInputDialog(self)
+        dlg.resize(500, 200)
+        dlg.setWindowTitle('IPV Inference')
+        dlg.setLabelText('Enter Root Address:')
+        dlg.setTextValue('http://127.0.0.1:5000/')
+        ok = dlg.exec()
+        address = dlg.textValue()
 
-            self.s1.ipvOnlineInference(address) if scan == 1 else self.s2.ipvOnlineInference(address)
+        if not ok or not address:
+            return
+
+        self.s1.inferenceIPV(address) if scan == 1 else self.s2.inferenceIPV(address)
 
     def _saveData(self, scan: int):
         """Save Scan point data."""
