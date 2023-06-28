@@ -226,8 +226,13 @@ class MainWindow(QMainWindow):
         if site == INFER_LOCAL:
             IPVInference.IPVInference().start(self.s1.path if scan == 1 else self.s2.path, False)
         else:
-            address, ok = QInputDialog.getText(self, 'Online IPV Inference', 'Enter Address:',
-                                               text='https://77d6-138-37-225-43.ngrok-free.app')
+            dlg = QInputDialog(self)
+            dlg.resize(500, 200)
+            dlg.setWindowTitle('Online IPV Inference')
+            dlg.setLabelText('Enter Address:')
+            dlg.setTextValue('https://77d6-138-37-225-43.ngrok-free.app')
+            ok = dlg.exec()
+            address = dlg.textValue()
 
             if not ok or not address:
                 return
@@ -351,7 +356,7 @@ class MainWindow(QMainWindow):
         self.s1.clearFramePoints() if scan == 1 else self.s2.clearFramePoints()
         self._updateDisplay(scan)
 
-    def _ipvCentre(self, scan: int, addOrRemove: str, position: QPoint):
+    def _updateIPVCentre(self, scan: int, addOrRemove: str, position: QPoint):
         """Add or remove IPV centre then update display."""
         position = [position.x(), self.s1.displayDimensions[1] - position.y()]
         self.s1.updateIPVCentre(position, addOrRemove) if scan == 1 else self.s2.updateIPVCentre(position, addOrRemove)
@@ -368,6 +373,12 @@ class MainWindow(QMainWindow):
                 self._updateDisplay(scan)
             except Exception as e:
                 print(f'Error converting radius to int: {e}.')
+
+    def _removeIPVData(self, scan: int):
+        """Remove all IPV data of the Scan."""
+        self.s1.removeIPVData() if scan == 1 else self.s2.removeIPVData()
+
+        self._updateDisplay(scan)
 
     def _refreshScanData(self, scan: int):
         """Refresh scan data by re-reading files."""
@@ -399,12 +410,16 @@ class MainWindow(QMainWindow):
             menu.addAction('Clear Points', lambda: self._clearFramePoints(1))
             menuIPV = menu.addMenu('IPV')
             menuIPV.addAction('Add Center',
-                              lambda: self._ipvCentre(1, Scan.ADD_POINT, self.axis1.mapFromGlobal(event.globalPos())))
+                              lambda: self._updateIPVCentre(1, Scan.ADD_POINT,
+                                                            self.axis1.mapFromGlobal(event.globalPos())))
             menuIPV.addSeparator()
-            menuIPV.addAction('Remove Center', lambda: self._ipvCentre(1, Scan.REMOVE_POINT,
-                                                                       self.axis1.mapFromGlobal(event.globalPos())))
+            menuIPV.addAction('Remove Center', lambda: self._updateIPVCentre(1, Scan.REMOVE_POINT,
+                                                                             self.axis1.mapFromGlobal(
+                                                                                 event.globalPos())))
             menuIPV.addSeparator()
             menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(1))
+            menuIPV.addSeparator()
+            menuIPV.addAction('Clear IPV Data', lambda: self._removeIPVData(1))
             menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(1))
             menu.exec(event.globalPos())
         elif self.s2 and self.axis2.underMouse():
@@ -412,12 +427,16 @@ class MainWindow(QMainWindow):
             menu.addAction('Clear Points', lambda: self._clearFramePoints(2))
             menuIPV = menu.addMenu('IPV')
             menuIPV.addAction('Add Center',
-                              lambda: self._ipvCentre(2, Scan.ADD_POINT, self.axis2.mapFromGlobal(event.globalPos())))
+                              lambda: self._updateIPVCentre(2, Scan.ADD_POINT,
+                                                            self.axis2.mapFromGlobal(event.globalPos())))
             menuIPV.addSeparator()
-            menuIPV.addAction('Remove Center', lambda: self._ipvCentre(1, Scan.REMOVE_POINT,
-                                                                       self.axis2.mapFromGlobal(event.globalPos())))
+            menuIPV.addAction('Remove Center', lambda: self._updateIPVCentre(1, Scan.REMOVE_POINT,
+                                                                             self.axis2.mapFromGlobal(
+                                                                                 event.globalPos())))
             menuIPV.addSeparator()
             menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(2))
+            menuIPV.addSeparator()
+            menuIPV.addAction('Clear IPV Data', lambda: self._removeIPVData(2))
             menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(2))
             menu.exec(event.globalPos())
 

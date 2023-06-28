@@ -380,6 +380,7 @@ class Scan:
             inferredPoints: Either 4 points (transverse) or  2 points (sagittal)
         """
         points = []
+        pass
         if self.scanType == TYPE_TRANSVERSE:
             for i in range(0, 7, 2):
                 points.append([inferredPoints[i], inferredPoints[i + 1]])
@@ -398,6 +399,18 @@ class Scan:
             radius: Size of radius (in pixels).
         """
         self.ipvData['radius'] = radius
+
+        self.__saveToDisk(SAVE_IPV_DATA)
+
+    def removeIPVData(self):
+        """
+        Remove all saved IPV data, including centre frame, radius, and any inferred points.
+        """
+        self.ipvData = {
+            'centre': ['', 0, 0],
+            'radius': 50,
+            'inferred_points': ['', []]
+        }
 
         self.__saveToDisk(SAVE_IPV_DATA)
 
@@ -450,7 +463,10 @@ class Scan:
                     'radius': 0,
                     'scanType': self.scanType}
 
-        result = requests.post(address, files=data, timeout=60)
+        result = requests.post(address, files=data, timeout=180)
 
-        print(result.ok)
-        print(result.json())
+        if result.ok:
+            print(f'\tResult returned: {result.json()}')
+            self.updateIPVInferredPoints(result.json()['result'])
+        else:
+            print(f'Error with online inference: {result.status_code}')
