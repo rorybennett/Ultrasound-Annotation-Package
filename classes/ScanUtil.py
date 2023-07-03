@@ -176,7 +176,10 @@ def getIMUDataFromFile(scanPath: str):
             accelerations.append([float(row[2]), float(row[3]), float(row[4])])
             quaternions.append([float(row[6]), float(row[7]), float(row[8]), float(row[9])])
             depths.append([float(row[14]), float(row[15])])
-        duration = int(names[-1].split('-')[1].split('.')[0]) - int(names[0].split('-')[1].split('.')[0])
+        try:
+            duration = int(names[-1].split('-')[1].split('.')[0]) - int(names[0].split('-')[1].split('.')[0])
+        except IndexError:
+            duration = 1
         if duration == 0:
             duration = 1
 
