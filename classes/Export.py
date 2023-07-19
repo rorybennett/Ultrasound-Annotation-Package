@@ -81,6 +81,8 @@ class Export:
                     pointDisplay = eu.mmToDisplayCoordinates([point[1], point[2]], depths, imuOffset, imuPosition,
                                                              [frame.shape[1], frame.shape[0]])
                     pointDataDisplay.append([point[0], pointDisplay[1], pointDisplay[1]])
+                # Ensure there are only 2 points per frame.
+
                 # Save point data.
                 with open(f'{savePath}/Sagittal_mark_list.txt', 'a') as pointFile:
                     pointFile.write(
