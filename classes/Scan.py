@@ -447,20 +447,24 @@ class Scan:
             with open(f"{self.path}/{self.ipvData['centre'][0]}.png", 'rb') as imageFile:
                 frame = imageFile.read()
             centre = self.getIPVCentreInFrameDimensions()
-            data = {'image': frame,
-                    'x': centre[0],
-                    'y': centre[1],
-                    'radius': self.ipvData['radius'],
-                    'scanType': self.scanType}
+            data = {
+                'model_name': 'transverse_original_1' if self.scanType == TYPE_TRANSVERSE else 'sagittal_original_1',
+                'image': frame,
+                'x': centre[0],
+                'y': centre[1],
+                'radius': self.ipvData['radius'],
+                'scanType': self.scanType}
         else:
             print(f'Sending currently displayed frame ({self.currentFrame}) for inference...')
             with open(f"{self.path}/{self.frameNames[self.currentFrame - 1]}.png", 'rb') as imageFile:
                 frame = imageFile.read()
-            data = {'image': frame,
-                    'x': 0,
-                    'y': 0,
-                    'radius': 0,
-                    'scanType': self.scanType}
+            data = {
+                'model_name': 'transverse_original_1' if self.scanType == TYPE_TRANSVERSE else 'sagittal_original_1',
+                'image': frame,
+                'x': 0,
+                'y': 0,
+                'radius': 0,
+                'scanType': self.scanType}
 
         result = requests.post(address, files=data, timeout=180)
 
@@ -468,4 +472,4 @@ class Scan:
             print(f'\tResult returned: {result.json()}')
             self.updateIPVInferredPoints(result.json()['result'])
         else:
-            print(f'Error with online inference: {result.status_code}')
+            print(f'Error with inference: {result.status_code}')
