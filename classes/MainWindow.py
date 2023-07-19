@@ -292,7 +292,7 @@ class MainWindow(QMainWindow):
             self._updateTitle(1)
         else:
             self.s2 = Scan.Scan(scanPath)
-            self.menuLoadScans.actions()[3].setEnabled(True)
+            self.menuLoadScans.actions()[4].setEnabled(True)
             self.menuIPV2.setEnabled(True)
             self.menuLoadData2.setEnabled(True)
             self.menuSaveData.actions()[1].setEnabled(True)
