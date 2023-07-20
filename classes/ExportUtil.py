@@ -149,12 +149,14 @@ def getFramesWithPoints(scanPath, pointDataMm):
 
     # Read frames into array
     frames = []
+    frameNumbers = []
     for row in frame_names:
-        frame_name = row + '.png'
-        frame_path = scanPath + '/' + frame_name
-        frames.append(cv2.imread(frame_path))
+        frameName = row + '.png'
+        framePath = scanPath + '/' + frameName
+        frames.append(cv2.imread(framePath))
+        frameNumbers.append(row.split('-')[0])
 
-    return frames
+    return frames, frameNumbers
 
 
 def mmToDisplayCoordinates(pointMm: list, depths: list, imuOffset: float, imuPosition: float, dd: list):
