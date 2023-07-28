@@ -554,7 +554,7 @@ def getIPVDataFromFile(scanPath: str):
     with open(ipvPath, 'r') as ipvFile:
         ipv_data = json.load(ipvFile)
         if 'radius' not in ipv_data:
-            ipv_data['radius'] = 50
+            ipv_data['radius'] = 100
 
     return ipvPath, ipv_data
 
@@ -575,7 +575,7 @@ def checkIPVDataFile(scanPath: str) -> Path:
         print('\tNo IPV data found. Creating...')
         initialIPV = {
             'centre': ['', 0, 0],
-            'radius': 50,
+            'radius': 100,
             'inferred_points': ['', []]
         }
         with open(ipvPath, 'w') as ipvFile:

@@ -408,7 +408,7 @@ class Scan:
         """
         self.ipvData = {
             'centre': ['', 0, 0],
-            'radius': 50,
+            'radius': 100,
             'inferred_points': ['', []]
         }
 
@@ -466,10 +466,11 @@ class Scan:
                 'radius': 0,
                 'scanType': self.scanType}
 
-        result = requests.post(address, files=data, timeout=180)
+        result = requests.post(address, files=data, timeout=360)
 
         if result.ok:
             print(f'\tResult returned: {result.json()}')
-            self.updateIPVInferredPoints(result.json()['result'])
+            # self.updateIPVInferredPoints(result.json()['result'])
+            # todo update based on returned results.
         else:
             print(f'Error with inference: {result.status_code}')

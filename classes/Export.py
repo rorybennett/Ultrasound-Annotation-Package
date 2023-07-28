@@ -55,10 +55,11 @@ class Export:
             framePath = os.listdir(Path(sagittalPath).absolute())[0]
             scanPath = f'{sagittalPath}/{framePath}'
             # Get save directory with given prefix.
-            saveDir = eu.getSaveDirName(scanPath, prefix)
-
-            if not saveDir:
-                print(f'\tPatient {patient} does not have a matching Save directory with prefix {prefix}.')
+            try:
+                saveDir = eu.getSaveDirName(scanPath, prefix)
+            except FileNotFoundError as e:
+                print(f'\t{prefix}  -  does not exist in {scanPath}, skipping...')
+                continue
             # Path to PointData.txt file.
             pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.txt'
             # Get point data in mm from file.
@@ -68,13 +69,13 @@ class Export:
             # Get required IMU data.
             imuOffset, imuPosition = eu.getIMUData(f'{scanPath}/Save Data/{saveDir}')
             # Get frames with points on them.
-            framesWithPoints = eu.getFramesWithPoints(scanPath, pointDataMm)
+            framesWithPoints, frameNumbers = eu.getFramesWithPoints(scanPath, pointDataMm)
             if not framesWithPoints:
                 print(f'\tNo frames with point data available.')
                 return
             # Loop through frames with points on them.
-            for index, frame in enumerate(framesWithPoints, start=1):
-                saveName = f'{patient}_{index}.png'
+            for index, frame in enumerate(framesWithPoints):
+                saveName = f'{patient}_{frameNumbers[index]}.png'
                 # Save frame to disk.
                 cv2.imwrite(f'{savePath}/Sagittal/{saveName}', frame)
                 # Convert points from mm to display/pixel coordinates.
@@ -82,7 +83,7 @@ class Export:
                 for point in pointDataMm:
                     pointDisplay = eu.mmToDisplayCoordinates([point[1], point[2]], depths, imuOffset, imuPosition,
                                                              [frame.shape[1], frame.shape[0]])
-                    pointDataDisplay.append([point[0], pointDisplay[1], pointDisplay[1]])
+                    pointDataDisplay.append([point[0], pointDisplay[0], pointDisplay[1]])
                 # Ensure there are only 2 points per frame.
 
                 # Save point data.
@@ -108,8 +109,11 @@ class Export:
             scanPath = f'{transversePath}/{framePath}'
             # Get save directory with given prefix.
             saveDir = eu.getSaveDirName(scanPath, prefix)
-            if not saveDir:
-                print(f'\tPatient {patient} does not have a matching Save directory with prefix {prefix}.')
+            try:
+                saveDir = eu.getSaveDirName(scanPath, prefix)
+            except FileNotFoundError as e:
+                print(f'\t{prefix}  -  does not exist in {scanPath}, skipping...')
+                continue
             # Path to PointData.txt file.
             pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.txt'
             # Get point data in mm from f()ile.
@@ -119,18 +123,19 @@ class Export:
             # Get required IMU data.
             imuOffset, imuPosition = eu.getIMUData(f'{scanPath}/Save Data/{saveDir}')
             # Get frames with points on them.
-            framesWithPoints = eu.getFramesWithPoints(scanPath, pointDataMm)
+            framesWithPoints, frameNumbers = eu.getFramesWithPoints(scanPath, pointDataMm)
             if not framesWithPoints:
                 print(f'\tNo frames with point data available.')
                 return
             # Loop through frames with points on them.
-            for index, frame in enumerate(framesWithPoints, start=1):
-                saveName = f'{patient}_{index}.png'
+            for index, frame in enumerate(framesWithPoints):
+                saveName = f'{patient}_{frameNumbers[index]}.png'
                 # Save frame to disk.
                 cv2.imwrite(f'{savePath}/Transverse/{saveName}', frame)
                 # Convert points from mm to display/pixel coordinates.
                 pointDataDisplay = []
                 for point in pointDataMm:
+                    #todo Transverse has 4 points, not 2.
                     pointDisplay = eu.mmToDisplayCoordinates([point[1], point[2]], depths, imuOffset, imuPosition,
                                                              [frame.shape[1], frame.shape[0]])
                     pointDataDisplay.append([point[0], pointDisplay[1], pointDisplay[1]])

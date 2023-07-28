@@ -212,8 +212,7 @@ class MainWindow(QMainWindow):
     def _exportDataIPV(self, scanType: str):
         """Export save data for model training."""
         if scanType == Scan.TYPE_TRANSVERSE:
-            # Not yet ready.
-            pass
+            self.export.exportIPVTransverseData(self)
         else:
             self.export.exportIPVSagittalData(self)
 
