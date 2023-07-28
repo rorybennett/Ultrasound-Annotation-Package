@@ -372,12 +372,13 @@ class Scan:
 
         self.__saveToDisk(SAVE_IPV_DATA)
 
-    def updateIPVInferredPoints(self, inferredPoints: list):
+    def updateIPVInferredPoints(self, inferredPoints: list, frameName: str):
         """
         Update inferred points of IPV data.
 
         Args:
-            inferredPoints: Either 4 points (transverse) or  2 points (sagittal)
+            inferredPoints: Either 4 points (transverse) or  2 points (sagittal).
+            frameName: Frame name that the points are inferred on.
         """
         points = []
         pass
@@ -387,7 +388,7 @@ class Scan:
         else:
             for i in range(0, 3, 2):
                 points.append([inferredPoints[i], inferredPoints[i + 1]])
-        self.ipvData['inferred_points'] = [self.ipvData['centre'][0], points]
+        self.ipvData['inferred_points'] = [frameName, points]
 
         self.__saveToDisk(SAVE_IPV_DATA)
 
@@ -443,8 +444,9 @@ class Scan:
         print(f'Sending frame for IPV inference at: {address}')
         # If IPV centre has been placed, else use currently displayed frame with no ROI.
         if self.ipvData['centre'][0]:
+            frameName = self.ipvData['centre'][0]
             print(f"\tSending IPV centre frame ({self.ipvData['centre'][0].split('-')[0]}) for inference...")
-            with open(f"{self.path}/{self.ipvData['centre'][0]}.png", 'rb') as imageFile:
+            with open(f"{self.path}/{frameName}.png", 'rb') as imageFile:
                 frame = imageFile.read()
             centre = self.getIPVCentreInFrameDimensions()
             data = {
@@ -455,8 +457,9 @@ class Scan:
                 'radius': self.ipvData['radius'],
                 'scanType': self.scanType}
         else:
+            frameName = self.frameNames[self.currentFrame - 1]
             print(f'Sending currently displayed frame ({self.currentFrame}) for inference...')
-            with open(f"{self.path}/{self.frameNames[self.currentFrame - 1]}.png", 'rb') as imageFile:
+            with open(f"{self.path}/{frameName}.png", 'rb') as imageFile:
                 frame = imageFile.read()
             data = {
                 'model_name': 'transverse_original_1' if self.scanType == TYPE_TRANSVERSE else 'sagittal_original_1',
@@ -466,11 +469,10 @@ class Scan:
                 'radius': 0,
                 'scanType': self.scanType}
 
-        result = requests.post(address, files=data, timeout=360)
+        result = requests.post(address, files=data, timeout=3600)
 
         if result.ok:
             print(f'\tResult returned: {result.json()}')
-            # self.updateIPVInferredPoints(result.json()['result'])
-            # todo update based on returned results.
+            self.updateIPVInferredPoints(result.json()['result'], frameName)
         else:
             print(f'Error with inference: {result.status_code}')
