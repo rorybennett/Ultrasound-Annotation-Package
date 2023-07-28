@@ -147,7 +147,6 @@ def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, depths: list, imuOff: fl
                 # circle = plt.Circle(point_display, 40, fill=False, color='red', linestyle='--')
                 # ax.add_artist(circle)
                 axis.plot(point_display[0], point_display[1], marker='o', color='red')
-                print(point_display)
 
 
 def getIMUDataFromFile(scanPath: str):
