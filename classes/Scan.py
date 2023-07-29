@@ -469,7 +469,6 @@ class Scan:
                 'radius': 0,
                 'scanType': self.scanType}
 
-
         result = requests.post(address, files=data, timeout=3600)
 
         if result.ok:

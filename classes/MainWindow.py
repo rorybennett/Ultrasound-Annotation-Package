@@ -232,6 +232,8 @@ class MainWindow(QMainWindow):
 
         self.s1.inferenceIPV(address) if scan == 1 else self.s2.inferenceIPV(address)
 
+        self._updateDisplay(scan)
+
     def _saveData(self, scan: int):
         """Save Scan point data."""
         userName, ok = QInputDialog.getText(self, 'Save Current Data', 'Enter User Name:')
@@ -276,35 +278,38 @@ class MainWindow(QMainWindow):
         if not scanPath:
             return
 
-        if scan == 1:
-            self.s1 = Scan.Scan(scanPath)
-            self.menuLoadScans.actions()[1].setEnabled(True)
-            self.menuIPV1.setEnabled(True)
-            self.menuLoadData1.setEnabled(True)
-            self.menuSaveData.actions()[0].setEnabled(True)
-            for i in range(self.leftButtons.count()):
-                self.leftButtons.itemAt(i).widget().setEnabled(True)
-            self.left.itemAt(2).widget().setFixedSize(self.s1.displayDimensions[0],
-                                                      self.s1.displayDimensions[1])
-            for i in range(self.leftBoxes.count()):
-                self.leftBoxes.itemAt(i).widget().setEnabled(True)
-            self._updateTitle(1)
-        else:
-            self.s2 = Scan.Scan(scanPath)
-            self.menuLoadScans.actions()[4].setEnabled(True)
-            self.menuIPV2.setEnabled(True)
-            self.menuLoadData2.setEnabled(True)
-            self.menuSaveData.actions()[1].setEnabled(True)
-            for i in range(self.rightButtons.count()):
-                self.rightButtons.itemAt(i).widget().setEnabled(True)
-            self.right.itemAt(2).widget().setFixedSize(self.s2.displayDimensions[0],
-                                                       self.s2.displayDimensions[1])
-            self.rightBoxes.itemAt(0).widget().setEnabled(True)
-            for i in range(self.rightBoxes.count()):
-                self.rightBoxes.itemAt(i).widget().setEnabled(True)
-            self._updateTitle(2)
+        try:
+            if scan == 1:
+                self.s1 = Scan.Scan(scanPath)
+                self.menuLoadScans.actions()[1].setEnabled(True)
+                self.menuIPV1.setEnabled(True)
+                self.menuLoadData1.setEnabled(True)
+                self.menuSaveData.actions()[0].setEnabled(True)
+                for i in range(self.leftButtons.count()):
+                    self.leftButtons.itemAt(i).widget().setEnabled(True)
+                self.left.itemAt(2).widget().setFixedSize(self.s1.displayDimensions[0],
+                                                          self.s1.displayDimensions[1])
+                for i in range(self.leftBoxes.count()):
+                    self.leftBoxes.itemAt(i).widget().setEnabled(True)
+                self._updateTitle(1)
+            else:
+                self.s2 = Scan.Scan(scanPath)
+                self.menuLoadScans.actions()[4].setEnabled(True)
+                self.menuIPV2.setEnabled(True)
+                self.menuLoadData2.setEnabled(True)
+                self.menuSaveData.actions()[1].setEnabled(True)
+                for i in range(self.rightButtons.count()):
+                    self.rightButtons.itemAt(i).widget().setEnabled(True)
+                self.right.itemAt(2).widget().setFixedSize(self.s2.displayDimensions[0],
+                                                           self.s2.displayDimensions[1])
+                self.rightBoxes.itemAt(0).widget().setEnabled(True)
+                for i in range(self.rightBoxes.count()):
+                    self.rightBoxes.itemAt(i).widget().setEnabled(True)
+                self._updateTitle(2)
+            self._updateDisplay(scan)
+        except Exception as e:
+            print(f'Error opening scan folder: {e}.')
 
-        self._updateDisplay(scan)
 
     def _axis1PressEvent(self, event):
         """Handle left clicks on axis 1 (canvas displaying image)."""
