@@ -445,6 +445,8 @@ class Scan:
         # If IPV centre has been placed, else use currently displayed frame with no ROI.
         if self.ipvData['centre'][0]:
             frameName = self.ipvData['centre'][0]
+            frameNumber = int(frameName.split('-')[0])
+            patient, _, _ = self.getScanDetails()
             print(f"\tSending IPV centre frame ({self.ipvData['centre'][0].split('-')[0]}) for inference...")
             with open(f"{self.path}/{frameName}.png", 'rb') as imageFile:
                 frame = imageFile.read()
@@ -455,9 +457,13 @@ class Scan:
                 'x': centre[0],
                 'y': centre[1],
                 'radius': self.ipvData['radius'],
-                'scanType': self.scanType}
+                'scanType': self.scanType,
+                'patient': patient,
+                'frameNumber': frameNumber}
         else:
             frameName = self.frameNames[self.currentFrame - 1]
+            frameNumber = int(frameName.split('-')[0])
+            patient, _, _ = self.getScanDetails()
             print(f'Sending currently displayed frame ({self.currentFrame}) for inference...')
             with open(f"{self.path}/{frameName}.png", 'rb') as imageFile:
                 frame = imageFile.read()
@@ -467,12 +473,17 @@ class Scan:
                 'x': 0,
                 'y': 0,
                 'radius': 0,
-                'scanType': self.scanType}
+                'scanType': self.scanType,
+                'patient': patient,
+                'frameNumber': frameNumber}
+        try:
+            result = requests.post(address, files=data, timeout=3600)
+            if result.ok:
+                print(f'\tResult returned: {result.json()}')
+                self.updateIPVInferredPoints(result.json()['result'], frameName)
+            else:
+                print(f'Error with inference: {result.status_code}')
+        except ConnectionError as e:
+            print(f'Error in http request: {e}.')
 
-        result = requests.post(address, files=data, timeout=3600)
 
-        if result.ok:
-            print(f'\tResult returned: {result.json()}')
-            self.updateIPVInferredPoints(result.json()['result'], frameName)
-        else:
-            print(f'Error with inference: {result.status_code}')
