@@ -44,6 +44,7 @@ class MainWindow(QMainWindow):
         self.leftButtons = self._createTopButtons(1)
         self.axis1 = FrameCanvas(self)
         self.axis1.mpl_connect('button_press_event', self._axis1PressEvent)
+        self.axis1.mpl_connect('scroll_event', self._axis1ScrollEvent)
         self.leftBoxes = self._createBoxes(1)
         self.left.addLayout(self.leftTitle)
         self.left.addLayout(self.leftButtons)
@@ -57,6 +58,7 @@ class MainWindow(QMainWindow):
         self.rightButtons = self._createTopButtons(2)
         self.axis2 = FrameCanvas(self)
         self.axis2.mpl_connect('button_press_event', self._axis2PressEvent)
+        self.axis2.mpl_connect('scroll_event', self._axis2ScrollEvent)
         self.rightBoxes = self._createBoxes(2)
         self.right.addLayout(self.rightTitle)
         self.right.addLayout(self.rightButtons)
@@ -310,7 +312,6 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(f'Error opening scan folder: {e}.')
 
-
     def _axis1PressEvent(self, event):
         """Handle left clicks on axis 1 (canvas displaying image)."""
         displayPoint = [event.x - 1 if event.x > 0 else 0,
@@ -330,6 +331,25 @@ class MainWindow(QMainWindow):
             self.s2.addOrRemovePoint(displayPoint)
             self._updateDisplay(2)
             return
+
+    def _axis1ScrollEvent(self, event):
+        """Handle scroll events on axis 1 (canvas displaying image)."""
+        if self.s1:
+            if event.button == 'up':
+                self.s1.navigate(Scan.NAVIGATION['w'])
+            else:
+                self.s1.navigate(Scan.NAVIGATION['s'])
+            self._updateDisplay(1)
+
+    def _axis2ScrollEvent(self, event):
+        """Handle scroll events on axis 2 (canvas displaying image)."""
+        if self.s2:
+            if event.button == 'up':
+                self.s2.navigate(Scan.NAVIGATION['w'])
+            else:
+                self.s2.navigate(Scan.NAVIGATION['s'])
+            self._updateDisplay(2)
+
 
     def _openScanDirectory(self, scan: int):
         """Open directory of Scan."""
