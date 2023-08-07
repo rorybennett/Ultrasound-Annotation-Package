@@ -449,7 +449,10 @@ class MainWindow(QMainWindow):
             menu.exec(event.globalPos())
         elif self.s2 and self.axis2.underMouse():
             menu = QMenu()
-            menu.addAction('Clear Points', lambda: self._clearFramePoints(2))
+            menuPoints = menu.addMenu('Points')
+            menuPoints.addAction('Clear Frame Points', lambda: self._clearFramePoints(2))
+            menuPoints.addSeparator()
+            menuPoints.addAction('Clear All Points', lambda: self._clearScanPoints(2))
             menuIPV = menu.addMenu('IPV')
             menuIPV.addAction('Add Center',
                               lambda: self._updateIPVCentre(2, Scan.ADD_POINT,
