@@ -369,6 +369,10 @@ class MainWindow(QMainWindow):
                                     showPoints=self.rightBoxes.itemAt(0).widget().isChecked(),
                                     showIPV=self.rightBoxes.itemAt(1).widget().isChecked())
 
+    def _clearScanPoints(self, scan: int):
+        """Clear all points in a Scan, then update display."""
+        self.s1.clearScanPoints() is scan == 1 else self.s2.clearScanPoints()
+        self._updateDisplay(scan)
     def _clearFramePoints(self, scan: int):
         """Clear frame points from scan, then update display."""
         self.s1.clearFramePoints() if scan == 1 else self.s2.clearFramePoints()
@@ -425,7 +429,10 @@ class MainWindow(QMainWindow):
     def contextMenuEvent(self, event):
         if self.s1 and self.axis1.underMouse():
             menu = QMenu()
-            menu.addAction('Clear Points', lambda: self._clearFramePoints(1))
+            menuPoints = menu.addMenu('Points')
+            menuPoints.addAction('Clear Frame Points', lambda: self._clearFramePoints(1))
+            menuPoints.addSeparator()
+            menuPoints.addAction('Clear All Points', lambda: self._clearScanPoints(1))
             menuIPV = menu.addMenu('IPV')
             menuIPV.addAction('Add Center',
                               lambda: self._updateIPVCentre(1, Scan.ADD_POINT,

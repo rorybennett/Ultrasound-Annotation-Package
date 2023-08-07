@@ -253,6 +253,14 @@ class Scan:
 
         self.__saveToDisk(SAVE_POINT_DATA)
 
+    def clearScanPoints(self):
+        """
+        Clear all points in the Scan, then save to disk.
+        """
+        self.pointsMm = []
+
+        self.__saveToDisk(SAVE_POINT_DATA)
+
     def loadSaveData(self, saveName: str):
         """
         Load the saved PointData.txt, BulletData.JSON, Editing.txt, and IPV.JSON  files from the directory selected.
