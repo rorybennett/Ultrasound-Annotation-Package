@@ -105,13 +105,16 @@ class Export:
         # Create training data from each patient.
         for patient in self.patients:
             transversePath = f'{self.scansPath}/{patient}/transverse'
-            framePath = os.listdir(Path(transversePath).absolute())[0]
-            scanPath = f'{transversePath}/{framePath}'
+            try:
+                framePath = os.listdir(Path(transversePath).absolute())[0]
+                scanPath = f'{transversePath}/{framePath}'
+            except IndexError:
+                print(f'{transversePath} does not exist skipping...')
+                continue
             # Get save directory with given prefix.
-            saveDir = eu.getSaveDirName(scanPath, prefix)
             try:
                 saveDir = eu.getSaveDirName(scanPath, prefix)
-            except FileNotFoundError as e:
+            except FileNotFoundError:
                 print(f'\t{prefix}  -  does not exist in {scanPath}, skipping...')
                 continue
             # Path to PointData.txt file.
@@ -127,6 +130,8 @@ class Export:
             if not framesWithPoints:
                 print(f'\tNo frames with point data available.')
                 return
+            print(len(framesWithPoints))
+
             # Loop through frames with points on them.
             for index, frame in enumerate(framesWithPoints):
                 saveName = f'{patient}_{frameNumbers[index]}.png'
@@ -135,15 +140,16 @@ class Export:
                 # Convert points from mm to display/pixel coordinates.
                 pointDataDisplay = []
                 for point in pointDataMm:
-                    #todo Transverse has 4 points, not 2.
                     pointDisplay = eu.mmToDisplayCoordinates([point[1], point[2]], depths, imuOffset, imuPosition,
                                                              [frame.shape[1], frame.shape[0]])
                     pointDataDisplay.append([point[0], pointDisplay[1], pointDisplay[1]])
-                # Ensure there are only 2 points per frame.
+                # Ensure there are only 4 points per frame.
 
                 # Save point data.
                 with open(f'{savePath}/Transverse_mark_list.txt', 'a') as pointFile:
                     pointFile.write(
                         f'{saveName} ({pointDataDisplay[0][1]}, {pointDataDisplay[0][2]}) '
-                        f'({pointDataDisplay[1][1]}, {pointDataDisplay[1][2]})\n')
-            print(f'\tExporting completed.')
+                        f'({pointDataDisplay[1][1]}, {pointDataDisplay[1][2]}) '
+                        f'({pointDataDisplay[2][1]}, {pointDataDisplay[2][2]}) '
+                        f'({pointDataDisplay[3][1]}, {pointDataDisplay[3][2]})\n')
+        print(f'\tExporting completed.')
