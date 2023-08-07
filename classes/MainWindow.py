@@ -371,7 +371,7 @@ class MainWindow(QMainWindow):
 
     def _clearScanPoints(self, scan: int):
         """Clear all points in a Scan, then update display."""
-        self.s1.clearScanPoints() is scan == 1 else self.s2.clearScanPoints()
+        self.s1.clearScanPoints() if scan == 1 else self.s2.clearScanPoints()
         self._updateDisplay(scan)
     def _clearFramePoints(self, scan: int):
         """Clear frame points from scan, then update display."""
