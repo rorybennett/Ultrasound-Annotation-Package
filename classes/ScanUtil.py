@@ -462,7 +462,7 @@ def pointInRadius(centre: list, point: list, radius: int) -> bool:
     return withinRadius
 
 
-def checkSaveDataDirectory(scanPath: str):
+def checkSaveDataDirectory(scanPath: str) -> Path:
     """
     Check if the given directory contains a Save Data folder, if not then it must be created. This folder is used to
     save BulletData, PointData, and EditingData for a user.

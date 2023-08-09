@@ -10,7 +10,6 @@ from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtGui import QFont, QAction
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
     QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle
-from PyQt6.uic.properties import QtCore
 
 import Scan
 from classes import Export
@@ -247,9 +246,14 @@ class MainWindow(QMainWindow):
         self._updateDisplay(scan)
 
     def _saveData(self, scan: int):
-        """Save Scan point data."""
+        """Save Scan point data. Check for overwrite"""
         userName, ok = QInputDialog.getText(self, 'Save Current Data', 'Enter User Name:')
+
         if ok:
+            if not userName:
+                print(f'User Name is empty...')
+                self._saveData(scan)
+                return
             self.s1.saveUserData(userName) if scan == 1 else self.s2.saveUserData(userName)
 
     def _loadSaveData(self, scan: int, fileName: str):

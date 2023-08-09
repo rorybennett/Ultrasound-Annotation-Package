@@ -334,6 +334,7 @@ class Scan:
             shutil.copy(self.pointPath, Path(userPath, self.pointPath.name))
             shutil.copy(self.editPath, Path(userPath, self.editPath.name))
             shutil.copy(self.ipvPath, Path(userPath, self.ipvPath.name))
+            print(f'\tUser data save to {userPath.name}')
 
         except Exception as e:
             print(f'\tError saving user data: {e}.')
@@ -495,5 +496,3 @@ class Scan:
                 print(f'Error with inference: {result.status_code}')
         except ConnectionError as e:
             print(f'Error in http request: {e}.')
-
-
