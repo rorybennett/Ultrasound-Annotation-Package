@@ -22,7 +22,7 @@ class Window(QMainWindow):
 
         self.dimensions = dimensions
         # Create heading above Cine.
-        self.title = f'Patient: {patient}\tScan Type: {scanType}\t Scan Plane: {scanPlane}'
+        self.title = f'Patient: {patient}    Scan Type: {scanType}    Scan Plane: {scanPlane}'
 
         self.setWindowTitle('Cine Playback')
         self._createUI()
@@ -43,7 +43,7 @@ class Window(QMainWindow):
         slider.setSliderPosition(50)
 
         sliderLabel = QLabel('Adjust Cine Speed')
-        sliderLabel.setFont(QFont('Arial', 12))
+        sliderLabel.setFont(QFont('Arial', 10))
         sliderLabel.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
         # Create imageItem view.
