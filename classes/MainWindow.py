@@ -5,10 +5,12 @@ import sys
 from pathlib import Path
 
 import qdarktheme
+from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtGui import QFont, QAction
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
-    QLabel, QGridLayout, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle
+    QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle
+from PyQt6.uic.properties import QtCore
 
 import Scan
 from classes import Export
@@ -20,7 +22,7 @@ INFER_ONLINE = 'INFER-ONLINE'
 
 
 class MainWindow(QMainWindow):
-    labelFont = QFont('Arial', 18)
+    labelFont = QFont('Arial', 14)
 
     def __init__(self):
         """Initialise MainWindow."""
@@ -31,6 +33,7 @@ class MainWindow(QMainWindow):
         self.setStyleSheet("""QToolTip { background-color: black; 
                                    color: white; 
                                    border: black solid 1px }""")
+
         # Display 2 scans side-by-side inside central widget.
         self.mainWidget = QWidget(self)
         self.mainLayout = QHBoxLayout(self.mainWidget)
@@ -43,8 +46,8 @@ class MainWindow(QMainWindow):
         self.leftTitle = self._createTitle()
         self.leftButtons = self._createTopButtons(1)
         self.axis1 = FrameCanvas(self)
-        self.axis1.mpl_connect('button_press_event', self._axis1PressEvent)
-        self.axis1.mpl_connect('scroll_event', self._axis1ScrollEvent)
+        self.axis1.mpl_connect('button_press_event', lambda x: self._axisClickEvent(x, 1))
+        self.axis1.mpl_connect('scroll_event', lambda x: self._axisScrollEvent(x, 1))
         self.leftBoxes = self._createBoxes(1)
         self.left.addLayout(self.leftTitle)
         self.left.addLayout(self.leftButtons)
@@ -57,8 +60,8 @@ class MainWindow(QMainWindow):
         self.rightTitle = self._createTitle()
         self.rightButtons = self._createTopButtons(2)
         self.axis2 = FrameCanvas(self)
-        self.axis2.mpl_connect('button_press_event', self._axis2PressEvent)
-        self.axis2.mpl_connect('scroll_event', self._axis2ScrollEvent)
+        self.axis2.mpl_connect('button_press_event', lambda x: self._axisClickEvent(x, 2))
+        self.axis2.mpl_connect('scroll_event', lambda x: self._axisScrollEvent(x, 2))
         self.rightBoxes = self._createBoxes(2)
         self.right.addLayout(self.rightTitle)
         self.right.addLayout(self.rightButtons)
@@ -113,36 +116,43 @@ class MainWindow(QMainWindow):
     @staticmethod
     def _createTitle():
         """Create title layout area."""
-        layout = QGridLayout()
+        layout = QHBoxLayout()
 
         patientLabel = QLabel(f'Patient: ')
         patientLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         patientLabel.setFont(MainWindow.labelFont)
-        scanLabel = QLabel(f'Scan Type:')
-        scanLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        scanLabel.setFont(MainWindow.labelFont)
+        typeLabel = QLabel(f'Scan Type:')
+        typeLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        typeLabel.setFont(MainWindow.labelFont)
+        planeLabel = QLabel(f'Scan Plane:')
+        planeLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        planeLabel.setFont(MainWindow.labelFont)
         frameLabel = QLabel(f'Total Frames:')
         frameLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         frameLabel.setFont(MainWindow.labelFont)
 
-        layout.addWidget(patientLabel, 0, 0)
-        layout.addWidget(scanLabel, 0, 1)
-        layout.addWidget(frameLabel, 0, 2)
+        layout.addWidget(patientLabel, 0)
+        layout.addWidget(typeLabel, 0)
+        layout.addWidget(planeLabel, 0)
+        layout.addWidget(frameLabel, 0)
+        layout.setSpacing(10)
 
         return layout
 
     def _updateTitle(self, scan: int):
         """Update title information."""
         if scan == 1:
-            patient, scanType, frameCount = self.s1.getScanDetails()
+            patient, scanType, scanPlane, frameCount = self.s1.getScanDetails()
             self.leftTitle.itemAt(0).widget().setText(f'Patient: {patient}')
             self.leftTitle.itemAt(1).widget().setText(f'Scan Type: {scanType}')
-            self.leftTitle.itemAt(2).widget().setText(f'Total Frames: {frameCount}')
+            self.leftTitle.itemAt(2).widget().setText(f'Scan Plane: {scanPlane}')
+            self.leftTitle.itemAt(3).widget().setText(f'Total Frames: {frameCount}')
         else:
-            patient, scanType, frameCount = self.s2.getScanDetails()
+            patient, scanType, scanPlane, frameCount = self.s2.getScanDetails()
             self.rightTitle.itemAt(0).widget().setText(f'Patient: {patient}')
             self.rightTitle.itemAt(1).widget().setText(f'Scan Type: {scanType}')
-            self.rightTitle.itemAt(2).widget().setText(f'Total Frames: {frameCount}')
+            self.leftTitle.itemAt(2).widget().setText(f'Scan Plane: {scanPlane}')
+            self.rightTitle.itemAt(3).widget().setText(f'Total Frames: {frameCount}')
 
     def _createBoxes(self, scan: int):
         """Create checkboxes below canvas."""
@@ -166,12 +176,12 @@ class MainWindow(QMainWindow):
     def _onCineClicked(self, scan: int):
         """Play a cine of the scan in a separate window."""
         if scan == 1:
-            patient, scanType, _ = self.s1.getScanDetails()
-            cine = PlayCine.PlayCine(self.s1.frames, patient, scanType)
+            patient, scanType, scanPlane, _ = self.s1.getScanDetails()
+            cine = PlayCine.PlayCine(self.s1.frames, patient, scanType, scanPlane)
             cine.startProcess()
         else:
-            patient, scanType, _ = self.s2.getScanDetails()
-            cine = PlayCine.PlayCine(self.s2.frames, patient, scanType)
+            patient, scanType, scanPlane, _ = self.s2.getScanDetails()
+            cine = PlayCine.PlayCine(self.s2.frames, patient, scanType, scanPlane)
             cine.startProcess()
 
     def _createMainMenu(self):
@@ -274,8 +284,7 @@ class MainWindow(QMainWindow):
 
     def _selectScanDialog(self, scan: int):
         """Show dialog for selecting a scan folder."""
-        scanPath = QFileDialog.getExistingDirectory(self, caption=f'Select Scan {scan}',
-                                                    directory=self.scansPath)
+        scanPath = QFileDialog.getExistingDirectory(self, caption=f'Select Scan {scan}', directory=self.scansPath)
 
         if not scanPath:
             return
@@ -312,44 +321,37 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(f'Error opening scan folder: {e}.')
 
-    def _axis1PressEvent(self, event):
-        """Handle left clicks on axis 1 (canvas displaying image)."""
+    def _axisClickEvent(self, event, scan: int):
+        """Handle left clicks on axis 1 and 2 (canvas displaying image)."""
         displayPoint = [event.x - 1 if event.x > 0 else 0,
                         event.y - 1 if event.y > 0 else 0]
         # Left click.
-        if event.button == 1 and self.s1 and self.leftBoxes.itemAt(0).widget().isChecked():
-            self.s1.addOrRemovePoint(displayPoint)
-            self._updateDisplay(1)
-            return
+        if event.button == 1:
+            if scan == 1 and self.s1 and self.leftBoxes.itemAt(0).widget().isChecked():
+                self.s1.addOrRemovePoint(displayPoint)
+                self._updateDisplay(1)
+                return
+            elif scan == 2 and self.s2 and self.rightBoxes.itemAt(0).widget().isChecked():
+                self.s2.addOrRemovePoint(displayPoint)
+                self._updateDisplay(2)
+                return
 
-    def _axis2PressEvent(self, event):
-        """Handle left clicks on axis 2 (canvas displaying image)."""
-        displayPoint = [event.x - 1 if event.x > 0 else 0,
-                        event.y - 1 if event.y > 0 else 0]
-        # Left click.
-        if event.button == 1 and self.s2 and self.rightBoxes.itemAt(0).widget().isChecked():
-            self.s2.addOrRemovePoint(displayPoint)
-            self._updateDisplay(2)
-            return
-
-    def _axis1ScrollEvent(self, event):
+    def _axisScrollEvent(self, event, scan: int):
         """Handle scroll events on axis 1 (canvas displaying image)."""
-        if self.s1:
+        if scan == 1 and self.s1:
             if event.button == 'up':
                 self.s1.navigate(Scan.NAVIGATION['w'])
             else:
                 self.s1.navigate(Scan.NAVIGATION['s'])
             self._updateDisplay(1)
-
-    def _axis2ScrollEvent(self, event):
-        """Handle scroll events on axis 2 (canvas displaying image)."""
-        if self.s2:
+            return
+        elif scan == 2 and self.s2:
             if event.button == 'up':
                 self.s2.navigate(Scan.NAVIGATION['w'])
             else:
                 self.s2.navigate(Scan.NAVIGATION['s'])
             self._updateDisplay(2)
-
+            return
 
     def _openScanDirectory(self, scan: int):
         """Open directory of Scan."""
@@ -373,6 +375,7 @@ class MainWindow(QMainWindow):
         """Clear all points in a Scan, then update display."""
         self.s1.clearScanPoints() if scan == 1 else self.s2.clearScanPoints()
         self._updateDisplay(scan)
+
     def _clearFramePoints(self, scan: int):
         """Clear frame points from scan, then update display."""
         self.s1.clearFramePoints() if scan == 1 else self.s2.clearFramePoints()
@@ -411,19 +414,19 @@ class MainWindow(QMainWindow):
 
         self._updateDisplay(scan)
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         """Handle key press events."""
         if self.s1 and self.axis1.underMouse():
-            if event.text() == 'w':
+            if event.key() == Qt.Key.Key_W:
                 self.s1.navigate(Scan.NAVIGATION['w'])
-            elif event.text() == 's':
+            elif event.key() == Qt.Key.Key_S:
                 self.s1.navigate(Scan.NAVIGATION['s'])
             self._updateDisplay(1)
         elif self.s2 and self.axis2.underMouse():
-            if event.text() == 'w':
-                self.s2.navigate(Scan.NAVIGATION['w'])
-            elif event.text() == 's':
-                self.s2.navigate(Scan.NAVIGATION['s'])
+            if event.key() == Qt.Key.Key_W:
+                self.s1.navigate(Scan.NAVIGATION['w'])
+            elif event.key() == Qt.Key.Key_D:
+                self.s1.navigate(Scan.NAVIGATION['s'])
             self._updateDisplay(2)
 
     def contextMenuEvent(self, event):

@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QApplication, QSl
 
 
 class Window(QMainWindow):
-    def __init__(self, frames: np.ndarray, dimensions: list, patient: str, scanType: str):
+    def __init__(self, frames: np.ndarray, dimensions: list, patient: str, scanType: str, scanPlane: str):
         super().__init__()
         # Flip frames to match MainWindow axis display.
         self.frames = []
@@ -22,7 +22,7 @@ class Window(QMainWindow):
 
         self.dimensions = dimensions
         # Create heading above Cine.
-        self.title = f'Patient: {patient}       Scan Type: {scanType}'
+        self.title = f'Patient: {patient}\tScan Type: {scanType}\t Scan Plane: {scanPlane}'
 
         self.setWindowTitle('Cine Playback')
         self._createUI()
@@ -81,7 +81,7 @@ class Window(QMainWindow):
 
 
 class PlayCine:
-    def __init__(self, frames: np.ndarray, patient: str, scanType: str):
+    def __init__(self, frames: np.ndarray, patient: str, scanType: str, scanPlane: str):
         """
         Initialise a PlayCine object.
         """
@@ -92,23 +92,25 @@ class PlayCine:
         self.frames = frames
         self.patient = patient
         self.scanType = scanType
+        self.scanPlane = scanPlane
 
     def startProcess(self):
         """
         Start the process that will display the frames on a loop.
         """
         self.pool = multiprocessing.Pool(1)
-        self.async_process = self.pool.apply_async(process,
-                                                   args=(self.frames, self.dimensions, self.patient, self.scanType))
+        self.async_process = self.pool.apply_async(process, args=(self.frames, self.dimensions,
+                                                                  self.patient, self.scanType,
+                                                                  self.scanPlane))
 
 
-def process(frames: np.ndarray, dimensions: list, patient: str, scanType: str):
+def process(frames: np.ndarray, dimensions: list, patient: str, scanType: str, scanPlane: str):
     try:
         App = QApplication(sys.argv)
 
         qdarktheme.setup_theme()
 
-        window = Window(frames, dimensions, patient, scanType)
+        window = Window(frames, dimensions, patient, scanType, scanPlane)
         window.show()
 
         sys.exit(App.exec())

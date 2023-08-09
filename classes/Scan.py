@@ -165,14 +165,16 @@ class Scan:
 
     def getScanDetails(self):
         """
-        Return information about the scan, including patient number, scan type, and total frames.
+        Return information about the scan, including patient number, scan type, scan plane, and total frames.
 
-        :return: patient, scanType, frameCount.
+        :return: patient, scanType, scanPlane, frameCount.
         """
-        patient = self.path.split('/')[-3]
-        scanType = self.path.split('/')[-2].lower().capitalize()
+        path = self.path.split('/')
+        patient = path[-4]
+        scanType = path[-3]
+        scanPlane = path[-2].lower().capitalize()
 
-        return patient, scanType, self.frameCount
+        return patient, scanType, scanPlane, self.frameCount
 
     def openDirectory(self):
         """
