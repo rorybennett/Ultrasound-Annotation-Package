@@ -15,9 +15,12 @@ from screeninfo import get_monitors
 import ScanUtil as su
 from classes import FrameCanvas
 
-# Scan types.
-TYPE_TRANSVERSE = 'transverse'
-TYPE_SAGITTAL = 'sagittal'
+# Scan Types.
+TYPE_AUS = 'AUS'  # Abdominal Ultrasound Scan.
+TYPE_PUS = 'PUS'  # Perineal Ultrasound Scan.
+# Scan Planes.
+PLANE_TRANSVERSE = 'transverse'
+PLANE_SAGITTAL = 'sagittal'
 # Navigation commands.
 NAVIGATION = {
     'w': 'UP',
@@ -56,8 +59,8 @@ class Scan:
             self.path)
         # EditingData.txt file information.
         self.editPath, self.imuOffset, self.imuPosition = su.getEditDataFromFile(self.path)
-        # Type of scan.
-        self.scanType = su.getScanType(self.path)
+        # Type of scan and plane.
+        _, self.scanType, self.scanPlane, _ = self.getScanDetails()
         # Display dimensions.
         self.displayDimensions = self.getDisplayDimensions()
         # Point data from PointData.txt.
@@ -393,7 +396,7 @@ class Scan:
         """
         points = []
         pass
-        if self.scanType == TYPE_TRANSVERSE:
+        if self.scanType == PLANE_TRANSVERSE:
             for i in range(0, 7, 2):
                 points.append([inferredPoints[i], inferredPoints[i + 1]])
         else:
@@ -463,7 +466,7 @@ class Scan:
                 frame = imageFile.read()
             centre = self.getIPVCentreInFrameDimensions()
             data = {
-                'model_name': 'transverse_original_1' if self.scanType == TYPE_TRANSVERSE else 'sagittal_original_1',
+                'model_name': 'transverse_original_1' if self.scanType == PLANE_TRANSVERSE else 'sagittal_original_1',
                 'image': frame,
                 'x': centre[0],
                 'y': centre[1],
@@ -479,7 +482,7 @@ class Scan:
             with open(f"{self.path}/{frameName}.png", 'rb') as imageFile:
                 frame = imageFile.read()
             data = {
-                'model_name': 'transverse_original_1' if self.scanType == TYPE_TRANSVERSE else 'sagittal_original_1',
+                'model_name': 'transverse_original_1' if self.scanType == PLANE_TRANSVERSE else 'sagittal_original_1',
                 'image': frame,
                 'x': 0,
                 'y': 0,

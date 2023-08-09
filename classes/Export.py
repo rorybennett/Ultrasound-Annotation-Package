@@ -48,7 +48,7 @@ class Export:
             print('\tCreate Sagittal IPV Data Cancelled.')
             return
         # Create directories for sagittal training data.
-        savePath = eu.createIPVTrainingDirs(Scan.TYPE_SAGITTAL)
+        savePath = eu.createIPVTrainingDirs(Scan.PLANE_SAGITTAL)
         # Create training data from each patient.
         for patient in self.patients:
             sagittalPath = f'{self.scansPath}/{patient}/sagittal'
@@ -101,7 +101,7 @@ class Export:
             print('\tCreate Transverse IPV Data Cancelled.')
             return
         # Create directories for sagittal training data.
-        savePath = eu.createIPVTrainingDirs(Scan.TYPE_TRANSVERSE)
+        savePath = eu.createIPVTrainingDirs(Scan.PLANE_TRANSVERSE)
         # Create training data from each patient.
         for patient in self.patients:
             transversePath = f'{self.scansPath}/{patient}/transverse'

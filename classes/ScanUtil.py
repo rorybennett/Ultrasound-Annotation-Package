@@ -13,8 +13,6 @@ from natsort import natsorted
 from numpy.lib.stride_tricks import sliding_window_view
 from pyquaternion import Quaternion
 
-from classes import Scan
-
 # Rotates the '+' marker by 45 degrees.
 m = MarkerStyle('+')
 m._transform.rotate_deg(45)
@@ -41,26 +39,6 @@ def loadFrames(scanPath: str):
             frames.append(img)
     return frames
 
-
-def getScanType(scanPath: str):
-    """
-    Get the type of scan based on scan parent directory.
-
-    Args:
-        scanPath: String representation of the scan path.
-
-    Returns:
-        Type of scan as a String.
-    """
-
-    scan_type = scanPath.split('/')[-2]
-
-    if scan_type == 'Transverse':
-        scan_type = Scan.TYPE_TRANSVERSE
-    elif scan_type == 'Sagittal':
-        scan_type = Scan.TYPE_SAGITTAL
-
-    return scan_type
 
 
 def drawFrameOnAxis(axis: Axes, frame: np.ndarray):
@@ -134,7 +112,8 @@ def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, depths: list, imuOff: fl
         # Plot the centre circle.
         pointDisplay = mmToDisplay(ipv['centre'][1:], depths, imuOff, imuPos, dd)
         axis.plot(pointDisplay[0], pointDisplay[1], marker='+', color='white', markersize=5)
-        circle = plt.Circle((pointDisplay[0], pointDisplay[1]), ipv['radius'], fill=False, color='white', linestyle='--')
+        circle = plt.Circle((pointDisplay[0], pointDisplay[1]), ipv['radius'], fill=False, color='white',
+                            linestyle='--')
         axis.add_artist(circle)
 
     if name == ipv['inferred_points'][0]:
