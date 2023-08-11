@@ -77,7 +77,7 @@ class Export:
             for index, frame in enumerate(framesWithPoints):
                 saveName = f'{patient}_{frameNumbers[index]}.png'
                 # Save frame to disk.
-                cv2.imwrite(f'{savePath}/Sagittal/{saveName}', frame)
+                cv2.imwrite(f'{savePath}/sagittal/{saveName}', frame)
                 # Convert points from mm to display/pixel coordinates.
                 pointDataDisplay = []
                 for point in pointDataMm:
@@ -87,7 +87,7 @@ class Export:
                 # Ensure there are only 2 points per frame.
 
                 # Save point data.
-                with open(f'{savePath}/Sagittal_mark_list.txt', 'a') as pointFile:
+                with open(f'{savePath}/sagittal_mark_list.txt', 'a') as pointFile:
                     pointFile.write(
                         f'{saveName} ({pointDataDisplay[0][1]}, {pointDataDisplay[0][2]}) '
                         f'({pointDataDisplay[1][1]}, {pointDataDisplay[1][2]})\n')
@@ -136,17 +136,17 @@ class Export:
             for index, frame in enumerate(framesWithPoints):
                 saveName = f'{patient}_{frameNumbers[index]}.png'
                 # Save frame to disk.
-                cv2.imwrite(f'{savePath}/Transverse/{saveName}', frame)
+                cv2.imwrite(f'{savePath}/transverse/{saveName}', frame)
                 # Convert points from mm to display/pixel coordinates.
                 pointDataDisplay = []
                 for point in pointDataMm:
                     pointDisplay = eu.mmToDisplayCoordinates([point[1], point[2]], depths, imuOffset, imuPosition,
                                                              [frame.shape[1], frame.shape[0]])
-                    pointDataDisplay.append([point[0], pointDisplay[1], pointDisplay[1]])
+                    pointDataDisplay.append([point[0], pointDisplay[0], pointDisplay[1]])
                 # Ensure there are only 4 points per frame.
 
                 # Save point data.
-                with open(f'{savePath}/Transverse_mark_list.txt', 'a') as pointFile:
+                with open(f'{savePath}/transverse_mark_list.txt', 'a') as pointFile:
                     pointFile.write(
                         f'{saveName} ({pointDataDisplay[0][1]}, {pointDataDisplay[0][2]}) '
                         f'({pointDataDisplay[1][1]}, {pointDataDisplay[1][2]}) '
