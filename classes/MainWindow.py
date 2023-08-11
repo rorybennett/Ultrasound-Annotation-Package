@@ -223,9 +223,9 @@ class MainWindow(QMainWindow):
     def _exportDataIPV(self, scanType: str):
         """Export save data for model training."""
         if scanType == Scan.PLANE_TRANSVERSE:
-            self.export.exportIPVTransverseData(self)
+            self.export.exportIPVAUSTransverseData(self)
         else:
-            self.export.exportIPVSagittalData(self)
+            self.export.exportIPVAUSSagittalData(self)
 
     def _ipvInference(self, scan: int):
         """Send current frame for IPV inference, either online or locally."""

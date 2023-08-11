@@ -24,9 +24,9 @@ def createIPVTrainingDirs(scanType: str):
         dataPath = f'../Export/IPV/{int(time.time())}_IPV_{scanType}_export/DATA'
         Path(f'{dataPath}/fold_lists').mkdir(parents=True, exist_ok=False)
         if scanType == Scan.PLANE_TRANSVERSE:
-            Path(f'{dataPath}/Transverse').mkdir(exist_ok=False)
+            Path(f'{dataPath}/transverse').mkdir(exist_ok=False)
         else:
-            Path(f'{dataPath}/Sagittal').mkdir(exist_ok=False)
+            Path(f'{dataPath}/sagittal').mkdir(exist_ok=False)
     except FileExistsError as e:
         print(f'Error creating directories: {e}.')
         return False
