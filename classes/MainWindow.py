@@ -120,19 +120,23 @@ class MainWindow(QMainWindow):
         patientLabel = QLabel(f'Patient: ')
         patientLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         patientLabel.setFont(MainWindow.labelFont)
-        typeLabel = QLabel(f'Scan Type:')
+        typeLabel = QLabel(f'Type:')
         typeLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         typeLabel.setFont(MainWindow.labelFont)
-        planeLabel = QLabel(f'Scan Plane:')
+        planeLabel = QLabel(f'Plane:')
         planeLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         planeLabel.setFont(MainWindow.labelFont)
-        frameLabel = QLabel(f'Total Frames:')
+        numberLabel = QLabel(f'Number:')
+        numberLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        numberLabel.setFont(MainWindow.labelFont)
+        frameLabel = QLabel(f'Frames:')
         frameLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         frameLabel.setFont(MainWindow.labelFont)
 
         layout.addWidget(patientLabel, 0)
         layout.addWidget(typeLabel, 0)
         layout.addWidget(planeLabel, 0)
+        layout.addWidget(numberLabel, 0)
         layout.addWidget(frameLabel, 0)
         layout.setSpacing(10)
 
@@ -141,17 +145,19 @@ class MainWindow(QMainWindow):
     def _updateTitle(self, scan: int):
         """Update title information."""
         if scan == 1:
-            patient, scanType, scanPlane, frameCount = self.s1.getScanDetails()
+            patient, scanType, scanPlane, scanNumber, frameCount = self.s1.getScanDetails()
             self.leftTitle.itemAt(0).widget().setText(f'Patient: {patient}')
-            self.leftTitle.itemAt(1).widget().setText(f'Scan Type: {scanType}')
-            self.leftTitle.itemAt(2).widget().setText(f'Scan Plane: {scanPlane}')
-            self.leftTitle.itemAt(3).widget().setText(f'Total Frames: {frameCount}')
+            self.leftTitle.itemAt(1).widget().setText(f'Type: {scanType}')
+            self.leftTitle.itemAt(2).widget().setText(f'Plane: {scanPlane}')
+            self.leftTitle.itemAt(3).widget().setText(f'Number: {scanNumber}')
+            self.leftTitle.itemAt(4).widget().setText(f'Frames: {frameCount}')
         else:
-            patient, scanType, scanPlane, frameCount = self.s2.getScanDetails()
+            patient, scanType, scanPlane, scanNumber, frameCount = self.s2.getScanDetails()
             self.rightTitle.itemAt(0).widget().setText(f'Patient: {patient}')
-            self.rightTitle.itemAt(1).widget().setText(f'Scan Type: {scanType}')
-            self.leftTitle.itemAt(2).widget().setText(f'Scan Plane: {scanPlane}')
-            self.rightTitle.itemAt(3).widget().setText(f'Total Frames: {frameCount}')
+            self.rightTitle.itemAt(1).widget().setText(f'Type: {scanType}')
+            self.rightTitle.itemAt(2).widget().setText(f'Plane: {scanPlane}')
+            self.rightTitle.itemAt(3).widget().setText(f'Number: {scanNumber}')
+            self.rightTitle.itemAt(4).widget().setText(f'Frames: {frameCount}')
 
     def _createBoxes(self, scan: int):
         """Create checkboxes below canvas."""
@@ -175,11 +181,11 @@ class MainWindow(QMainWindow):
     def _onCineClicked(self, scan: int):
         """Play a cine of the scan in a separate window."""
         if scan == 1:
-            patient, scanType, scanPlane, _ = self.s1.getScanDetails()
+            patient, scanType, scanPlane, _, _ = self.s1.getScanDetails()
             cine = PlayCine.PlayCine(self.s1.frames, patient, scanType, scanPlane)
             cine.startProcess()
         else:
-            patient, scanType, scanPlane, _ = self.s2.getScanDetails()
+            patient, scanType, scanPlane, _, _ = self.s2.getScanDetails()
             cine = PlayCine.PlayCine(self.s2.frames, patient, scanType, scanPlane)
             cine.startProcess()
 
@@ -428,9 +434,9 @@ class MainWindow(QMainWindow):
             self._updateDisplay(1)
         elif self.s2 and self.axis2.underMouse():
             if event.key() == Qt.Key.Key_W:
-                self.s1.navigate(Scan.NAVIGATION['w'])
-            elif event.key() == Qt.Key.Key_D:
-                self.s1.navigate(Scan.NAVIGATION['s'])
+                self.s2.navigate(Scan.NAVIGATION['w'])
+            elif event.key() == Qt.Key.Key_S:
+                self.s2.navigate(Scan.NAVIGATION['s'])
             self._updateDisplay(2)
 
     def contextMenuEvent(self, event):

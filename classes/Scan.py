@@ -60,7 +60,7 @@ class Scan:
         # EditingData.txt file information.
         self.editPath, self.imuOffset, self.imuPosition = su.getEditDataFromFile(self.path)
         # Type of scan and plane.
-        _, self.scanType, self.scanPlane, _ = self.getScanDetails()
+        _, self.scanType, self.scanPlane, _, _ = self.getScanDetails()
         # Display dimensions.
         self.displayDimensions = self.getDisplayDimensions()
         # Point data from PointData.txt.
@@ -176,8 +176,9 @@ class Scan:
         patient = path[-4]
         scanType = path[-3]
         scanPlane = path[-2].lower().capitalize()
+        scanNumber = path[-1]
 
-        return patient, scanType, scanPlane, self.frameCount
+        return patient, scanType, scanPlane, scanNumber, self.frameCount
 
     def openDirectory(self):
         """
@@ -460,7 +461,7 @@ class Scan:
         if self.ipvData['centre'][0]:
             frameName = self.ipvData['centre'][0]
             frameNumber = int(frameName.split('-')[0])
-            patient, _, _ = self.getScanDetails()
+            patient, _, _, _, _ = self.getScanDetails()
             print(f"\tSending IPV centre frame ({self.ipvData['centre'][0].split('-')[0]}) for inference...")
             with open(f"{self.path}/{frameName}.png", 'rb') as imageFile:
                 frame = imageFile.read()
@@ -477,7 +478,7 @@ class Scan:
         else:
             frameName = self.frameNames[self.currentFrame - 1]
             frameNumber = int(frameName.split('-')[0])
-            patient, _, _ = self.getScanDetails()
+            patient, _, _, _, _ = self.getScanDetails()
             print(f'Sending currently displayed frame ({self.currentFrame}) for inference...')
             with open(f"{self.path}/{frameName}.png", 'rb') as imageFile:
                 frame = imageFile.read()
