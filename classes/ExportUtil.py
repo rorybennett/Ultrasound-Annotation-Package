@@ -151,10 +151,9 @@ def getFramesWithPoints(scanPath, pointDataMm):
     frames = []
     frameNumbers = []
     for row in frame_names:
-        frameName = row + '.png'
-        framePath = scanPath + '/' + frameName
+        framePath = scanPath + '/' + row
         frames.append(cv2.imread(framePath))
-        frameNumbers.append(row.split('-')[0])
+        frameNumbers.append(row.split('.')[0])
 
     return frames, frameNumbers
 

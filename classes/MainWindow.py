@@ -318,7 +318,7 @@ class MainWindow(QMainWindow):
                 self.menuLoadScans.actions()[4].setEnabled(True)
                 self.menuIPV2.setEnabled(True)
                 self.menuLoadData2.setEnabled(True)
-                self.menuSaveData.actions()[1].setEnabled(True)
+                self.menuSaveData.actions()[2].setEnabled(True)
                 for i in range(self.rightButtons.count()):
                     self.rightButtons.itemAt(i).widget().setEnabled(True)
                 self.right.itemAt(2).widget().setFixedSize(self.s2.displayDimensions[0],

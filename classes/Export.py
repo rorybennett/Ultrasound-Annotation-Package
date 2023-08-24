@@ -40,6 +40,7 @@ class Export:
         print(f'\tSExporting completed.')
 
     def exportIPVAUSSagittalData(self, mainWindow: QWidget):
+        # todo Fix like transverse
         """Export AUS sagittal frames for ipv inference."""
         print(f'Exporting Sagittal frames for IPV inference...')
         # Get Save prefix.
@@ -109,52 +110,53 @@ class Export:
         for patient in self.patients:
             try:
                 transversePath = f'{self.scansPath}/{patient}/AUS/transverse'
-                try:
-                    framePath = os.listdir(Path(transversePath).absolute())[0]
-                    scanPath = f'{transversePath}/{framePath}'
-                except IndexError:
-                    print(f'{transversePath} does not exist skipping...')
-                    continue
-                # Get save directory with given prefix.
-                try:
+                scanDirs = Path(transversePath).iterdir()
+                # Go through each scan in the plane directory.
+                for scan in scanDirs:
+                    # Some files are .avi, they can be skipped.
+                    if scan.is_file():
+                        continue
+                    # Get save directory with given prefix.
+                    scanPath = scan.as_posix()
                     saveDir = eu.getSaveDirName(scanPath, prefix)
-                except FileNotFoundError:
-                    print(f'\t{prefix}  -  does not exist in {scanPath}, skipping...')
-                    continue
-                # Path to PointData.txt file.
-                pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.txt'
-                # Get point data in mm from f()ile.
-                pointDataMm = eu.getPointData(pointDataPath)
-                # Get depths of scans.
-                depths = eu.getDepths(scanPath)
-                # Get required IMU data.
-                imuOffset, imuPosition = eu.getIMUData(f'{scanPath}/Save Data/{saveDir}')
-                # Get frames with points on them.
-                framesWithPoints, frameNumbers = eu.getFramesWithPoints(scanPath, pointDataMm)
-                if not framesWithPoints:
-                    print(f'\tNo frames with point data available.')
-                    return
+                    if not saveDir:
+                        print(f'\t{prefix} not found in {scanPath}. Skipping...')
+                        continue
+                    # Path to PointData.txt file.
+                    pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.txt'
+                    # Get point data in mm from f()ile.
+                    pointDataMm = eu.getPointData(pointDataPath)
+                    # Get depths of scans.
+                    depths = eu.getDepths(scanPath)
+                    # Get required IMU data.
+                    imuOffset, imuPosition = eu.getIMUData(f'{scanPath}/Save Data/{saveDir}')
+                    # Get frames with points on them.
+                    framesWithPoints, frameNumbers = eu.getFramesWithPoints(scanPath, pointDataMm)
+                    if not framesWithPoints:
+                        print(f'\tNo frames with point data available.')
+                        return
 
-                # Loop through frames with points on them.
-                for index, frame in enumerate(framesWithPoints):
-                    saveName = f'{patient}_{frameNumbers[index]}.png'
-                    # Save frame to disk.
-                    cv2.imwrite(f'{savePath}/transverse/{saveName}', frame)
-                    # Convert points from mm to display/pixel coordinates.
-                    pointDataDisplay = []
-                    for point in pointDataMm:
-                        pointDisplay = eu.mmToDisplayCoordinates([point[1], point[2]], depths, imuOffset, imuPosition,
-                                                                 [frame.shape[1], frame.shape[0]])
-                        pointDataDisplay.append([point[0], pointDisplay[0], pointDisplay[1]])
-                    # Ensure there are only 4 points per frame.
+                    # Loop through frames with points on them.
+                    for index, frame in enumerate(framesWithPoints):
+                        saveName = f'{patient}_{frameNumbers[index]}.png'
+                        # Save frame to disk.
+                        cv2.imwrite(f'{savePath}/transverse/{saveName}', frame)
+                        # Convert points from mm to display/pixel coordinates.
+                        pointDataDisplay = []
+                        for point in pointDataMm:
+                            pointDisplay = eu.mmToDisplayCoordinates([point[1], point[2]], depths, imuOffset,
+                                                                     imuPosition,
+                                                                     [frame.shape[1], frame.shape[0]])
+                            pointDataDisplay.append([point[0], pointDisplay[0], pointDisplay[1]])
+                        # Ensure there are only 4 points per frame.
 
-                    # Save point data.
-                    with open(f'{savePath}/transverse_mark_list.txt', 'a') as pointFile:
-                        pointFile.write(
-                            f'{saveName} ({pointDataDisplay[0][1]}, {pointDataDisplay[0][2]}) '
-                            f'({pointDataDisplay[1][1]}, {pointDataDisplay[1][2]}) '
-                            f'({pointDataDisplay[2][1]}, {pointDataDisplay[2][2]}) '
-                            f'({pointDataDisplay[3][1]}, {pointDataDisplay[3][2]})\n')
+                        # Save point data.
+                        with open(f'{savePath}/transverse_mark_list.txt', 'a') as pointFile:
+                            pointFile.write(
+                                f'{saveName} ({pointDataDisplay[0][1]}, {pointDataDisplay[0][2]}) '
+                                f'({pointDataDisplay[1][1]}, {pointDataDisplay[1][2]}) '
+                                f'({pointDataDisplay[2][1]}, {pointDataDisplay[2][2]}) '
+                                f'({pointDataDisplay[3][1]}, {pointDataDisplay[3][2]})\n')
             except WindowsError as e:
                 print(f'Error creating transverse data: {e}.')
         print(f'\tAUS transverse exporting completed.')
