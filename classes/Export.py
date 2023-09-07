@@ -67,13 +67,9 @@ class Export:
                     # Path to PointData.txt file.
                     pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.txt'
                     # Get point data in mm from f()ile.
-                    pointDataMm = eu.getPointData(pointDataPath)
-                    # Get depths of scans.
-                    depths = eu.getDepths(scanPath)
-                    # Get required IMU data.
-                    imuOffset, imuPosition = eu.getIMUData(f'{scanPath}/Save Data/{saveDir}')
+                    pointDataPix = eu.getPointData(pointDataPath)
                     # Get frames with points on them.
-                    framesWithPoints, frameNumbers = eu.getFramesWithPoints(scanPath, pointDataMm)
+                    framesWithPoints, frameNumbers = eu.getFramesWithPoints(scanPath, pointDataPix)
                     if not framesWithPoints:
                         print(f'\tNo frames with point data available.')
                         return
@@ -82,19 +78,12 @@ class Export:
                         saveName = f'{patient}_{frameNumbers[index]}.png'
                         # Save frame to disk.
                         cv2.imwrite(f'{savePath}/sagittal/{saveName}', frame)
-                        # Convert points from mm to display/pixel coordinates.
-                        pointDataDisplay = []
-                        for point in pointDataMm:
-                            pointDisplay = eu.mmToDisplayCoordinates([point[1], point[2]], depths, imuOffset,
-                                                                     imuPosition, [frame.shape[1], frame.shape[0]])
-                            pointDataDisplay.append([point[0], pointDisplay[0], pointDisplay[1]])
-                        # Ensure there are only 2 points per frame.
 
                         # Save point data.
                         with open(f'{savePath}/sagittal_mark_list.txt', 'a') as pointFile:
                             pointFile.write(
-                                f'{saveName} ({pointDataDisplay[0][1]}, {pointDataDisplay[0][2]}) '
-                                f'({pointDataDisplay[1][1]}, {pointDataDisplay[1][2]})\n')
+                                f'{saveName} ({pointDataPix[0][1]}, {pointDataPix[0][2]}) '
+                                f'({pointDataPix[1][1]}, {pointDataPix[1][2]})\n')
             except WindowsError as e:
                 print(f'Error creating sagittal data: {e}.')
         print(f'\tAUS sagittal exporting completed.')
@@ -127,13 +116,9 @@ class Export:
                     # Path to PointData.txt file.
                     pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.txt'
                     # Get point data in mm from f()ile.
-                    pointDataMm = eu.getPointData(pointDataPath)
-                    # Get depths of scans.
-                    depths = eu.getDepths(scanPath)
-                    # Get required IMU data.
-                    imuOffset, imuPosition = eu.getIMUData(f'{scanPath}/Save Data/{saveDir}')
+                    pointDataPix = eu.getPointData(pointDataPath)
                     # Get frames with points on them.
-                    framesWithPoints, frameNumbers = eu.getFramesWithPoints(scanPath, pointDataMm)
+                    framesWithPoints, frameNumbers = eu.getFramesWithPoints(scanPath, pointDataPix)
                     if not framesWithPoints:
                         print(f'\tNo frames with point data available.')
                         return
@@ -143,21 +128,13 @@ class Export:
                         saveName = f'{patient}_{frameNumbers[index]}.png'
                         # Save frame to disk.
                         cv2.imwrite(f'{savePath}/transverse/{saveName}', frame)
-                        # Convert points from mm to display/pixel coordinates.
-                        pointDataDisplay = []
-                        for point in pointDataMm:
-                            pointDisplay = eu.mmToDisplayCoordinates([point[1], point[2]], depths, imuOffset,
-                                                                     imuPosition, [frame.shape[1], frame.shape[0]])
-                            pointDataDisplay.append([point[0], pointDisplay[0], pointDisplay[1]])
-                        # Ensure there are only 4 points per frame.
-
                         # Save point data.
                         with open(f'{savePath}/transverse_mark_list.txt', 'a') as pointFile:
                             pointFile.write(
-                                f'{saveName} ({pointDataDisplay[0][1]}, {pointDataDisplay[0][2]}) '
-                                f'({pointDataDisplay[1][1]}, {pointDataDisplay[1][2]}) '
-                                f'({pointDataDisplay[2][1]}, {pointDataDisplay[2][2]}) '
-                                f'({pointDataDisplay[3][1]}, {pointDataDisplay[3][2]})\n')
+                                f'{saveName} ({pointDataPix[0][1]}, {pointDataPix[0][2]}) '
+                                f'({pointDataPix[1][1]}, {pointDataPix[1][2]}) '
+                                f'({pointDataPix[2][1]}, {pointDataPix[2][2]}) '
+                                f'({pointDataPix[3][1]}, {pointDataPix[3][2]})\n')
             except WindowsError as e:
                 print(f'Error creating transverse data: {e}.')
         print(f'\tAUS transverse exporting completed.')

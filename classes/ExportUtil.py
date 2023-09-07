@@ -158,65 +158,6 @@ def getFramesWithPoints(scanPath, pointDataMm):
     return frames, frameNumbers
 
 
-def mmToDisplayCoordinates(pointMm: list, depths: list, imuOffset: float, imuPosition: float, dd: list):
-    """
-    Convert a point in mm to a point in the display coordinates (pixel/frame coordinates). First convert the point in
-    mm to a display ratio, then to display coordinates.
-
-    Args:
-        pointMm (list): x and y coordinates of the point in mm.
-        depths (list): Scan depth.
-        imuOffset (float): IMU offset.
-        imuPosition (float): Position of IMU shown by ticks.
-        dd (list): Display dimensions, based on frame.
-
-    Returns:
-        pointDisplay (list): Point coordinates in display dimensions.
-    """
-    pointDisplay = ratioToDisplayCoordinates(mmToRatio(pointMm, depths, imuOffset, imuPosition),
-                                             dd)
-
-    return pointDisplay
-
-
-def ratioToDisplayCoordinates(pointRatio: list, dd: list):
-    """
-    Convert a point given as a ratio of the display dimensions to display coordinates. Rounding is done as display
-    coordinates have to be integers.
-
-    Args:
-        pointRatio (list): Width and Height ratio of a point in relation to the display dimensions.
-        dd (list): Display dimensions, based on frame.
-
-    Returns:
-        point_display (list): Point coordinates in display dimensions (int rounding).
-    """
-    point_display = [int(pointRatio[0] * dd[0]),
-                     int(pointRatio[1] * dd[1])]
-
-    return point_display
-
-
-def mmToRatio(pointMm: list, depths: list, imuOffset: float, imuPosition: float):
-    """
-    Convert the given point in mm to a display ratio. Calculated using the imu offset and the depths of the scan. Remove
-    the IMU offset in the y direction.
-
-    Args:
-        pointMm (list): Point as x and y coordinates.
-        depths (list): Depth and width of scan, used to get the point ratio.
-        imuOffset (float): IMU Offset.
-        imuPosition (float): Position of IMU shown by ticks.
-
-    Returns:
-        pointRatio (list): x and y coordinates of the point as a ratio of the display.
-    """
-    pointRatio = [(pointMm[0] + depths[1] / (depths[1] * imuPosition / 100)) / depths[1],
-                  (pointMm[1] - imuOffset) / depths[0]]
-
-    return pointRatio
-
-
 def createSaveDataExportDir():
     """
     Create a directory where all patient Save Data can be stored.

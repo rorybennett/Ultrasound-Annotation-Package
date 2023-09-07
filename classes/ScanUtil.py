@@ -40,7 +40,6 @@ def loadFrames(scanPath: str):
     return frames
 
 
-
 def drawFrameOnAxis(axis: Axes, frame: np.ndarray):
     """
     Clear the given axis and plot a new frame with imshow. Enforce axis limits.
@@ -93,7 +92,7 @@ def drawScanDataOnAxis(axis: Axes, frame: np.ndarray, fNo: int, fCount: int, dep
     axis.plot([imuPos / 100 * dd[0], imuPos / 100 * dd[0]], [0, 10], color='white', linewidth=2)
 
 
-def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, depths: list, imuOff: float, imuPos: float, dd: list, fd: list):
+def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, dd: list, fd: list):
     """
         Plot the IPV data onto the frame.
 
@@ -101,16 +100,13 @@ def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, depths: list, imuOff: fl
             axis: Axis displaying frame.
             ipv: Dictionary of ipv data.
             name: Frame name as a string.
-            depths: Height and Width of recording in mm.
-            imuOff: Offset of the imu from the end of the probe.
-            imuPos: IMU position as a percent of frame width.
             dd: Display dimension - shape of the displayed frame.
             fd: Dimensions of original frame (x, y).
     """
     fd = [fd[1], fd[0]]
     if name == ipv['centre'][0]:
         # Plot the centre circle.
-        pointDisplay = mmToDisplay(ipv['centre'][1:], depths, imuOff, imuPos, dd)
+        pointDisplay = pixelsToDisplay(ipv['centre'][1:], fd, dd)
         axis.plot(pointDisplay[0], pointDisplay[1], marker='+', color='white', markersize=5)
         circle = plt.Circle((pointDisplay[0], pointDisplay[1]), ipv['radius'], fill=False, color='white',
                             linestyle='--')
@@ -263,7 +259,7 @@ def checkPointDataFile(scanPath: str):
     return pointPath
 
 
-def drawPointDataOnAxis(axis, points, depths, imuOffset, imuPosition, dd):
+def drawPointDataOnAxis(axis, points, fd, dd):
     """
     Plot given points on the frame. Points are currently stored in mm (including the IMU offset from the edge
     of the probe). These need to be converted to display coordinates.
@@ -271,96 +267,33 @@ def drawPointDataOnAxis(axis, points, depths, imuOffset, imuPosition, dd):
     Args:
         axis: Axis displaying frame.
         points: List of points in mm.
-        depths: Height and Width of recording in mm.
-        imuOffset: Offset of the imu from the end of the probe.
-        imuPosition: IMU position as a percent of frame width.
+        fd: Original frame dimensions (before resizing)
         dd: Display dimension - shape of the frame, first and second value swapped.
 
     Returns:
         Nothing returned as data is drawn directly on axis.
     """
     for point in points:
-        point_display = mmToDisplay(point, depths, imuOffset, imuPosition, dd)
+        pointDisplay = pixelsToDisplay(point, fd, dd)
 
-        axis.plot(point_display[0], point_display[1], marker=m, color='lime')
+        axis.plot(pointDisplay[0], pointDisplay[1], marker=m, color='lime')
 
 
-def mmToDisplay(pointMM: list, depths: list, imuOffset: float, imuPosition: float, dd: list):
+def pixelsToDisplay(pointPix: list, fd: list, dd: list):
     """
-    Convert a point in mm to a point in the display coordinates. First convert the point in mm to a display ratio,
-    then to display coordinates.
+    Convert a point from frame relative pixels to display coordinates. Since the frames are resized before being
+    displayed the point coordinates need to be updated.
 
     Args:
-        pointMM: x and y coordinates of the point in mm.
-        depths: Scan depth.
-        imuOffset: IMU offset.
-        imuPosition: Position of IMU shown by ticks.
-        dd: Display dimensions, based on frame.
+        pointPix: Point in frame relative coordinates.
+        fd: Frame dimensions.
+        dd: Display dimensions.
 
     Returns:
-        Point coordinates in display dimensions.
+        Point in display coordinates.
     """
-    pointDisplay = ratioToDisplay(mmToRatio(pointMM, depths, imuOffset, imuPosition),
-                                  dd)
-
-    return pointDisplay
-
-
-def mmToFrame(pointMM: list, depths: list, imuOffset: float, imuPosition: float, fd: list):
-    """
-    Convert a point in mm to a point in the frame coordinates. First convert the point in mm to a display ratio,
-    then to frame coordinates.
-
-    Args:
-        pointMM: x and y coordinates of the point in mm.
-        depths: Scan depth.
-        imuOffset: IMU offset.
-        imuPosition: Position of IMU shown by ticks.
-        fd: Frame dimensions
-
-    Returns:
-        Point coordinates in display dimensions.
-    """
-    pointDisplay = ratioToFrame(mmToRatio(pointMM, depths, imuOffset, imuPosition), fd)
-
-    return pointDisplay
-
-
-def mmToRatio(pointMm: list, depths: list, imuOffset: float, imuPosition: float):
-    """
-    Convert the given point in mm to a display ratio. Calculated using the imu offset and the depths of the scan. Remove
-    the IMU offset in the y direction.
-
-    Args:
-        pointMm: Point as x and y coordinates in mm.
-        depths : Depth and width of scan, used to get the point ratio.
-        imuOffset: IMU Offset.
-        imuPosition: Position of IMU shown by ticks.
-
-    Returns:
-        x and y coordinates of the point as a ratio of the display.
-    """
-    point_ratio = [(pointMm[0] + depths[1] / (depths[1] * imuPosition / 100)) / depths[1],
-                   (pointMm[1] - imuOffset) / depths[0]]
-
-    return point_ratio
-
-
-def ratioToFrame(pointRatio: list, fd: list):
-    """
-    Convert a point given as a ratio of the display dimensions to frame coordinates. Rounding is done as frame
-    coordinates have to be integers.
-
-    Args:
-        pointRatio: Width and Height ratio of a point in relation to the display dimensions.
-        fd: Frame dimensions, based on frame.
-
-    Returns:
-        Point coordinates in frame dimensions (int rounding).
-    """
-    pointDisplay = [int(pointRatio[0] * fd[0]),
-                    int(pointRatio[1] * fd[1])]
-
+    pointRatio = [(pointPix[0]) / fd[1], (pointPix[1]) / fd[0]]
+    pointDisplay = ratioToDisplay(pointRatio, dd)
     return pointDisplay
 
 
@@ -376,49 +309,9 @@ def ratioToDisplay(pointRatio: list, dd: list):
     Returns:
         Point coordinates in display dimensions (int rounding).
     """
-    pointDisplay = [int(pointRatio[0] * dd[0]),
-                    int(pointRatio[1] * dd[1])]
+    pointDisplay = [int(pointRatio[0] * dd[0]), int(pointRatio[1] * dd[1])]
 
     return pointDisplay
-
-
-def displayToMm(pointDisplay: list, depths: list, imuOffset: float, imuPosition: int, dd: list):
-    """
-    Convert a point in display coordinates to mm. Include the offset in the y direction.
-
-    Args:
-        pointDisplay (list): x and y coordinates of the point in display dimensions.
-        depths (list): Scan depth.
-        imuOffset (float): IMU offset.
-        imuPosition (int): Position of IMU shown by ticks.
-        dd (list): Dimensions of display, based on frame.
-
-    Returns:
-        point_mm (list): Point coordinates in mm.
-    """
-    point_ratio = displayToRatio(pointDisplay, dd)
-
-    # Point in mm using depth of scan as reference.
-    point_mm = [point_ratio[0] * depths[1] - (depths[1] / (depths[1] * (imuPosition / 100))),
-                point_ratio[1] * depths[0] + imuOffset]
-
-    return point_mm
-
-
-def displayToRatio(pointDisplay: list, dd: list):
-    """
-    Convert a point in display coordinates into a ratio of the display dimensions.
-
-    Args:
-        pointDisplay (list): x and y coordinates of the point in display dimensions.
-        dd (list): Dimensions of frame being displayed.
-
-    Returns:
-        pointRatio (list): Point as a ratio of the display dimensions.
-    """
-    pointRatio = [pointDisplay[0] / dd[0], (dd[1] - pointDisplay[1]) / dd[1]]
-
-    return pointRatio
 
 
 def pointInRadius(centre: list, point: list, radius: int) -> bool:

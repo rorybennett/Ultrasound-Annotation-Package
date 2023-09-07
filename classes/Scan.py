@@ -64,7 +64,7 @@ class Scan:
         # Display dimensions.
         self.displayDimensions = self.getDisplayDimensions()
         # Point data from PointData.txt.
-        self.pointPath, self.pointsMm = su.getPointDataFromFile(self.path)
+        self.pointPath, self.pointsPix = su.getPointDataFromFile(self.path)
         # IPV data from IPV.JSON.
         self.ipvPath, self.ipvData = su.getIPVDataFromFile(self.path)
 
@@ -87,6 +87,7 @@ class Scan:
         imuOffset = self.imuOffset
         imuPosition = self.imuPosition
         dd = self.displayDimensions
+        fd = frame.shape
         # Resize frame to fit display dimensions.
         frame = cv2.resize(frame, dd, cv2.INTER_CUBIC)
         # Corner markers.
@@ -97,7 +98,7 @@ class Scan:
         su.drawScanDataOnAxis(axis, frame, framePosition, count, depths, imuOffset, imuPosition, dd)
         # Show points on frame.
         if showPoints:
-            su.drawPointDataOnAxis(axis, self.getPointsOnFrame(), depths, imuOffset, imuPosition, dd)
+            su.drawPointDataOnAxis(axis, self.getPointsOnFrame(), fd, dd)
         # Show IPV data.
         if showIPV:
             su.drawIPVDataOnAxis(axis, self.ipvData, name, depths, imuOffset, imuPosition, dd, self.frames[0].shape)
@@ -112,9 +113,9 @@ class Scan:
         :return: List of points on frame.
         """
         if position:
-            points = [[p[1], p[2]] for p in self.pointsMm if p[0] == self.frameNames[position]]
+            points = [[p[1], p[2]] for p in self.pointsPix if p[0] == self.frameNames[position]]
         else:
-            points = [[p[1], p[2]] for p in self.pointsMm if p[0] == self.frameNames[self.currentFrame - 1]]
+            points = [[p[1], p[2]] for p in self.pointsPix if p[0] == self.frameNames[self.currentFrame - 1]]
 
         return points
 
@@ -207,16 +208,16 @@ class Scan:
 
         pointRemoved = False
 
-        for point in self.pointsMm:
+        for point in self.pointsPix:
             if self.frameNames[self.currentFrame - 1] == point[0]:
                 # If within radius of another point, remove that point.
                 if su.pointInRadius(point[1:], pointMm, 2):
-                    self.pointsMm.remove(point)
+                    self.pointsPix.remove(point)
                     pointRemoved = True
                     break
         # If no point was removed, add the new point.
         if not pointRemoved:
-            self.pointsMm.append([self.frameNames[self.currentFrame - 1], pointMm[0], pointMm[1]])
+            self.pointsPix.append([self.frameNames[self.currentFrame - 1], pointMm[0], pointMm[1]])
         # Save point data to disk.
         self.__saveToDisk(SAVE_POINT_DATA)
 
@@ -236,8 +237,8 @@ class Scan:
 
             if saveType in [SAVE_POINT_DATA, SAVE_ALL]:
                 with open(self.pointPath, 'w') as pointFile:
-                    self.pointsMm = natsorted(self.pointsMm, key=lambda l: l[0])
-                    for point in self.pointsMm:
+                    self.pointsPix = natsorted(self.pointsPix, key=lambda l: l[0])
+                    for point in self.pointsPix:
                         pointFile.write(f'{point[0]},{point[1]},{point[2]}\n')
 
             # if saveType in [SAVE_PLANE_DATA, SAVE_ALL]:
@@ -255,7 +256,7 @@ class Scan:
         """
         Clear points on the currently displayed frame, then save to disk.
         """
-        self.pointsMm = [p for p in self.pointsMm if not p[0] == self.frameNames[self.currentFrame - 1]]
+        self.pointsPix = [p for p in self.pointsPix if not p[0] == self.frameNames[self.currentFrame - 1]]
 
         self.__saveToDisk(SAVE_POINT_DATA)
 
@@ -263,7 +264,7 @@ class Scan:
         """
         Clear all points in the Scan, then save to disk.
         """
-        self.pointsMm = []
+        self.pointsPix = []
 
         self.__saveToDisk(SAVE_POINT_DATA)
 
