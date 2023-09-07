@@ -203,8 +203,7 @@ class Scan:
         Returns:
             Nothing, adds points directly to self.pointsMm.
         """
-        pointMm = su.displayToMm(pointDisplay, self.depths[self.currentFrame - 1], self.imuOffset,
-                                 self.imuPosition, self.displayDimensions)
+        pointMm = su.displayToPixels(pointDisplay, self.frames[self.currentFrame - 1].shape, self.displayDimensions)
 
         pointRemoved = False
 

@@ -20,7 +20,7 @@ m._transform.rotate_deg(45)
 
 def loadFrames(scanPath: str):
     """
-    Load all .png images in recording_path as frames into a multidimensional list.
+    Load all .png images in scanPath as frames into a multidimensional list.
 
     Args:
         scanPath: String representation of the recording path.
@@ -102,6 +102,7 @@ def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, dd: list, fd: list):
             name: Frame name as a string.
             dd: Display dimension - shape of the displayed frame.
             fd: Dimensions of original frame (x, y).
+            todo Will need to make sure this still works now that points are stored in pixel coordinates.
     """
     fd = [fd[1], fd[0]]
     if name == ipv['centre'][0]:
@@ -292,24 +293,42 @@ def pixelsToDisplay(pointPix: list, fd: list, dd: list):
     Returns:
         Point in display coordinates.
     """
-    pointRatio = [(pointPix[0]) / fd[1], (pointPix[1]) / fd[0]]
-    pointDisplay = ratioToDisplay(pointRatio, dd)
+    pointRatio = [pointPix[0] / fd[1], pointPix[1] / fd[0]]
+    pointDisplay = ratioToCoordinates(pointRatio, dd)
     return pointDisplay
 
 
-def ratioToDisplay(pointRatio: list, dd: list):
+def displayToPixels(pointDisplay: list, fd: list, dd: list):
     """
-    Convert a point given as a ratio of the display dimensions to display coordinates. Rounding is done as display
-    coordinates have to be integers.
-
+    Convert a point from display coordinates to frame relative pixel coordinates.
     Args:
-        pointRatio: Width and Height ratio of a point in relation to the display dimensions.
-        dd: Display dimensions, based on screen size.
+        pointDisplay: Point in display coordinates.
+        fd: Frame dimensions.
+        dd: Display dimensions.
 
     Returns:
-        Point coordinates in display dimensions (int rounding).
+        Point in frame relative pixel coordinates.
     """
-    pointDisplay = [int(pointRatio[0] * dd[0]), int(pointRatio[1] * dd[1])]
+    pointRatio = [pointDisplay[0] / dd[0], (dd[1] - pointDisplay[1]) / dd[1]]
+    pointPix = ratioToCoordinates(pointRatio, [fd[1], fd[0]])
+
+    return pointPix
+
+
+def ratioToCoordinates(pointRatio: list, dimensions: list):
+    """
+    Convert a point given as a ratio to coordinates. Rounding is done as display and pixel coordinates have to be
+    integers. If dimensions are related to the display dimensions, the result will be a point in display relative
+    dimensions. If dimensions are related to frame dimensions, the result will be a point in frame relative dimensions.
+
+    Args:
+        pointRatio: Width and Height ratio of a point.
+        dimensions: Either display or frame dimensions.
+
+    Returns:
+        Point coordinates in either frame or display relative dimensions (int rounding).
+    """
+    pointDisplay = [int(pointRatio[0] * dimensions[0]), int(pointRatio[1] * dimensions[1])]
 
     return pointDisplay
 
@@ -424,11 +443,11 @@ def getIPVDataFromFile(scanPath: str):
     ipvPath = checkIPVDataFile(scanPath)
 
     with open(ipvPath, 'r') as ipvFile:
-        ipv_data = json.load(ipvFile)
-        if 'radius' not in ipv_data:
-            ipv_data['radius'] = 100
+        ipvData = json.load(ipvFile)
+        if 'radius' not in ipvData:
+            ipvData['radius'] = 100
 
-    return ipvPath, ipv_data
+    return ipvPath, ipvData
 
 
 def checkIPVDataFile(scanPath: str) -> Path:
