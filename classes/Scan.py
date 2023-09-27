@@ -448,55 +448,55 @@ class Scan:
 
         return pointFrame
 
-    def inferenceIPV(self, address: str, modelName: str):
-        """
-        Send the current IPV centre frame for inference at the given address. This address can either be online
-        or local (if local the server must be running on localhost (http://127.0.0.1:5000/)).
-
-        Args:
-            address: Address of online IPV inference server.
-            modelName: Name of model to use.
-        """
-        address = f'{address.strip()}/infer'
-        print(f'Sending frame for IPV inference at: {address}')
-        # If IPV centre has been placed, else use currently displayed frame with no ROI.
-        if self.ipvData['centre'][0]:
-            frameName = self.ipvData['centre'][0]
-            frameNumber = int(frameName.split('-')[0])
-            patient, _, _, _, _ = self.getScanDetails()
-            print(f"\tSending IPV centre frame ({self.ipvData['centre'][0].split('-')[0]}) for inference...")
-            with open(f"{self.path}/{frameName}.png", 'rb') as imageFile:
-                frame = imageFile.read()
-            centre = self.getIPVCentreInFrameDimensions()
-            data = {
-                'model_name': f'transverse_{modelName}' if self.scanPlane == PLANE_TRANSVERSE else f'sagittal_{modelName}',
-                'frame': frame,
-                'ipv_centre': f'[{centre[0]}, {centre[1]}]',
-                'ipv_radius': self.ipvData['radius'],
-                'scan_plane': self.scanPlane,
-                'patient_number': patient,
-                'frame_number': frameNumber}
-        else:
-            frameName = self.frameNames[self.currentFrame - 1]
-            frameNumber = int(frameName.split('-')[0])
-            patient, _, _, _, _ = self.getScanDetails()
-            print(f'Sending currently displayed frame ({self.currentFrame}) for inference...')
-            with open(f"{self.path}/{frameName}.png", 'rb') as imageFile:
-                frame = imageFile.read()
-            data = {
-                'model_name': f'transverse_{modelName}' if self.scanPlane == PLANE_TRANSVERSE else f'sagittal_{modelName}',
-                'frame': frame,
-                'ipv_centre': f'[0, 0]',
-                'ipv_radius': 0,
-                'scan_plane': self.scanPlane,
-                'patient_number': patient,
-                'frame_number': frameNumber}
-        try:
-            result = requests.post(address, files=data, timeout=3600)
-            if result.ok:
-                print(f'\tResult returned: {result.json()}')
-                self.updateIPVInferredPoints(result.json()['result'], frameName)
-            else:
-                ErrorDialog(None, f'Error with inference', result.status_code)
-        except Exception as e:
-            ErrorDialog(None, f'Error in http request', e)
+    # def inferenceIPV(self, address: str, modelName: str):
+    #     """
+    #     Send the current IPV centre frame for inference at the given address. This address can either be online
+    #     or local (if local the server must be running on localhost (http://127.0.0.1:5000/)).
+    #
+    #     Args:
+    #         address: Address of online IPV inference server.
+    #         modelName: Name of model to use.
+    #     """
+    #     address = f'{address.strip()}/infer'
+    #     print(f'Sending frame for IPV inference at: {address}')
+    #     # If IPV centre has been placed, else use currently displayed frame with no ROI.
+    #     if self.ipvData['centre'][0]:
+    #         frameName = self.ipvData['centre'][0]
+    #         frameNumber = int(frameName.split('-')[0])
+    #         patient, _, _, _, _ = self.getScanDetails()
+    #         print(f"\tSending IPV centre frame ({self.ipvData['centre'][0].split('-')[0]}) for inference...")
+    #         with open(f"{self.path}/{frameName}.png", 'rb') as imageFile:
+    #             frame = imageFile.read()
+    #         centre = self.getIPVCentreInFrameDimensions()
+    #         data = {
+    #             'model_name': f'transverse_{modelName}' if self.scanPlane == PLANE_TRANSVERSE else f'sagittal_{modelName}',
+    #             'frame': frame,
+    #             'ipv_centre': f'[{centre[0]}, {centre[1]}]',
+    #             'ipv_radius': self.ipvData['radius'],
+    #             'scan_plane': self.scanPlane,
+    #             'patient_number': patient,
+    #             'frame_number': frameNumber}
+    #     else:
+    #         frameName = self.frameNames[self.currentFrame - 1]
+    #         frameNumber = int(frameName.split('-')[0])
+    #         patient, _, _, _, _ = self.getScanDetails()
+    #         print(f'Sending currently displayed frame ({self.currentFrame}) for inference...')
+    #         with open(f"{self.path}/{frameName}.png", 'rb') as imageFile:
+    #             frame = imageFile.read()
+    #         data = {
+    #             'model_name': f'transverse_{modelName}' if self.scanPlane == PLANE_TRANSVERSE else f'sagittal_{modelName}',
+    #             'frame': frame,
+    #             'ipv_centre': f'[0, 0]',
+    #             'ipv_radius': 0,
+    #             'scan_plane': self.scanPlane,
+    #             'patient_number': patient,
+    #             'frame_number': frameNumber}
+    #     try:
+    #         result = requests.post(address, files=data, timeout=3600)
+    #         if result.ok:
+    #             print(f'\tResult returned: {result.json()}')
+    #             self.updateIPVInferredPoints(result.json()['result'], frameName)
+    #         else:
+    #             ErrorDialog(None, f'Error with inference', result.status_code)
+    #     except Exception as e:
+    #         ErrorDialog(None, f'Error in http request', e)

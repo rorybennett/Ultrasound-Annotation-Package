@@ -381,7 +381,7 @@ def estimateSlopeStartAndEnd(axisAngles: list):
         axisAngles (list): All axis angles of the recording (degrees).
 
     Returns:
-        slopeIndexStart (int): Index of the start of the slope/scan.
+        slopeIndexStart (int): Index of the __start of the slope/scan.
         slopeIndexEnd (int): Index of the end of the slope/scan.
     """
     threshold = 0.15

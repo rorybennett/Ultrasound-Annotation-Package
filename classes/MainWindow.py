@@ -6,16 +6,18 @@ from pathlib import Path
 
 import qdarktheme
 from PyQt6 import QtGui
-from PyQt6.QtCore import Qt, QPoint
+from PyQt6.QtCore import Qt, QPoint, QThreadPool
 from PyQt6.QtGui import QFont, QAction
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
-    QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox
+    QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle
 
 import Scan
 from classes import Export
 from classes.ErrorDialog import ErrorDialog
 from classes.FrameCanvas import FrameCanvas
+from classes.IPVInferenceRequest import IPVInferenceRequest
 from classes.InputDialog import InputDialog
+from classes.LoadingDialog import LoadingDialog
 from processes import PlayCine
 
 INFER_LOCAL = 'INFER-LOCAL'
@@ -245,9 +247,18 @@ class MainWindow(QMainWindow):
         if not ok or not address or not modelName:
             return
 
-        self.s1.inferenceIPV(address, modelName) if scan == 1 else self.s2.inferenceIPV(address, modelName)
+        loading = LoadingDialog()
+        self.threadPool = QThreadPool()
 
-        self._updateDisplay(scan)
+        worker = IPVInferenceRequest(self.s1 if scan == 1 else self.s2, address, modelName)
+
+        worker.signals.started.connect(lambda: self.setDisabled(True))
+        worker.signals.finished.connect(lambda: self._updateDisplay(scan))
+        worker.signals.finished.connect(lambda: loading.stop())
+        worker.signals.finished.connect(loading.stop)
+        worker.signals.finished.connect(lambda: self.setDisabled(False))
+
+        self.threadPool.start(worker)
 
     def _saveData(self, scan: int):
         """Save Scan point data. Check for overwrite"""
