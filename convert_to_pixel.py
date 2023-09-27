@@ -164,9 +164,5 @@ for p in patients:
                 for save_dir in [i for i in Path(f'{scan}/Save Data').iterdir()]:
                     bullet_to_pixels(save_dir, data_dir)
                     points_to_pixels(save_dir, data_dir)
-
-
-
-
         except FileNotFoundError as e:
             print(f'{e}.')

@@ -14,13 +14,14 @@ from screeninfo import get_monitors
 
 import ScanUtil as su
 from classes import FrameCanvas
+from classes.ErrorDialog import ErrorDialog
 
 # Scan Types.
 TYPE_AUS = 'AUS'  # Abdominal Ultrasound Scan.
 TYPE_PUS = 'PUS'  # Perineal Ultrasound Scan.
 # Scan Planes.
-PLANE_TRANSVERSE = 'transverse'
-PLANE_SAGITTAL = 'sagittal'
+PLANE_TRANSVERSE = 'Transverse'
+PLANE_SAGITTAL = 'Sagittal'
 # Navigation commands.
 NAVIGATION = {
     'w': 'UP',
@@ -189,7 +190,7 @@ class Scan:
         try:
             subprocess.Popen(f'explorer "{path}"')
         except Exception as e:
-            print(f'Error opening Windows explorer: {e}')
+            ErrorDialog(None, f'Error opening Windows explorer', e)
 
     def addOrRemovePoint(self, pointDisplay: list):
         """
@@ -290,13 +291,13 @@ class Scan:
         try:
             shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.pointPath.name), self.pointPath)
         except Exception as e:
-            print(f'\tError loading point data: {e}.')
+            ErrorDialog(None, 'Error loading point data', e)
             successFlags[1] = False
 
         try:
             shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.editPath.name), self.editPath)
         except Exception as e:
-            print(f'\tError loading editing data: {e}.')
+            ErrorDialog(None, 'Error loading editing data', e)
             successFlags[2] = False
         #
         # try:
@@ -364,7 +365,7 @@ class Scan:
 
             index_at_percentage = index_start + index_from_start
         except Exception as e:
-            print(f'\tError finding axis angle centre: {e}.')
+            ErrorDialog(None, f'Error finding axis angle centre', e)
 
         return index_at_percentage
 
@@ -447,13 +448,14 @@ class Scan:
 
         return pointFrame
 
-    def inferenceIPV(self, address: str):
+    def inferenceIPV(self, address: str, modelName: str):
         """
         Send the current IPV centre frame for inference at the given address. This address can either be online
         or local (if local the server must be running on localhost (http://127.0.0.1:5000/)).
 
         Args:
             address: Address of online IPV inference server.
+            modelName: Name of model to use.
         """
         address = f'{address.strip()}/infer'
         print(f'Sending frame for IPV inference at: {address}')
@@ -467,14 +469,13 @@ class Scan:
                 frame = imageFile.read()
             centre = self.getIPVCentreInFrameDimensions()
             data = {
-                'model_name': 'transverse_original_1' if self.scanType == PLANE_TRANSVERSE else 'sagittal_original_1',
-                'image': frame,
-                'x': centre[0],
-                'y': centre[1],
-                'radius': self.ipvData['radius'],
-                'scanType': self.scanType,
-                'patient': patient,
-                'frameNumber': frameNumber}
+                'model_name': f'transverse_{modelName}' if self.scanPlane == PLANE_TRANSVERSE else f'sagittal_{modelName}',
+                'frame': frame,
+                'ipv_centre': f'[{centre[0]}, {centre[1]}]',
+                'ipv_radius': self.ipvData['radius'],
+                'scan_plane': self.scanPlane,
+                'patient_number': patient,
+                'frame_number': frameNumber}
         else:
             frameName = self.frameNames[self.currentFrame - 1]
             frameNumber = int(frameName.split('-')[0])
@@ -483,20 +484,19 @@ class Scan:
             with open(f"{self.path}/{frameName}.png", 'rb') as imageFile:
                 frame = imageFile.read()
             data = {
-                'model_name': 'transverse_original_1' if self.scanType == PLANE_TRANSVERSE else 'sagittal_original_1',
-                'image': frame,
-                'x': 0,
-                'y': 0,
-                'radius': 0,
-                'scanType': self.scanType,
-                'patient': patient,
-                'frameNumber': frameNumber}
+                'model_name': f'transverse_{modelName}' if self.scanPlane == PLANE_TRANSVERSE else f'sagittal_{modelName}',
+                'frame': frame,
+                'ipv_centre': f'[0, 0]',
+                'ipv_radius': 0,
+                'scan_plane': self.scanPlane,
+                'patient_number': patient,
+                'frame_number': frameNumber}
         try:
             result = requests.post(address, files=data, timeout=3600)
             if result.ok:
                 print(f'\tResult returned: {result.json()}')
                 self.updateIPVInferredPoints(result.json()['result'], frameName)
             else:
-                print(f'Error with inference: {result.status_code}')
-        except ConnectionError as e:
-            print(f'Error in http request: {e}.')
+                ErrorDialog(None, f'Error with inference', result.status_code)
+        except Exception as e:
+            ErrorDialog(None, f'Error in http request', e)

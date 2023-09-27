@@ -9,11 +9,13 @@ from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtGui import QFont, QAction
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
-    QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle
+    QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox
 
 import Scan
 from classes import Export
+from classes.ErrorDialog import ErrorDialog
 from classes.FrameCanvas import FrameCanvas
+from classes.InputDialog import InputDialog
 from processes import PlayCine
 
 INFER_LOCAL = 'INFER-LOCAL'
@@ -236,18 +238,14 @@ class MainWindow(QMainWindow):
     def _ipvInference(self, scan: int):
         """Send current frame for IPV inference, either online or locally."""
 
-        dlg = QInputDialog(self)
-        dlg.resize(500, 200)
-        dlg.setWindowTitle('IPV Inference')
-        dlg.setLabelText('Enter Root Address:')
-        dlg.setTextValue('http://127.0.0.1:5000/')
+        dlg = InputDialog()
         ok = dlg.exec()
-        address = dlg.textValue()
+        address, modelName = dlg.getInputs()
 
-        if not ok or not address:
+        if not ok or not address or not modelName:
             return
 
-        self.s1.inferenceIPV(address) if scan == 1 else self.s2.inferenceIPV(address)
+        self.s1.inferenceIPV(address, modelName) if scan == 1 else self.s2.inferenceIPV(address, modelName)
 
         self._updateDisplay(scan)
 
@@ -329,7 +327,7 @@ class MainWindow(QMainWindow):
                 self._updateTitle(2)
             self._updateDisplay(scan)
         except Exception as e:
-            print(f'Error opening scan folder: {e}.')
+            ErrorDialog(self, 'Error loading Scan data', e)
 
     def _axisClickEvent(self, event, scan: int):
         """Handle left clicks on axis 1 and 2 (canvas displaying image)."""
@@ -407,7 +405,7 @@ class MainWindow(QMainWindow):
                 self.s1.updateIPVRadius(radius) if scan == 1 else self.s2.updateIPVRadius(radius)
                 self._updateDisplay(scan)
             except Exception as e:
-                print(f'Error converting radius to int: {e}.')
+                ErrorDialog(self, f'Error converting radius to int', e)
 
     def _removeIPVData(self, scan: int):
         """Remove all IPV data of the Scan."""

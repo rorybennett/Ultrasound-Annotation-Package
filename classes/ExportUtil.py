@@ -6,6 +6,7 @@ from pathlib import Path
 import cv2
 
 from classes import Scan
+from classes.ErrorDialog import ErrorDialog
 
 
 def createIPVTrainingDirs(scanType: str):
@@ -28,7 +29,7 @@ def createIPVTrainingDirs(scanType: str):
         else:
             Path(f'{dataPath}/sagittal').mkdir(exist_ok=False)
     except FileExistsError as e:
-        print(f'Error creating directories: {e}.')
+        ErrorDialog(None, 'Error creating directories', e)
         return False
     return dataPath
 
@@ -169,6 +170,6 @@ def createSaveDataExportDir():
         path = f'../Export/Save Data Exports/{int(time.time())}_save_data_export'
         Path(f'{path}').mkdir(parents=True, exist_ok=False)
     except Exception as e:
-        print(f'Error creating Save Data Export Directory: {e}.')
+        ErrorDialog(None, f'Error creating Save Data Export Directory', e)
         return False
     return path

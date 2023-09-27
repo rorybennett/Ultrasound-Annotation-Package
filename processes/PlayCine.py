@@ -11,6 +11,8 @@ from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QApplication, QSlider, QLabel
 
+from classes.ErrorDialog import ErrorDialog
+
 
 class Window(QMainWindow):
     def __init__(self, frames: np.ndarray, dimensions: list, patient: str, scanType: str, scanPlane: str):
@@ -115,4 +117,4 @@ def process(frames: np.ndarray, dimensions: list, patient: str, scanType: str, s
 
         sys.exit(App.exec())
     except Exception as e:
-        print(f'Error playing cine: {e}.')
+        ErrorDialog(None, f'Error playing cine', e)

@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import QInputDialog, QWidget
 
 import ExportUtil as eu
 from classes import Scan
+from classes.ErrorDialog import ErrorDialog
 
 
 class Export:
@@ -85,7 +86,7 @@ class Export:
                                 f'{saveName} ({pointDataPix[0][1]}, {pointDataPix[0][2]}) '
                                 f'({pointDataPix[1][1]}, {pointDataPix[1][2]})\n')
             except WindowsError as e:
-                print(f'Error creating sagittal data: {e}.')
+                ErrorDialog(None, f'Error creating sagittal data', e)
         print(f'\tAUS sagittal exporting completed.')
 
     def exportIPVAUSTransverseData(self, mainWindow: QWidget):
@@ -136,5 +137,5 @@ class Export:
                                 f'({pointDataPix[2][1]}, {pointDataPix[2][2]}) '
                                 f'({pointDataPix[3][1]}, {pointDataPix[3][2]})\n')
             except WindowsError as e:
-                print(f'Error creating transverse data: {e}.')
+                ErrorDialog(None, f'Error creating transverse data', e)
         print(f'\tAUS transverse exporting completed.')
