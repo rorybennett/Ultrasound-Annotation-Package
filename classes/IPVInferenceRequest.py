@@ -62,7 +62,7 @@ class IPVInferenceRequest(QRunnable):
                 'patient_number': patient,
                 'frame_number': frameNumber}
         try:
-            time.sleep(10)
+            time.sleep(5)
             self.signals.finished.emit()
             return
             result = requests.post(address, files=data, timeout=3600)

@@ -247,15 +247,15 @@ class MainWindow(QMainWindow):
         if not ok or not address or not modelName:
             return
 
-        loading = LoadingDialog()
+        loading = LoadingDialog(loadingMessage='Inferring IPV Points...')
         self.threadPool = QThreadPool()
 
         worker = IPVInferenceRequest(self.s1 if scan == 1 else self.s2, address, modelName)
 
         worker.signals.started.connect(lambda: self.setDisabled(True))
+        worker.signals.started.connect(lambda: loading.start())
         worker.signals.finished.connect(lambda: self._updateDisplay(scan))
         worker.signals.finished.connect(lambda: loading.stop())
-        worker.signals.finished.connect(loading.stop)
         worker.signals.finished.connect(lambda: self.setDisabled(False))
 
         self.threadPool.start(worker)
