@@ -8,9 +8,8 @@ import time
 from pathlib import Path
 
 import cv2
-import requests
+from PyQt6.QtWidgets import QMainWindow
 from natsort import natsorted
-from screeninfo import get_monitors
 
 import ScanUtil as su
 from classes import FrameCanvas
@@ -39,11 +38,14 @@ SAVE_ALL = '-SAVE-ALL-'
 
 
 class Scan:
-    def __init__(self, path: str, startingFrame=1):
+    def __init__(self, path: str, startingFrame=1, window: QMainWindow = None):
         """
         Initialise a Scan object using the given path string.
 
-        :param path: Path to Scan directory as a String.
+        Args:
+            path: Path to Scan directory as a String.
+            startingFrame: Starting frame position.
+            window: QMainWindow, for sizing of frames.
         """
         # Path to Recording directory.
         self.path = path
@@ -62,6 +64,8 @@ class Scan:
         self.editPath, self.imuOffset, self.imuPosition = su.getEditDataFromFile(self.path)
         # Type of scan and plane.
         _, self.scanType, self.scanPlane, _, _ = self.getScanDetails()
+        # Main Window (used for dimension calculations)
+        self.window = window
         # Display dimensions.
         self.displayDimensions = self.getDisplayDimensions()
         # Point data from PointData.txt.
@@ -150,15 +154,14 @@ class Scan:
     def getDisplayDimensions(self):
         """
         Return the dimensions of the canvas used to display the frame. The size of the canvas is a percentage of the
-        screen dimension with an aspect ratio that matches the frame dimensions given. The frames will then
+        Main Window dimension with an aspect ratio that matches the frame dimensions given. The frames will then
         need to be resized to fit the canvas when being displayed.
 
         :return: displayDimensions : Size of the canvas that will be used to display the frame.
         """
+        windowDimensions = [self.window.size().width(), self.window.size().height]
 
-        screenDimensions = [get_monitors()[0].width, get_monitors()[0].height]
-
-        width = screenDimensions[0] * 0.48  # Width of frame is 48% of total screen width.
+        width = windowDimensions[0] * 0.48  # Width of frame is 48% of total screen width.
 
         ratio = width / self.frames[0].shape[1]
 
