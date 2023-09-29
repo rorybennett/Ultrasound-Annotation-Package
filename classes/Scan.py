@@ -106,7 +106,7 @@ class Scan:
             su.drawPointDataOnAxis(axis, self.getPointsOnFrame(), fd, dd)
         # Show IPV data.
         if showIPV:
-            su.drawIPVDataOnAxis(axis, self.ipvData, name, depths, imuOffset, imuPosition, dd, self.frames[0].shape)
+            su.drawIPVDataOnAxis(axis, self.ipvData, name, dd, self.frames[0].shape)
         # Finalise canvas with draw.
         canvas.draw()
 
@@ -207,20 +207,20 @@ class Scan:
         Returns:
             Nothing, adds points directly to self.pointsMm.
         """
-        pointMm = su.displayToPixels(pointDisplay, self.frames[self.currentFrame - 1].shape, self.displayDimensions)
+        pointPixel = su.displayToPixels(pointDisplay, self.frames[self.currentFrame - 1].shape, self.displayDimensions)
 
         pointRemoved = False
 
         for point in self.pointsPix:
             if self.frameNames[self.currentFrame - 1] == point[0]:
                 # If within radius of another point, remove that point.
-                if su.pointInRadius(point[1:], pointMm, 2):
+                if su.pointInRadius(point[1:], pointPixel, 2):
                     self.pointsPix.remove(point)
                     pointRemoved = True
                     break
         # If no point was removed, add the new point.
         if not pointRemoved:
-            self.pointsPix.append([self.frameNames[self.currentFrame - 1], pointMm[0], pointMm[1]])
+            self.pointsPix.append([self.frameNames[self.currentFrame - 1], pointPixel[0], pointPixel[1]])
         # Save point data to disk.
         self.__saveToDisk(SAVE_POINT_DATA)
 
@@ -382,9 +382,9 @@ class Scan:
             addOrRemove: Either add or remove the currently placed circle.
         """
         if addOrRemove == ADD_POINT:
-            pointMm = su.displayToMm(pointDisplay, self.depths[self.currentFrame - 1], self.imuOffset, self.imuPosition,
-                                     self.displayDimensions)
-            self.ipvData['centre'] = [self.frameNames[self.currentFrame - 1], pointMm[0], pointMm[1]]
+            pointPixel = su.displayToPixels(pointDisplay, self.frames[self.currentFrame - 1].shape,
+                                            self.displayDimensions)
+            self.ipvData['centre'] = [self.frameNames[self.currentFrame - 1], pointPixel[0], pointPixel[1]]
         else:
             self.ipvData['centre'] = ['', 0, 0]
             self.ipvData['radius'] = 0
@@ -401,7 +401,7 @@ class Scan:
         """
         points = []
         pass
-        if self.scanType == PLANE_TRANSVERSE:
+        if self.scanPlane == PLANE_TRANSVERSE:
             for i in range(0, 7, 2):
                 points.append([inferredPoints[i], inferredPoints[i + 1]])
         else:
@@ -433,73 +433,3 @@ class Scan:
         }
 
         self.__saveToDisk(SAVE_IPV_DATA)
-
-    def getIPVCentreInFrameDimensions(self):
-        """
-        Return the IPV data in display dimensions, for use in inference.
-
-        Returns:
-            pointDisplay (list): Point in display dimensions.
-        """
-        centre = self.ipvData['centre'][1:]
-        depths = self.depths[self.frameNames.index(self.ipvData['centre'][0])]
-        imuPos = self.imuPosition
-        imuOff = self.imuOffset
-        fd = [self.frames[0].shape[1], self.frames[0].shape[0]]
-
-        pointFrame = su.mmToFrame(centre, depths, imuOff, imuPos, fd)
-
-        return pointFrame
-
-    # def inferenceIPV(self, address: str, modelName: str):
-    #     """
-    #     Send the current IPV centre frame for inference at the given address. This address can either be online
-    #     or local (if local the server must be running on localhost (http://127.0.0.1:5000/)).
-    #
-    #     Args:
-    #         address: Address of online IPV inference server.
-    #         modelName: Name of model to use.
-    #     """
-    #     address = f'{address.strip()}/infer'
-    #     print(f'Sending frame for IPV inference at: {address}')
-    #     # If IPV centre has been placed, else use currently displayed frame with no ROI.
-    #     if self.ipvData['centre'][0]:
-    #         frameName = self.ipvData['centre'][0]
-    #         frameNumber = int(frameName.split('-')[0])
-    #         patient, _, _, _, _ = self.getScanDetails()
-    #         print(f"\tSending IPV centre frame ({self.ipvData['centre'][0].split('-')[0]}) for inference...")
-    #         with open(f"{self.path}/{frameName}.png", 'rb') as imageFile:
-    #             frame = imageFile.read()
-    #         centre = self.getIPVCentreInFrameDimensions()
-    #         data = {
-    #             'model_name': f'transverse_{modelName}' if self.scanPlane == PLANE_TRANSVERSE else f'sagittal_{modelName}',
-    #             'frame': frame,
-    #             'ipv_centre': f'[{centre[0]}, {centre[1]}]',
-    #             'ipv_radius': self.ipvData['radius'],
-    #             'scan_plane': self.scanPlane,
-    #             'patient_number': patient,
-    #             'frame_number': frameNumber}
-    #     else:
-    #         frameName = self.frameNames[self.currentFrame - 1]
-    #         frameNumber = int(frameName.split('-')[0])
-    #         patient, _, _, _, _ = self.getScanDetails()
-    #         print(f'Sending currently displayed frame ({self.currentFrame}) for inference...')
-    #         with open(f"{self.path}/{frameName}.png", 'rb') as imageFile:
-    #             frame = imageFile.read()
-    #         data = {
-    #             'model_name': f'transverse_{modelName}' if self.scanPlane == PLANE_TRANSVERSE else f'sagittal_{modelName}',
-    #             'frame': frame,
-    #             'ipv_centre': f'[0, 0]',
-    #             'ipv_radius': 0,
-    #             'scan_plane': self.scanPlane,
-    #             'patient_number': patient,
-    #             'frame_number': frameNumber}
-    #     try:
-    #         result = requests.post(address, files=data, timeout=3600)
-    #         if result.ok:
-    #             print(f'\tResult returned: {result.json()}')
-    #             self.updateIPVInferredPoints(result.json()['result'], frameName)
-    #         else:
-    #             ErrorDialog(None, f'Error with inference', result.status_code)
-    #     except Exception as e:
-    #         ErrorDialog(None, f'Error in http request', e)

@@ -102,9 +102,8 @@ def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, dd: list, fd: list):
             name: Frame name as a string.
             dd: Display dimension - shape of the displayed frame.
             fd: Dimensions of original frame (x, y).
-            todo Will need to make sure this still works now that points are stored in pixel coordinates.
     """
-    fd = [fd[1], fd[0]]
+
     if name == ipv['centre'][0]:
         # Plot the centre circle.
         pointDisplay = pixelsToDisplay(ipv['centre'][1:], fd, dd)
@@ -112,7 +111,7 @@ def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, dd: list, fd: list):
         circle = plt.Circle((pointDisplay[0], pointDisplay[1]), ipv['radius'], fill=False, color='white',
                             linestyle='--')
         axis.add_artist(circle)
-
+    fd = [fd[1], fd[0]]
     if name == ipv['inferred_points'][0]:
         for point in ipv['inferred_points'][1]:
             # If a point is [1, 1] it failed inference.
@@ -262,12 +261,12 @@ def checkPointDataFile(scanPath: str):
 
 def drawPointDataOnAxis(axis, points, fd, dd):
     """
-    Plot given points on the frame. Points are currently stored in mm (including the IMU offset from the edge
+    Plot given points on the frame. Points are currently stored in pixels (including the IMU offset from the edge
     of the probe). These need to be converted to display coordinates.
 
     Args:
         axis: Axis displaying frame.
-        points: List of points in mm.
+        points: List of points in pixels.
         fd: Original frame dimensions (before resizing)
         dd: Display dimension - shape of the frame, first and second value swapped.
 

@@ -21,8 +21,6 @@ class LoadingDialog(QDialog):
         self.movie.setScaledSize(QSize(200, 200))
         labelAnimation.setMovie(self.movie)
 
-        # Creating and fill the layout.
-
         self.layout = QVBoxLayout(self)
         self.layout.addWidget(labelMessage)
         self.layout.addWidget(labelAnimation)

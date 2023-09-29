@@ -35,7 +35,7 @@ class IPVInferenceRequest(QRunnable):
             print(f"\tSending IPV centre frame ({self.scan.ipvData['centre'][0].split('-')[0]}) for inference...")
             with open(f"{self.scan.path}/{frameName}.png", 'rb') as imageFile:
                 frame = imageFile.read()
-            centre = self.scan.getIPVCentreInFrameDimensions()
+            centre = self.scan.ipvData['centre'][1:]
             data = {
                 'model_name': f'transverse_{self.modelName}' if self.scan.scanPlane == Scan.PLANE_TRANSVERSE else f'sagittal_{self.modelName}',
                 'frame': frame,
@@ -64,7 +64,7 @@ class IPVInferenceRequest(QRunnable):
             result = requests.post(address, files=data, timeout=3600)
             if result.ok:
                 print(f'\tResult returned: {result.json()}')
-                # self.updateIPVInferredPoints(result.json()['result'], frameName)
+                self.scan.updateIPVInferredPoints(result.json()['result'], frameName)
             else:
                 ErrorDialog(None, f'Error with inference', result.status_code)
         except Exception as e:
