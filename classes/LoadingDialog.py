@@ -27,9 +27,11 @@ class LoadingDialog(QDialog):
         self.setLayout(self.layout)
 
     def start(self):
+        print('Starting')
         self.movie.start()
         self.exec()
 
     def stop(self):
+        print('Stopping')
         self.movie.stop()
         self.close()

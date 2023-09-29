@@ -60,10 +60,9 @@ class IPVInferenceRequest(QRunnable):
                 'patient_number': patient,
                 'frame_number': frameNumber}
         try:
-            self.signals.finished.emit()
             result = requests.post(address, files=data, timeout=3600)
             if result.ok:
-                print(f'\tResult returned: {result.json()}')
+                print(f'\tIPV result returned: {result.json()}')
                 self.scan.updateIPVInferredPoints(result.json()['result'], frameName)
             else:
                 ErrorDialog(None, f'Error with inference', result.status_code)
