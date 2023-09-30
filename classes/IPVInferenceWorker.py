@@ -10,9 +10,9 @@ class Signals(QObject):
     started = pyqtSignal()
 
 
-class IPVInferenceRequest(QRunnable):
+class IPVInferenceWorker(QRunnable):
     def __init__(self, scan: Scan, address: str, modelName: str):
-        super(IPVInferenceRequest, self).__init__()
+        super(IPVInferenceWorker, self).__init__()
         self.scan = scan
         self.address = address
         self.modelName = modelName

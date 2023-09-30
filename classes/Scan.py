@@ -8,8 +8,10 @@ import time
 from pathlib import Path
 
 import cv2
+import numpy as np
 from PyQt6.QtWidgets import QMainWindow
 from natsort import natsorted
+from pyquaternion import Quaternion
 
 import ScanUtil as su
 from classes import FrameCanvas
@@ -433,3 +435,30 @@ class Scan:
         }
 
         self.__saveToDisk(SAVE_IPV_DATA)
+
+    def quaternionsToAxisAngles(self) -> list:
+        """
+        Convert quaternions to a list of axis angles (in degrees) in the following manner:
+            1. Get the initial quaternion, to be used as the reference quaternion.
+            2. Calculate the difference between all subsequent quaternions and the initial quaternion using:
+                    r = p * conj(q)
+               where r is the difference quaternion, p is the initial quaternion, and conj(q) is the conjugate of the
+               current quaternion.
+            3. Calculate the axis angle of r (the difference quaternion).
+
+        Converting the raw quaternions to their axis angle representation for rotation comparisons is not the correct way
+        to do it, the axis angle has to be calculated from the quaternion difference.
+
+        Returns:
+            axisAngles (list): List of axis angles (in degrees) relative to the first rotation (taken as 0 degrees).
+        """
+        initialQ = Quaternion(self.quaternions[0])
+        axis_angles = []
+        # Get angle differences (as quaternion rotations).
+        for row in self.quaternions:
+            q = Quaternion(row)
+            r = initialQ * q.conjugate
+
+            axis_angles.append(180 / np.pi * 2 * np.arctan2(np.sqrt(r[1] ** 2 + r[2] ** 2 + r[3] ** 2), r[0]))
+
+        return axis_angles

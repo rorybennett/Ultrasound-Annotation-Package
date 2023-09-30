@@ -13,9 +13,10 @@ from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout,
 
 import Scan
 from classes import Export
+from classes.AxisAngleWorker import AxisAngleWorker
 from classes.ErrorDialog import ErrorDialog
 from classes.FrameCanvas import FrameCanvas
-from classes.IPVInferenceRequest import IPVInferenceRequest
+from classes.IPVInferenceWorker import IPVInferenceWorker
 from classes.InputDialog import InputDialog
 from classes.LoadingDialog import LoadingDialog
 from processes import PlayCine
@@ -86,6 +87,8 @@ class MainWindow(QMainWindow):
         self.s2: Scan = None
         # Class for exporting data for training.
         self.export = Export.Export(self.scansPath)
+        # Thread pool.
+        self.threadPool = QThreadPool()
 
     def _createTopButtons(self, scan: int):
         """Create the layout for the top row of buttons"""
@@ -105,7 +108,20 @@ class MainWindow(QMainWindow):
         nav50Button.setDisabled(True)
         layout.addWidget(nav50Button)
 
+        axisAngleButton = QPushButton('Axis Angle Plot')
+        axisAngleButton.setToolTip('Show axis angle plot.')
+        axisAngleButton.clicked.connect(lambda: self._onAxisAngleClicked(scan))
+        axisAngleButton.setDisabled(True)
+        layout.addWidget(axisAngleButton)
+
         return layout
+
+    def _onAxisAngleClicked(self, scan: int):
+        """Display axis angle plot."""
+        worker = AxisAngleWorker(self.s1 if scan == 1 else self.s2)
+
+        self.threadPool.start(worker)
+
 
     def _onNav50Clicked(self, scan: int):
         """Travel to the frame at 50%."""
@@ -248,15 +264,14 @@ class MainWindow(QMainWindow):
             return
 
         loading = LoadingDialog(loadingMessage='Inferring IPV Points...')
-        self.threadPool = QThreadPool()
 
-        worker = IPVInferenceRequest(self.s1 if scan == 1 else self.s2, address, modelName)
+        worker = IPVInferenceWorker(self.s1 if scan == 1 else self.s2, address, modelName)
 
         worker.signals.started.connect(lambda: self.setDisabled(True))
         worker.signals.started.connect(lambda: loading.start())
-        worker.signals.finished.connect(lambda: self._updateDisplay(scan))
         worker.signals.finished.connect(lambda: loading.stop())
         worker.signals.finished.connect(lambda: self.setDisabled(False))
+        worker.signals.finished.connect(lambda: self._updateDisplay(scan))
 
         self.threadPool.start(worker)
 
