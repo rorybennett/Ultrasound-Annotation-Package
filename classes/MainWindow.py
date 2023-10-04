@@ -13,7 +13,6 @@ from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout,
 
 import Scan
 from classes import Export
-from classes.AxisAngleWorker import AxisAngleWorker
 from classes.ErrorDialog import ErrorDialog
 from classes.FrameCanvas import FrameCanvas
 from classes.IPVInferenceWorker import IPVInferenceWorker
@@ -118,10 +117,7 @@ class MainWindow(QMainWindow):
 
     def _onAxisAngleClicked(self, scan: int):
         """Display axis angle plot."""
-        worker = AxisAngleWorker(self.s1 if scan == 1 else self.s2)
-
-        self.threadPool.start(worker)
-
+        self.s1.axisAnglePlot() if scan == 1 else self.s2.axisAnglePlot()
 
     def _onNav50Clicked(self, scan: int):
         """Travel to the frame at 50%."""
@@ -473,7 +469,7 @@ class MainWindow(QMainWindow):
         if self.s2:
             self.s2 = Scan.Scan(self.s2.path, startingFrame=self.s2.currentFrame, window=self)
             self.right.itemAt(2).widget().setFixedSize(self.s2.displayDimensions[0],
-                                                      self.s2.displayDimensions[1])
+                                                       self.s2.displayDimensions[1])
             self._updateDisplay(2)
 
     def contextMenuEvent(self, event):

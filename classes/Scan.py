@@ -10,6 +10,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 from PyQt6.QtWidgets import QMainWindow
+from matplotlib import pyplot as plt
 from natsort import natsorted
 from pyquaternion import Quaternion
 
@@ -435,6 +436,25 @@ class Scan:
         }
 
         self.__saveToDisk(SAVE_IPV_DATA)
+
+    def axisAnglePlot(self):
+        """
+        Plot the axis angle representation of the quaternions for the Scan.
+        """
+        axis_angles = self.quaternionsToAxisAngles()
+
+        fig, ax = plt.subplots(1)
+        fig.canvas.manager.set_window_title('Axis Angle Plot')
+
+        ax.set_xlabel('Frame Number')
+        ax.set_ylabel('Probe Axis Angle (degrees)')
+
+        ax.plot(range(1, len(axis_angles) + 1), axis_angles, c='blue')
+
+        ax.set_xlim([0, len(axis_angles) + 1])
+        ax.set_ylim([min(axis_angles) - 2, max(axis_angles) + 2])
+
+        plt.show()
 
     def quaternionsToAxisAngles(self) -> list:
         """
