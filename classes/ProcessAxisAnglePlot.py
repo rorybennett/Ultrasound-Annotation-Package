@@ -95,10 +95,11 @@ def plottingProcess(lifoQueue, scanPath: str, frameIndex: int):
     while plt.fignum_exists(fig.number):
         try:
             # Remove text label from previous point.
-            ax.texts.pop(-1)
+            ax.texts[0].remove()
             # Remove 'crosshair' from previous point.
-            ax.lines.pop(-1)
-            ax.lines.pop(-1)
+            # ax.lines[0].remove()
+            ax.lines[2].remove()
+            ax.lines[1].remove()
 
             angle = axisAngles[frameIndex]
             indexMax = len(axisAngles)
