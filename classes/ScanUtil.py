@@ -83,7 +83,7 @@ def drawScanDataOnAxis(axis: Axes, frame: np.ndarray, fNo: int, fCount: int, dep
     axis.text(20, 40, f'IMU Offset: {imuOff:.1f}mm', color='lightblue')
     axis.text(20, 60, f'IMU Position: {imuPos:.1f}%', color='lightblue')
     # Current frame number over total frames.
-    axis.text(dd[0] - 120, frame.shape[0] - 20, f'Frame {fNo} of {fCount}', color='white')
+    axis.text(dd[0] - 150, frame.shape[0] - 20, f'Frame {fNo} of {fCount}', color='white')
     # Scan position indicator.
     axis.plot([dd[0] - 20, dd[0] - 20], [dd[1] - 40, dd[1] - 240], color='white', linewidth=1)
     axis.plot([dd[0] - 22, dd[0] - 16], [dd[1] - 40 - 201 * (fNo - 1) / fCount, dd[1] - 40 - 201 * (fNo - 1) / fCount],
