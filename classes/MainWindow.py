@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout,
     QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle
 
 import Scan
-from classes import Export
+from classes import Export, ProcessAxisAnglePlot
 from classes.ErrorDialog import ErrorDialog
 from classes.FrameCanvas import FrameCanvas
 from classes.IPVInferenceWorker import IPVInferenceWorker
@@ -80,14 +80,16 @@ class MainWindow(QMainWindow):
 
         # Scan directory Path.
         self.scansPath = str(Path(Path.cwd().parent, 'Scans'))
-        # Scan 1.
+        # Scans.
         self.s1: Scan = None
-        # Scan 2.
         self.s2: Scan = None
         # Class for exporting data for training.
         self.export = Export.Export(self.scansPath)
         # Thread pool.
         self.threadPool = QThreadPool()
+        # Processes.
+        self.axisAngleProcess = [ProcessAxisAnglePlot.ProcessAxisAnglePlot(),
+                                 ProcessAxisAnglePlot.ProcessAxisAnglePlot()]
 
     def _createTopButtons(self, scan: int):
         """Create the layout for the top row of buttons"""
@@ -115,9 +117,9 @@ class MainWindow(QMainWindow):
 
         return layout
 
-    def _onAxisAngleClicked(self, scan: int):
-        """Display axis angle plot."""
-        self.s1.axisAnglePlot() if scan == 1 else self.s2.axisAnglePlot()
+    def _onAxisAngleClicked(self, scan):
+        """Start Axis Angle plotting process."""
+        self.axisAngleProcess[scan - 1].start(self.s1 if scan == 1 else self.s2)
 
     def _onNav50Clicked(self, scan: int):
         """Travel to the frame at 50%."""
@@ -400,6 +402,8 @@ class MainWindow(QMainWindow):
             self.s2.drawFrameOnAxis(self.axis2,
                                     showPoints=self.rightBoxes.itemAt(0).widget().isChecked(),
                                     showIPV=self.rightBoxes.itemAt(1).widget().isChecked())
+
+        self.axisAngleProcess[scan - 1].updateIndex(self.s1.currentFrame - 1 if scan == 1 else self.s2.currentFrame - 1)
 
     def _clearScanPoints(self, scan: int):
         """Clear all points in a Scan, then update display."""
