@@ -9,10 +9,10 @@ from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, QPoint, QThreadPool
 from PyQt6.QtGui import QFont, QAction
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
-    QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle
+    QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox
 
 import Scan
-from classes import Export, ProcessAxisAnglePlot
+from classes import Export, ProcessAxisAnglePlot, Utils
 from classes.ErrorDialog import ErrorDialog
 from classes.FrameCanvas import FrameCanvas
 from classes.IPVInferenceWorker import IPVInferenceWorker
@@ -243,6 +243,21 @@ class MainWindow(QMainWindow):
         menuExportIPV.addAction('Transverse', lambda: self._exportDataIPV(Scan.PLANE_TRANSVERSE))
         menuExportIPV.addAction('Sagittal', lambda: self._exportDataIPV(Scan.PLANE_SAGITTAL))
         self.menuExport.addAction('Save Data', lambda: self.export.exportAllSaveData())
+        # Reset data menu.
+        self.menuReset = self.menuBar().addMenu("Reset Data")
+        self.menuReset = self.menuReset.addAction("Reset Editing Data", lambda: self._resetEditingData())
+
+    def _resetEditingData(self):
+        """Reset all editing data after confirmation."""
+        confirm = QMessageBox.question(self, 'Reset Editing Data', 'Are you sure you wan to reset all editing data?',
+                                       buttons=QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+
+        if confirm == QMessageBox.StandardButton.Ok:
+            result = Utils.resetEditingData(self.scansPath)
+            if result:
+                dialog = QMessageBox(parent=self, text='Editing Data has been reset!')
+                dialog.setWindowTitle('Reset Editing Data')
+                dialog.exec()
 
     def _exportDataIPV(self, scanType: str):
         """Export save data for model training."""
@@ -439,6 +454,12 @@ class MainWindow(QMainWindow):
 
         self._updateDisplay(scan)
 
+    def _copyFramePoints(self, scan: int, location):
+        """Copy points from either previous or next frame."""
+        self.s1.copyFramePoints(location) if scan == 1 else self.s2.copyFramePoints(location)
+
+        self._updateDisplay(scan)
+
     def _refreshScanData(self, scan: int):
         """Refresh scan data by re-reading files."""
         if scan == 1:
@@ -495,6 +516,9 @@ class MainWindow(QMainWindow):
             menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(1))
             menuIPV.addSeparator()
             menuIPV.addAction('Clear IPV Data', lambda: self._removeIPVData(1))
+            menuSegmentation = menu.addMenu('Segmentation')
+            menuSegmentation.addAction('Copy Previous Points', lambda: self._copyFramePoints(1, Scan.PREVIOUS))
+            menuSegmentation.addAction('Copy Next Points', lambda: self._copyFramePoints(1, Scan.NEXT))
             menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(1))
             menu.exec(event.globalPos())
         elif self.s2 and self.axis2.underMouse():
@@ -515,6 +539,9 @@ class MainWindow(QMainWindow):
             menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(2))
             menuIPV.addSeparator()
             menuIPV.addAction('Clear IPV Data', lambda: self._removeIPVData(2))
+            menuSegmentation = menu.addMenu('Segmentation')
+            menuSegmentation.addAction('Copy Previous Points', lambda: self._copyFramePoints(2, Scan.PREVIOUS))
+            menuSegmentation.addAction('Copy Next Points', lambda: self._copyFramePoints(2, Scan.NEXT))
             menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(2))
             menu.exec(event.globalPos())
 

@@ -37,6 +37,9 @@ SAVE_POINT_DATA = '-SAVE-POINT-DATA-'
 SAVE_PLANE_DATA = '-SAVE-PLANE-DATA-'
 SAVE_IPV_DATA = '-SAVE-IPV-DATA-'
 SAVE_ALL = '-SAVE-ALL-'
+# Copy points from previous or next frame.
+NEXT = '-NEXT-'
+PREVIOUS = '-PREVIOUS-'
 
 
 class Scan:
@@ -119,7 +122,7 @@ class Scan:
         :param position: Index of frame.
         :return: List of points on frame.
         """
-        if position:
+        if position is not None:
             points = [[p[1], p[2]] for p in self.pointsPix if p[0] == self.frameNames[position]]
         else:
             points = [[p[1], p[2]] for p in self.pointsPix if p[0] == self.frameNames[self.currentFrame - 1]]
@@ -438,7 +441,27 @@ class Scan:
 
         self.__saveToDisk(SAVE_IPV_DATA)
 
+    def copyFramePoints(self, location: str):
+        """
+        Copy frame points from previous or next frame on to current frame. Deletes any points on current frame
+        then copies points on to frame.
 
+        Args:
+            location: Either NEXT frame or PREVIOUS frame.
+        """
+        # New frame.
+        newFrame = self.currentFrame + 1 if location == NEXT else self.currentFrame - 1
+        if newFrame <= 0 or newFrame > self.frameCount:
+            return
+        # Points on new frame.
+        newPoints = self.getPointsOnFrame(position=newFrame - 1)
+
+        if newPoints:
+            # Delete points on current frame.
+            self.clearFramePoints()
+            for newPoint in newPoints:
+                self.pointsPix.append([self.frameNames[self.currentFrame - 1], newPoint[0], newPoint[1]])
+            self.__saveToDisk(SAVE_POINT_DATA)
 
     def quaternionsToAxisAngles(self) -> list:
         """

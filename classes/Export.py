@@ -14,7 +14,7 @@ class Export:
     def __init__(self, scansPath: str):
         self.scansPath = scansPath
         self.totalPatients = eu.getTotalPatients(self.scansPath)
-        self.patients = [f'{x:03d}' for x in range(1, self.totalPatients + 1)]
+        self.patients = [f'{x}' for x in range(1, self.totalPatients + 1)]
 
     def exportAllSaveData(self):
         """Export all save data from all patients - For backup."""
