@@ -489,3 +489,15 @@ class Scan:
             axis_angles.append(180 / np.pi * 2 * np.arctan2(np.sqrt(r[1] ** 2 + r[2] ** 2 + r[3] ** 2), r[0]))
 
         return axis_angles
+
+    def postSplineInteraction(self, endPoints):
+        """
+        Update the self.pointsPix with the new "endPoints".
+        Args:
+            endPoints:
+
+        Returns:
+
+        """
+        print(f'Points before spline: {self.getPointsOnFrame()}')
+        print(f'Points after spline: {endPoints}.')

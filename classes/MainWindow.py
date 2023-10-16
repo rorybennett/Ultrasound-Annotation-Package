@@ -9,7 +9,7 @@ from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, QPoint, QThreadPool
 from PyQt6.QtGui import QFont, QAction
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
-    QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox
+    QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar
 
 import Scan
 from classes import Export, ProcessAxisAnglePlot, Utils
@@ -57,6 +57,7 @@ class MainWindow(QMainWindow):
         self.left.addWidget(self.axis1)
         self.left.addLayout(self.leftBoxes)
         self.left.addItem(spacer)
+        self._createToolBars(1)
         # Right side.
         self.right = QVBoxLayout()
         self.right.setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -71,6 +72,7 @@ class MainWindow(QMainWindow):
         self.right.addWidget(self.axis2)
         self.right.addLayout(self.rightBoxes)
         self.right.addItem(spacer)
+        self._createToolBars(2)
 
         self.mainLayout.addLayout(self.left)
         self.mainLayout.addLayout(self.right)
@@ -91,6 +93,20 @@ class MainWindow(QMainWindow):
         self.axisAngleProcess = [ProcessAxisAnglePlot.ProcessAxisAnglePlot(),
                                  ProcessAxisAnglePlot.ProcessAxisAnglePlot()]
 
+    def _createToolBars(self, scan):
+        """Create left and right toolbars."""
+        toolbar = QToolBar("Left Tool Bar" if scan == 1 else "Right Tool Bar")
+        self.addToolBar(Qt.ToolBarArea.LeftToolBarArea if scan == 1 else Qt.ToolBarArea.RightToolBarArea, toolbar)
+
+        copyPreviousAction = QAction("Copy Previous", self)
+        copyPreviousAction.setStatusTip("Copy points from previous frame.")
+        copyPreviousAction.triggered.connect(lambda: self._copyFramePoints(scan, Scan.PREVIOUS))
+        toolbar.addAction(copyPreviousAction)
+
+        copyNextAction = QAction("Copy Next", self)
+        copyNextAction.setStatusTip("Copy points from next frame.")
+        copyNextAction.triggered.connect(lambda: self._copyFramePoints(scan, Scan.NEXT))
+        toolbar.addAction(copyNextAction)
     def _createTopButtons(self, scan: int):
         """Create the layout for the top row of buttons"""
         layout = QHBoxLayout()
@@ -484,18 +500,18 @@ class MainWindow(QMainWindow):
                 self.s2.navigate(Scan.NAVIGATION['s'])
             self._updateDisplay(2)
 
-    def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
-        QMainWindow.resizeEvent(self, a0)
-        if self.s1:
-            self.s1 = Scan.Scan(self.s1.path, startingFrame=self.s1.currentFrame, window=self)
-            self.left.itemAt(2).widget().setFixedSize(self.s1.displayDimensions[0],
-                                                      self.s1.displayDimensions[1])
-            self._updateDisplay(1)
-        if self.s2:
-            self.s2 = Scan.Scan(self.s2.path, startingFrame=self.s2.currentFrame, window=self)
-            self.right.itemAt(2).widget().setFixedSize(self.s2.displayDimensions[0],
-                                                       self.s2.displayDimensions[1])
-            self._updateDisplay(2)
+    # def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
+    #     QMainWindow.resizeEvent(self, a0)
+    #     if self.s1:
+    #         self.s1 = Scan.Scan(self.s1.path, startingFrame=self.s1.currentFrame, window=self)
+    #         self.left.itemAt(2).widget().setFixedSize(self.s1.displayDimensions[0],
+    #                                                   self.s1.displayDimensions[1])
+    #         self._updateDisplay(1)
+    #     if self.s2:
+    #         self.s2 = Scan.Scan(self.s2.path, startingFrame=self.s2.currentFrame, window=self)
+    #         self.right.itemAt(2).widget().setFixedSize(self.s2.displayDimensions[0],
+    #                                                    self.s2.displayDimensions[1])
+    #         self._updateDisplay(2)
 
     def contextMenuEvent(self, event):
         if self.s1 and self.axis1.underMouse():
@@ -516,9 +532,6 @@ class MainWindow(QMainWindow):
             menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(1))
             menuIPV.addSeparator()
             menuIPV.addAction('Clear IPV Data', lambda: self._removeIPVData(1))
-            menuSegmentation = menu.addMenu('Segmentation')
-            menuSegmentation.addAction('Copy Previous Points', lambda: self._copyFramePoints(1, Scan.PREVIOUS))
-            menuSegmentation.addAction('Copy Next Points', lambda: self._copyFramePoints(1, Scan.NEXT))
             menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(1))
             menu.exec(event.globalPos())
         elif self.s2 and self.axis2.underMouse():
@@ -539,9 +552,6 @@ class MainWindow(QMainWindow):
             menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(2))
             menuIPV.addSeparator()
             menuIPV.addAction('Clear IPV Data', lambda: self._removeIPVData(2))
-            menuSegmentation = menu.addMenu('Segmentation')
-            menuSegmentation.addAction('Copy Previous Points', lambda: self._copyFramePoints(2, Scan.PREVIOUS))
-            menuSegmentation.addAction('Copy Next Points', lambda: self._copyFramePoints(2, Scan.NEXT))
             menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(2))
             menu.exec(event.globalPos())
 
