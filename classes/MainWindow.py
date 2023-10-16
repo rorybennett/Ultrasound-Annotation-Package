@@ -42,6 +42,9 @@ class MainWindow(QMainWindow):
         self.mainLayout = QHBoxLayout(self.mainWidget)
         self.mainWidget.installEventFilter(self)
 
+        # Toolbars.
+        self.segmentationTB = [QToolBar("Left Tool Bar"), QToolBar("Right Tool Bar")]
+
         spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
         # Left side.
         self.left = QVBoxLayout()
@@ -95,7 +98,7 @@ class MainWindow(QMainWindow):
 
     def _createToolBars(self, scan):
         """Create left and right toolbars."""
-        toolbar = QToolBar("Left Tool Bar" if scan == 1 else "Right Tool Bar")
+        toolbar = self.segmentationTB[scan - 1]
         self.addToolBar(Qt.ToolBarArea.LeftToolBarArea if scan == 1 else Qt.ToolBarArea.RightToolBarArea, toolbar)
 
         copyPreviousAction = QAction("Copy Previous", self)
@@ -107,6 +110,9 @@ class MainWindow(QMainWindow):
         copyNextAction.setStatusTip("Copy points from next frame.")
         copyNextAction.triggered.connect(lambda: self._copyFramePoints(scan, Scan.NEXT))
         toolbar.addAction(copyNextAction)
+
+        toolbar.setDisabled(True)
+
     def _createTopButtons(self, scan: int):
         """Create the layout for the top row of buttons"""
         layout = QHBoxLayout()
@@ -131,7 +137,21 @@ class MainWindow(QMainWindow):
         axisAngleButton.setDisabled(True)
         layout.addWidget(axisAngleButton)
 
+        segmentationBox = QCheckBox('Segmentation')
+        segmentationBox.setToolTip('Enable segmentation tool bar.')
+        segmentationBox.stateChanged.connect(lambda: self._toggleSegmentationTB(scan))
+        segmentationBox.setDisabled(True)
+        layout.addWidget(segmentationBox)
+
         return layout
+
+    def _toggleSegmentationTB(self, scan: int):
+        """Toggle segmentation tool bar for scan."""
+
+        if scan == 1:
+            self.segmentationTB[0].setEnabled(True if self.leftButtons.itemAt(3).widget().isChecked() else False)
+        else:
+            self.segmentationTB[1].setEnabled(True if self.rightButtons.itemAt(3).widget().isChecked() else False)
 
     def _onAxisAngleClicked(self, scan):
         """Start Axis Angle plotting process."""

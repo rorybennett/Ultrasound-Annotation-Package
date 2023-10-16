@@ -9,6 +9,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QMainWindow
 from natsort import natsorted
 from pyquaternion import Quaternion
@@ -165,7 +166,7 @@ class Scan:
         :return: displayDimensions : Size of the canvas that will be used to display the frame.
         """
         if self.window:
-            windowDimensions = [self.window.size().width(), self.window.size().height]
+            windowDimensions = [self.window.centralWidget().size().width(), self.window.centralWidget().size().height]
 
             width = windowDimensions[0] * 0.48  # Width of frame is 48% of total screen width.
 
