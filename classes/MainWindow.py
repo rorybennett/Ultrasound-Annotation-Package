@@ -111,6 +111,16 @@ class MainWindow(QMainWindow):
         copyNextAction.triggered.connect(lambda: self._copyFramePoints(scan, Scan.NEXT))
         toolbar.addAction(copyNextAction)
 
+        shrinkAction = QAction("Shrink", self)
+        shrinkAction.setStatusTip("Shrink points around centre of mass.")
+        shrinkAction.triggered.connect(lambda: self._shrinkExpandPoints(scan, Scan.SHRINK))
+        toolbar.addAction(shrinkAction)
+
+        expandAction = QAction("Expand", self)
+        expandAction.setStatusTip("Expand points around centre of mass.")
+        expandAction.triggered.connect(lambda: self._shrinkExpandPoints(scan, Scan.EXPAND))
+        toolbar.addAction(expandAction)
+
         toolbar.setDisabled(True)
 
     def _createTopButtons(self, scan: int):
@@ -147,7 +157,6 @@ class MainWindow(QMainWindow):
 
     def _toggleSegmentationTB(self, scan: int):
         """Toggle segmentation tool bar for scan."""
-
         if scan == 1:
             self.segmentationTB[0].setEnabled(True if self.leftButtons.itemAt(3).widget().isChecked() else False)
         else:
@@ -455,6 +464,11 @@ class MainWindow(QMainWindow):
                                     showIPV=self.rightBoxes.itemAt(1).widget().isChecked())
 
         self.axisAngleProcess[scan - 1].updateIndex(self.s1.currentFrame - 1 if scan == 1 else self.s2.currentFrame - 1)
+
+    def _shrinkExpandPoints(self, scan: int, direction):
+        """Expand or shrink points around centre of mass."""
+        self.s1.shrinkExpandPoints(direction, 5) if scan == 1 else self.s2.shrinkExpandPoints(direction, 5)
+        self._updateDisplay(scan)
 
     def _clearScanPoints(self, scan: int):
         """Clear all points in a Scan, then update display."""

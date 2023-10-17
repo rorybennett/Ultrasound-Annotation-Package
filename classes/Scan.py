@@ -9,13 +9,12 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QMainWindow
 from natsort import natsorted
 from pyquaternion import Quaternion
 
 import ScanUtil as su
-from classes import FrameCanvas
+from classes import FrameCanvas, Utils
 from classes.ErrorDialog import ErrorDialog
 
 # Scan Types.
@@ -41,6 +40,9 @@ SAVE_ALL = '-SAVE-ALL-'
 # Copy points from previous or next frame.
 NEXT = '-NEXT-'
 PREVIOUS = '-PREVIOUS-'
+# Shrink or expand points around centre of mass.
+SHRINK = '-SHRINK-'
+EXPAND = '-EXPAND-'
 
 
 class Scan:
@@ -491,14 +493,23 @@ class Scan:
 
         return axis_angles
 
-    def postSplineInteraction(self, endPoints):
+    def shrinkExpandPoints(self, direction, amount):
         """
-        Update the self.pointsPix with the new "endPoints".
+        Shrink or expand points around their centre of mass.
+
         Args:
-            endPoints:
-
-        Returns:
-
+            amount: How much to shrink or expand by.
+            direction: Either SHRINK or EXPAND.
         """
-        print(f'Points before spline: {self.getPointsOnFrame()}')
-        print(f'Points after spline: {endPoints}.')
+        amount = amount if direction == EXPAND else amount * -1
+        points = self.getPointsOnFrame()
+
+        if points:
+            newPoints = Utils.shrinkExpandPoints(points, amount)
+
+            self.clearFramePoints()
+
+            for newPoint in newPoints:
+                self.pointsPix.append([self.frameNames[self.currentFrame - 1], newPoint[0], newPoint[1]])
+
+            self.__saveToDisk(SAVE_POINT_DATA)
