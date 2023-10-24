@@ -97,7 +97,8 @@ def polarToCartesian(point: list):
 
 def shrinkExpandPoints(points: list, amount: int):
     """
-    Shrink points around their centre of mass.
+    Shrink or expand points around their centre of mass. Once shrinking or expanding is complete, convert to integer
+    (pixel coordinates)
 
     Args:
         points: List of points.
@@ -127,6 +128,6 @@ def shrinkExpandPoints(points: list, amount: int):
     # Shift back to original position.
     newPoints = []
     for point in cartesianPoints:
-        newPoints.append([point[0] + com[0], point[1] + com[1]])
+        newPoints.append([round(point[0] + com[0]), round(point[1] + com[1])])
 
     return newPoints

@@ -506,8 +506,6 @@ class Scan:
         if points:
             newPoints = Utils.shrinkExpandPoints(points, amount)
 
-            newPoints = [round(newPoints[0]), round(newPoints[1])]
-
             self.clearFramePoints()
 
             for newPoint in newPoints:
