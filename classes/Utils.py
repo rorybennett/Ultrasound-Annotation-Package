@@ -10,6 +10,7 @@ def resetEditingData(scansPath: str):
     Reset all the Editing Data by deleting IPV.json, PointData.txt, and BulletData.json.
 
     To return this data it will need to be loaded from Save Data folder.
+
     Args:
         scansPath: Path to Scans directory.
 
@@ -43,6 +44,7 @@ def resetEditingData(scansPath: str):
 
         except Exception as e:
             print(f'Error resetting editing data: {e}.')
+            return False
     return True
 
 

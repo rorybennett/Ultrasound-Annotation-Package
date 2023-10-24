@@ -482,8 +482,7 @@ class Scan:
         Returns:
             axisAngles (list): List of axis angles (in degrees) relative to the first rotation (taken as 0 degrees).
         """
-        initialQ = Quaternion(self.quaternions[0])
-        axis_angles = []
+        initialQ = Quaternion(self.quaternions[0]); axis_angles = []
         # Get angle differences (as quaternion rotations).
         for row in self.quaternions:
             q = Quaternion(row)

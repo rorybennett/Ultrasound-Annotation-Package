@@ -7,7 +7,7 @@ from pathlib import Path
 import qdarktheme
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, QPoint, QThreadPool
-from PyQt6.QtGui import QFont, QAction
+from PyQt6.QtGui import QFont, QAction, QIcon
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
     QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar
 
@@ -101,23 +101,23 @@ class MainWindow(QMainWindow):
         toolbar = self.segmentationTB[scan - 1]
         self.addToolBar(Qt.ToolBarArea.LeftToolBarArea if scan == 1 else Qt.ToolBarArea.RightToolBarArea, toolbar)
 
-        copyPreviousAction = QAction("Copy Previous", self)
-        copyPreviousAction.setStatusTip("Copy points from previous frame.")
+        previousIcon = QIcon("../resources/copy_previous.png")
+        copyPreviousAction = QAction(previousIcon, "Copy points from previous frame.", self)
         copyPreviousAction.triggered.connect(lambda: self._copyFramePoints(scan, Scan.PREVIOUS))
         toolbar.addAction(copyPreviousAction)
 
-        copyNextAction = QAction("Copy Next", self)
-        copyNextAction.setStatusTip("Copy points from next frame.")
+        nextIcon = QIcon("../resources/copy_next.png")
+        copyNextAction = QAction(nextIcon, "Copy points from next frame.", self)
         copyNextAction.triggered.connect(lambda: self._copyFramePoints(scan, Scan.NEXT))
         toolbar.addAction(copyNextAction)
 
-        shrinkAction = QAction("Shrink", self)
-        shrinkAction.setStatusTip("Shrink points around centre of mass.")
+        shrinkIcon = QIcon("../resources/shrink.png")
+        shrinkAction = QAction(shrinkIcon, "Shrink points around centre of mass.", self)
         shrinkAction.triggered.connect(lambda: self._shrinkExpandPoints(scan, Scan.SHRINK))
         toolbar.addAction(shrinkAction)
 
-        expandAction = QAction("Expand", self)
-        expandAction.setStatusTip("Expand points around centre of mass.")
+        expandIcon = QIcon("../resources/expand.png")
+        expandAction = QAction(expandIcon, "Expand points around centre of mass.", self)
         expandAction.triggered.connect(lambda: self._shrinkExpandPoints(scan, Scan.EXPAND))
         toolbar.addAction(expandAction)
 
@@ -299,10 +299,10 @@ class MainWindow(QMainWindow):
 
         if confirm == QMessageBox.StandardButton.Ok:
             result = Utils.resetEditingData(self.scansPath)
-            if result:
-                dialog = QMessageBox(parent=self, text='Editing Data has been reset!')
-                dialog.setWindowTitle('Reset Editing Data')
-                dialog.exec()
+            text = 'Editing Data has been reset!' if result else 'An error occurred while resetting Editing Data!'
+            dialog = QMessageBox(parent=self, text=text)
+            dialog.setWindowTitle('Reset Editing Data')
+            dialog.exec()
 
     def _exportDataIPV(self, scanType: str):
         """Export save data for model training."""

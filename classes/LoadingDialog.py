@@ -17,7 +17,7 @@ class LoadingDialog(QDialog):
         labelAnimation = QLabel(self)
         labelAnimation.setStyleSheet('border:none')
 
-        self.movie = QMovie('loading.gif')
+        self.movie = QMovie('../resources/loading.gif')
         self.movie.setScaledSize(QSize(200, 200))
         labelAnimation.setMovie(self.movie)
 
