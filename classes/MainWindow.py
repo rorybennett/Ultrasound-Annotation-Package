@@ -9,7 +9,7 @@ from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, QPoint, QThreadPool
 from PyQt6.QtGui import QFont, QAction, QIcon
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
-    QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar
+    QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar, QSpinBox
 
 import Scan
 from classes import Export, Utils
@@ -111,17 +111,30 @@ class MainWindow(QMainWindow):
         copyNextAction.triggered.connect(lambda: self._copyFramePoints(scan, Scan.NEXT))
         toolbar.addAction(copyNextAction)
 
+        shrinkSpinBox = QSpinBox(minimum=1, value=5)
+        shrinkSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        shrinkSpinBox.setToolTip("Shrink Scale (minimum 1)")
+        toolbar.addWidget(shrinkSpinBox)
+
         shrinkIcon = QIcon("../resources/shrink.png")
         shrinkAction = QAction(shrinkIcon, "Shrink points around centre of mass.", self)
-        shrinkAction.triggered.connect(lambda: self._shrinkExpandPoints(scan, Scan.SHRINK))
+        shrinkAction.triggered.connect(
+            lambda: self._shrinkExpandPoints(scan, -shrinkSpinBox.value()))
         toolbar.addAction(shrinkAction)
+
+        expandSpinBox = QSpinBox(minimum=1, value=5)
+        expandSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        expandSpinBox.setToolTip("Expand Scale (minimum 1)")
+        toolbar.addWidget(expandSpinBox)
 
         expandIcon = QIcon("../resources/expand.png")
         expandAction = QAction(expandIcon, "Expand points around centre of mass.", self)
-        expandAction.triggered.connect(lambda: self._shrinkExpandPoints(scan, Scan.EXPAND))
+        expandAction.triggered.connect(
+            lambda: self._shrinkExpandPoints(scan, expandSpinBox.value()))
         toolbar.addAction(expandAction)
 
         toolbar.setDisabled(True)
+        toolbar.setMovable(False)
 
     def _createTopButtons(self, scan: int):
         """Create the layout for the top row of buttons"""
@@ -464,9 +477,9 @@ class MainWindow(QMainWindow):
 
         self.axisAngleProcess[scan - 1].updateIndex(self.s1.currentFrame - 1 if scan == 1 else self.s2.currentFrame - 1)
 
-    def _shrinkExpandPoints(self, scan: int, direction):
+    def _shrinkExpandPoints(self, scan: int, amount):
         """Expand or shrink points around centre of mass."""
-        self.s1.shrinkExpandPoints(direction, 5) if scan == 1 else self.s2.shrinkExpandPoints(direction, 5)
+        self.s1.shrinkExpandPoints(amount) if scan == 1 else self.s2.shrinkExpandPoints(amount)
         self._updateDisplay(scan)
 
     def _clearScanPoints(self, scan: int):

@@ -492,15 +492,13 @@ class Scan:
 
         return axis_angles
 
-    def shrinkExpandPoints(self, direction, amount):
+    def shrinkExpandPoints(self, amount):
         """
-        Shrink or expand points around their centre of mass.
+        Shrink or expand points around their centre of mass. amount < 0 means shrink, amount > 0 means expand.
 
         Args:
             amount: How much to shrink or expand by.
-            direction: Either SHRINK or EXPAND.
         """
-        amount = amount if direction == EXPAND else amount * -1
         points = self.getPointsOnFrame()
 
         if points:
