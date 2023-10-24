@@ -415,8 +415,7 @@ class MainWindow(QMainWindow):
 
     def _axisClickEvent(self, event, scan: int):
         """Handle left clicks on axis 1 and 2 (canvas displaying image)."""
-        displayPoint = [event.x - 1 if event.x > 0 else 0,
-                        event.y - 1 if event.y > 0 else 0]
+        displayPoint = [event.x, event.y]
         # Left click.
         if event.button == 1:
             if scan == 1 and self.s1 and self.leftBoxes.itemAt(0).widget().isChecked():

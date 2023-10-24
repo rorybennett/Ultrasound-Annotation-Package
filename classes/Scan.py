@@ -224,7 +224,7 @@ class Scan:
         for point in self.pointsPix:
             if self.frameNames[self.currentFrame - 1] == point[0]:
                 # If within radius of another point, remove that point.
-                if su.pointInRadius(point[1:], pointPixel, 2):
+                if su.pointInRadius(point[1:], pointPixel, 3):
                     self.pointsPix.remove(point)
                     pointRemoved = True
                     break
