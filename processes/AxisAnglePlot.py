@@ -23,7 +23,7 @@ class MyManager(BaseManager):
 MyManager.register('LifoQueue', LifoQueue)
 
 
-class ProcessAxisAnglePlot:
+class AxisAnglePlot:
     def __init__(self):
         """
         Initialise a ProcessAnglePlot object.

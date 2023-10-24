@@ -12,13 +12,13 @@ from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout,
     QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar
 
 import Scan
-from classes import Export, ProcessAxisAnglePlot, Utils
+from classes import Export, Utils
 from classes.ErrorDialog import ErrorDialog
 from classes.FrameCanvas import FrameCanvas
 from classes.IPVInferenceWorker import IPVInferenceWorker
 from classes.InputDialog import InputDialog
 from classes.LoadingDialog import LoadingDialog
-from processes import PlayCine
+from processes import PlayCine, AxisAnglePlot
 
 INFER_LOCAL = 'INFER-LOCAL'
 INFER_ONLINE = 'INFER-ONLINE'
@@ -93,11 +93,11 @@ class MainWindow(QMainWindow):
         # Thread pool.
         self.threadPool = QThreadPool()
         # Processes.
-        self.axisAngleProcess = [ProcessAxisAnglePlot.ProcessAxisAnglePlot(),
-                                 ProcessAxisAnglePlot.ProcessAxisAnglePlot()]
+        self.axisAngleProcess = [AxisAnglePlot.AxisAnglePlot(),
+                                 AxisAnglePlot.AxisAnglePlot()]
 
     def _createToolBars(self, scan):
-        """Create left and right toolbars."""
+        """Create left and right toolbars (mirrored)."""
         toolbar = self.segmentationTB[scan - 1]
         self.addToolBar(Qt.ToolBarArea.LeftToolBarArea if scan == 1 else Qt.ToolBarArea.RightToolBarArea, toolbar)
 
