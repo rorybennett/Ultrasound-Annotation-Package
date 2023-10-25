@@ -454,6 +454,7 @@ class Scan:
         """
         # New frame.
         newFrame = self.currentFrame + 1 if location == NEXT else self.currentFrame - 1
+        # Do not copy frames from opposite ends.
         if newFrame <= 0 or newFrame > self.frameCount:
             return
         # Points on new frame.

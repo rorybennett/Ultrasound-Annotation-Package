@@ -9,7 +9,8 @@ from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, QPoint, QThreadPool
 from PyQt6.QtGui import QFont, QAction, QIcon
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
-    QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar, QSpinBox
+    QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar, QSpinBox, \
+    QToolButton
 
 import Scan
 from classes import Export, Utils
@@ -51,31 +52,31 @@ class MainWindow(QMainWindow):
         self.left.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.leftTitle = self._createTitle()
         self.leftButtons = self._createTopButtons(1)
-        self.axis1 = FrameCanvas(self)
-        self.axis1.mpl_connect('button_press_event', lambda x: self._axisClickEvent(x, 1))
-        self.axis1.mpl_connect('scroll_event', lambda x: self._axisScrollEvent(x, 1))
         self.leftBoxes = self._createBoxes(1)
+        self._createToolBars(1)
+        self.axis1 = FrameCanvas(lambda: self._updateDisplay(1),
+                                 self.leftBoxes.itemAt(0).widget(),
+                                 self.segmentationTB[0].actions()[6])
         self.left.addLayout(self.leftTitle)
         self.left.addLayout(self.leftButtons)
         self.left.addWidget(self.axis1)
         self.left.addLayout(self.leftBoxes)
         self.left.addItem(spacer)
-        self._createToolBars(1)
         # Right side.
         self.right = QVBoxLayout()
         self.right.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.rightTitle = self._createTitle()
         self.rightButtons = self._createTopButtons(2)
-        self.axis2 = FrameCanvas(self)
-        self.axis2.mpl_connect('button_press_event', lambda x: self._axisClickEvent(x, 2))
-        self.axis2.mpl_connect('scroll_event', lambda x: self._axisScrollEvent(x, 2))
         self.rightBoxes = self._createBoxes(2)
+        self._createToolBars(2)
+        self.axis2 = FrameCanvas(lambda: self._updateDisplay(2),
+                                 self.rightBoxes.itemAt(0).widget(),
+                                 self.segmentationTB[1].actions()[6])
         self.right.addLayout(self.rightTitle)
         self.right.addLayout(self.rightButtons)
         self.right.addWidget(self.axis2)
         self.right.addLayout(self.rightBoxes)
         self.right.addItem(spacer)
-        self._createToolBars(2)
 
         self.mainLayout.addLayout(self.left)
         self.mainLayout.addLayout(self.right)
@@ -111,21 +112,16 @@ class MainWindow(QMainWindow):
         copyNextAction.triggered.connect(lambda: self._copyFramePoints(scan, Scan.NEXT))
         toolbar.addAction(copyNextAction)
 
-        shrinkSpinBox = QSpinBox(minimum=1, value=5)
-        shrinkSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        shrinkSpinBox.setToolTip("Shrink Scale (minimum 1)")
-        toolbar.addWidget(shrinkSpinBox)
-
         shrinkIcon = QIcon("../resources/shrink.png")
         shrinkAction = QAction(shrinkIcon, "Shrink points around centre of mass.", self)
         shrinkAction.triggered.connect(
             lambda: self._shrinkExpandPoints(scan, -shrinkSpinBox.value()))
         toolbar.addAction(shrinkAction)
 
-        expandSpinBox = QSpinBox(minimum=1, value=5)
-        expandSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        expandSpinBox.setToolTip("Expand Scale (minimum 1)")
-        toolbar.addWidget(expandSpinBox)
+        shrinkSpinBox = QSpinBox(minimum=1, value=5)
+        shrinkSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        shrinkSpinBox.setToolTip("Shrink Scale (minimum 1)")
+        toolbar.addWidget(shrinkSpinBox)
 
         expandIcon = QIcon("../resources/expand.png")
         expandAction = QAction(expandIcon, "Expand points around centre of mass.", self)
@@ -133,8 +129,22 @@ class MainWindow(QMainWindow):
             lambda: self._shrinkExpandPoints(scan, expandSpinBox.value()))
         toolbar.addAction(expandAction)
 
+        expandSpinBox = QSpinBox(minimum=1, value=5)
+        expandSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        expandSpinBox.setToolTip("Expand Scale (minimum 1)")
+        toolbar.addWidget(expandSpinBox)
+
+        dragIcon = QIcon("../resources/drag.png")
+        dragButton = QToolButton(self)
+        dragButton.setToolTip("Drag all points on frame.")
+        dragButton.setIcon(dragIcon)
+        dragButton.setCheckable(True)
+        toolbar.addWidget(dragButton)
+
         toolbar.setDisabled(True)
         toolbar.setMovable(False)
+
+        print(len(toolbar.actions()))
 
     def _createTopButtons(self, scan: int):
         """Create the layout for the top row of buttons"""
@@ -397,6 +407,7 @@ class MainWindow(QMainWindow):
         try:
             if scan == 1:
                 self.s1 = Scan.Scan(scanPath, window=self)
+                self.axis1.linkedScan = self.s1
                 self.menuLoadScans.actions()[1].setEnabled(True)
                 self.menuIPV1.setEnabled(True)
                 self.menuLoadData1.setEnabled(True)
@@ -407,9 +418,9 @@ class MainWindow(QMainWindow):
                                                           self.s1.displayDimensions[1])
                 for i in range(self.leftBoxes.count()):
                     self.leftBoxes.itemAt(i).widget().setEnabled(True)
-                self._updateTitle(1)
             else:
                 self.s2 = Scan.Scan(scanPath, window=self)
+                self.axis2.linkedScan = self.s2
                 self.menuLoadScans.actions()[4].setEnabled(True)
                 self.menuIPV2.setEnabled(True)
                 self.menuLoadData2.setEnabled(True)
@@ -421,41 +432,11 @@ class MainWindow(QMainWindow):
                 self.rightBoxes.itemAt(0).widget().setEnabled(True)
                 for i in range(self.rightBoxes.count()):
                     self.rightBoxes.itemAt(i).widget().setEnabled(True)
-                self._updateTitle(2)
+
+            self._updateTitle(scan)
             self._updateDisplay(scan)
         except Exception as e:
             ErrorDialog(self, 'Error loading Scan data', e)
-
-    def _axisClickEvent(self, event, scan: int):
-        """Handle left clicks on axis 1 and 2 (canvas displaying image)."""
-        displayPoint = [event.x, event.y]
-        # Left click.
-        if event.button == 1:
-            if scan == 1 and self.s1 and self.leftBoxes.itemAt(0).widget().isChecked():
-                self.s1.addOrRemovePoint(displayPoint)
-                self._updateDisplay(1)
-                return
-            elif scan == 2 and self.s2 and self.rightBoxes.itemAt(0).widget().isChecked():
-                self.s2.addOrRemovePoint(displayPoint)
-                self._updateDisplay(2)
-                return
-
-    def _axisScrollEvent(self, event, scan: int):
-        """Handle scroll events on axis 1 (canvas displaying image)."""
-        if scan == 1 and self.s1:
-            if event.button == 'up':
-                self.s1.navigate(Scan.NAVIGATION['w'])
-            else:
-                self.s1.navigate(Scan.NAVIGATION['s'])
-            self._updateDisplay(1)
-            return
-        elif scan == 2 and self.s2:
-            if event.button == 'up':
-                self.s2.navigate(Scan.NAVIGATION['w'])
-            else:
-                self.s2.navigate(Scan.NAVIGATION['s'])
-            self._updateDisplay(2)
-            return
 
     def _openScanDirectory(self, scan: int):
         """Open directory of Scan."""
