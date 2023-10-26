@@ -92,7 +92,7 @@ def drawScanDataOnAxis(axis: Axes, frame: np.ndarray, fNo: int, fCount: int, dep
     axis.plot([imuPos / 100 * dd[0], imuPos / 100 * dd[0]], [0, 10], color='white', linewidth=2)
 
 
-def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, dd: list, fd: list):
+def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, fd: list, dd: list):
     """
         Plot the IPV data onto the frame.
 
@@ -100,8 +100,8 @@ def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, dd: list, fd: list):
             axis: Axis displaying frame.
             ipv: Dictionary of ipv data.
             name: Frame name as a string.
-            dd: Display dimension - shape of the displayed frame.
             fd: Dimensions of original frame (x, y).
+            dd: Display dimension - shape of the displayed frame.
     """
 
     if name == ipv['centre'][0]:

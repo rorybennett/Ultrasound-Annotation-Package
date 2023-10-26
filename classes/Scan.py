@@ -81,16 +81,14 @@ class Scan:
         # IPV data from IPV.JSON.
         self.ipvPath, self.ipvData = su.getIPVDataFromFile(self.path)
 
-    def drawFrameOnAxis(self, canvas: FrameCanvas, showPoints=False, showIPV=False):
+    def drawFrameOnAxis(self, canvas: FrameCanvas):
         """
-        Draw the current frame on the provided canvas with all supplementary available data.
+        Draw the current frame on the provided canvas with all Scan details drawn on.
 
         Args:
-            canvas: Canvas to drawn frame on.
-            showPoints: Show points on frame?
-            showIPV: Show IPV data on frame?
+            canvas: Canvas to draw frame on.
         """
-        axis = canvas.axes
+        axis = canvas.axis
         cfi = self.currentFrame - 1
         frame = self.frames[cfi].copy()
         framePosition = self.currentFrame
@@ -109,14 +107,6 @@ class Scan:
         su.drawFrameOnAxis(axis, frame)
         # Draw scan details on axis.
         su.drawScanDataOnAxis(axis, frame, framePosition, count, depths, imuOffset, imuPosition, dd)
-        # Show points on frame.
-        if showPoints:
-            su.drawPointDataOnAxis(axis, self.getPointsOnFrame(), fd, dd)
-        # Show IPV data.
-        if showIPV:
-            su.drawIPVDataOnAxis(axis, self.ipvData, name, dd, self.frames[0].shape)
-        # Finalise canvas with draw.
-        canvas.draw()
 
     def getPointsOnFrame(self, position=None):
         """
@@ -207,15 +197,14 @@ class Scan:
 
     def addOrRemovePoint(self, pointDisplay: list):
         """
-        Add or remove a point to/from self.points. Point data is saved as real world x and y coordinates on the
-        frame, taking the top offset and left offset as zero (ignoring imuOffset). If the new point is within
+        Add or remove a point to/from self.points. Point data is save din pixel values. If the new point is within
         a radius of an old point, the old point is removed.
 
         Args:
-            pointDisplay: x/width-, and y/height-coordinates returned by the Graph elements' event.
+            pointDisplay: x/width-, and y/height-coordinates returned by the canvas elements' event.
 
         Returns:
-            Nothing, adds points directly to self.pointsMm.
+            Nothing, adds points directly to self.pointsPixels.
         """
         pointPixel = su.displayToPixels(pointDisplay, self.frames[self.currentFrame - 1].shape, self.displayDimensions)
 
@@ -483,7 +472,8 @@ class Scan:
         Returns:
             axisAngles (list): List of axis angles (in degrees) relative to the first rotation (taken as 0 degrees).
         """
-        initialQ = Quaternion(self.quaternions[0]); axis_angles = []
+        initialQ = Quaternion(self.quaternions[0]);
+        axis_angles = []
         # Get angle differences (as quaternion rotations).
         for row in self.quaternions:
             q = Quaternion(row)

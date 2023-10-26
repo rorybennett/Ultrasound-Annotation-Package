@@ -9,8 +9,7 @@ from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, QPoint, QThreadPool
 from PyQt6.QtGui import QFont, QAction, QIcon
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
-    QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar, QSpinBox, \
-    QToolButton
+    QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar, QSpinBox
 
 import Scan
 from classes import Export, Utils
@@ -54,12 +53,13 @@ class MainWindow(QMainWindow):
         self.leftButtons = self._createTopButtons(1)
         self.leftBoxes = self._createBoxes(1)
         self._createToolBars(1)
-        self.axis1 = FrameCanvas(lambda: self._updateDisplay(1),
-                                 self.leftBoxes.itemAt(0).widget(),
-                                 self.segmentationTB[0].actions()[6])
+        self.canvas1 = FrameCanvas(updateDisplay=lambda: self._updateDisplay(1),
+                                   showPointsBox=self.leftBoxes.itemAt(0).widget(),
+                                   showIPVBox=self.leftBoxes.itemAt(1).widget(),
+                                   dragButton=self.segmentationTB[0].actions()[6])
         self.left.addLayout(self.leftTitle)
         self.left.addLayout(self.leftButtons)
-        self.left.addWidget(self.axis1)
+        self.left.addWidget(self.canvas1)
         self.left.addLayout(self.leftBoxes)
         self.left.addItem(spacer)
         # Right side.
@@ -69,12 +69,13 @@ class MainWindow(QMainWindow):
         self.rightButtons = self._createTopButtons(2)
         self.rightBoxes = self._createBoxes(2)
         self._createToolBars(2)
-        self.axis2 = FrameCanvas(lambda: self._updateDisplay(2),
-                                 self.rightBoxes.itemAt(0).widget(),
-                                 self.segmentationTB[1].actions()[6])
+        self.canvas2 = FrameCanvas(updateDisplay=lambda: self._updateDisplay(2),
+                                   showPointsBox=self.rightBoxes.itemAt(0).widget(),
+                                   showIPVBox=self.rightBoxes.itemAt(1).widget(),
+                                   dragButton=self.segmentationTB[1].actions()[6])
         self.right.addLayout(self.rightTitle)
         self.right.addLayout(self.rightButtons)
-        self.right.addWidget(self.axis2)
+        self.right.addWidget(self.canvas2)
         self.right.addLayout(self.rightBoxes)
         self.right.addItem(spacer)
 
@@ -135,16 +136,12 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(expandSpinBox)
 
         dragIcon = QIcon("../resources/drag.png")
-        dragButton = QToolButton(self)
-        dragButton.setToolTip("Drag all points on frame.")
-        dragButton.setIcon(dragIcon)
+        dragButton = QAction(dragIcon, "Drag all points on frame.", self)
         dragButton.setCheckable(True)
-        toolbar.addWidget(dragButton)
+        toolbar.addAction(dragButton)
 
         toolbar.setDisabled(True)
         toolbar.setMovable(False)
-
-        print(len(toolbar.actions()))
 
     def _createTopButtons(self, scan: int):
         """Create the layout for the top row of buttons"""
@@ -407,7 +404,7 @@ class MainWindow(QMainWindow):
         try:
             if scan == 1:
                 self.s1 = Scan.Scan(scanPath, window=self)
-                self.axis1.linkedScan = self.s1
+                self.canvas1.linkedScan = self.s1
                 self.menuLoadScans.actions()[1].setEnabled(True)
                 self.menuIPV1.setEnabled(True)
                 self.menuLoadData1.setEnabled(True)
@@ -420,7 +417,7 @@ class MainWindow(QMainWindow):
                     self.leftBoxes.itemAt(i).widget().setEnabled(True)
             else:
                 self.s2 = Scan.Scan(scanPath, window=self)
-                self.axis2.linkedScan = self.s2
+                self.canvas2.linkedScan = self.s2
                 self.menuLoadScans.actions()[4].setEnabled(True)
                 self.menuIPV2.setEnabled(True)
                 self.menuLoadData2.setEnabled(True)
@@ -432,7 +429,6 @@ class MainWindow(QMainWindow):
                 self.rightBoxes.itemAt(0).widget().setEnabled(True)
                 for i in range(self.rightBoxes.count()):
                     self.rightBoxes.itemAt(i).widget().setEnabled(True)
-
             self._updateTitle(scan)
             self._updateDisplay(scan)
         except Exception as e:
@@ -440,22 +436,11 @@ class MainWindow(QMainWindow):
 
     def _openScanDirectory(self, scan: int):
         """Open directory of Scan."""
-        if scan == 1:
-            self.s1.openDirectory()
-        else:
-            self.s2.openDirectory()
+        self.s1.openDirectory() if scan == 1 else self.s2.openDirectory()
 
     def _updateDisplay(self, scan: int):
-        """Update the shown frame."""
-        if scan == 1:
-            self.s1.drawFrameOnAxis(self.axis1,
-                                    showPoints=self.leftBoxes.itemAt(0).widget().isChecked(),
-                                    showIPV=self.leftBoxes.itemAt(1).widget().isChecked())
-        else:
-            self.s2.drawFrameOnAxis(self.axis2,
-                                    showPoints=self.rightBoxes.itemAt(0).widget().isChecked(),
-                                    showIPV=self.rightBoxes.itemAt(1).widget().isChecked())
-
+        """Update the shown frame and position on plot."""
+        self.canvas1.updateAxis() if scan == 1 else self.canvas2.updateAxis()
         self.axisAngleProcess[scan - 1].updateIndex(self.s1.currentFrame - 1 if scan == 1 else self.s2.currentFrame - 1)
 
     def _shrinkExpandPoints(self, scan: int, amount):
@@ -514,13 +499,13 @@ class MainWindow(QMainWindow):
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         """Handle key press events."""
-        if self.s1 and self.axis1.underMouse():
+        if self.s1 and self.canvas1.underMouse():
             if event.key() == Qt.Key.Key_W:
                 self.s1.navigate(Scan.NAVIGATION['w'])
             elif event.key() == Qt.Key.Key_S:
                 self.s1.navigate(Scan.NAVIGATION['s'])
             self._updateDisplay(1)
-        elif self.s2 and self.axis2.underMouse():
+        elif self.s2 and self.canvas2.underMouse():
             if event.key() == Qt.Key.Key_W:
                 self.s2.navigate(Scan.NAVIGATION['w'])
             elif event.key() == Qt.Key.Key_S:
@@ -541,7 +526,7 @@ class MainWindow(QMainWindow):
     #         self._updateDisplay(2)
 
     def contextMenuEvent(self, event):
-        if self.s1 and self.axis1.underMouse():
+        if self.s1 and self.canvas1.underMouse():
             menu = QMenu()
             menuPoints = menu.addMenu('Points')
             menuPoints.addAction('Clear Frame Points', lambda: self._clearFramePoints(1))
@@ -550,10 +535,10 @@ class MainWindow(QMainWindow):
             menuIPV = menu.addMenu('IPV')
             menuIPV.addAction('Add Center',
                               lambda: self._updateIPVCentre(1, Scan.ADD_POINT,
-                                                            self.axis1.mapFromGlobal(event.globalPos())))
+                                                            self.canvas1.mapFromGlobal(event.globalPos())))
             menuIPV.addSeparator()
             menuIPV.addAction('Remove Center', lambda: self._updateIPVCentre(1, Scan.REMOVE_POINT,
-                                                                             self.axis1.mapFromGlobal(
+                                                                             self.canvas1.mapFromGlobal(
                                                                                  event.globalPos())))
             menuIPV.addSeparator()
             menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(1))
@@ -561,7 +546,7 @@ class MainWindow(QMainWindow):
             menuIPV.addAction('Clear IPV Data', lambda: self._removeIPVData(1))
             menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(1))
             menu.exec(event.globalPos())
-        elif self.s2 and self.axis2.underMouse():
+        elif self.s2 and self.canvas2.underMouse():
             menu = QMenu()
             menuPoints = menu.addMenu('Points')
             menuPoints.addAction('Clear Frame Points', lambda: self._clearFramePoints(2))
@@ -570,10 +555,10 @@ class MainWindow(QMainWindow):
             menuIPV = menu.addMenu('IPV')
             menuIPV.addAction('Add Center',
                               lambda: self._updateIPVCentre(2, Scan.ADD_POINT,
-                                                            self.axis2.mapFromGlobal(event.globalPos())))
+                                                            self.canvas2.mapFromGlobal(event.globalPos())))
             menuIPV.addSeparator()
             menuIPV.addAction('Remove Center', lambda: self._updateIPVCentre(1, Scan.REMOVE_POINT,
-                                                                             self.axis2.mapFromGlobal(
+                                                                             self.canvas2.mapFromGlobal(
                                                                                  event.globalPos())))
             menuIPV.addSeparator()
             menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(2))
