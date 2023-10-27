@@ -110,7 +110,7 @@ class Scan:
 
     def getPointsOnFrame(self, position=None):
         """
-        Return a list of points on the frame at 'position'. If index is None, use the current frame.
+        Return a list of points on the frame at 'position'. If position is None, use the current frame.
 
         :param position: Index of frame.
         :return: List of points on frame.

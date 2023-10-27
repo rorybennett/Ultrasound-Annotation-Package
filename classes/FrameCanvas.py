@@ -30,7 +30,7 @@ class FrameCanvas(FigureCanvasQTAgg):
         # Coordinates of cursor when drag starts in ??? coordinates.
         self.xy = [0, 0]
         # Points that are dragged on canvas (pixels).
-        self.dragPoints = None
+        self.framePointsPix = None
 
         # Figure to draw frames on.
         self.fig = Figure(dpi=100)
@@ -48,31 +48,30 @@ class FrameCanvas(FigureCanvasQTAgg):
 
     def _axisPressEvent(self, event):
         """Handle left presses on axis 1 and 2 (canvas displaying image)."""
-
         if self.linkedScan is not None:
             self.fd = self.linkedScan.frames[self.linkedScan.currentFrame - 1].shape
             self.dd = self.linkedScan.displayDimensions
             if self.dragButton.isChecked():
-                self.xy = su.displayToPixels([event.x, event.y], self.fd, self.dd)
+                self.xy = [event.xdata, event.ydata]
                 self.enableDrag = True
-                self.dragPoints = self.linkedScan.getPointsOnFrame()
+                self.framePointsPix = self.linkedScan.getPointsOnFrame()
 
     def _axisMotionEvent(self, event):
         """Handle drag events on axis 1 and 2."""
         if self.linkedScan is not None:
             if self.enableDrag:
                 self.dragAttempted = True
-                xy = su.displayToPixels([event.x, event.y], self.fd, self.dd)
-                deltaPixels = [xy[0] - self.xy[0], xy[1] - self.xy[1]]
+                xyNew = [event.xdata, event.ydata]
+                dxy = [xyNew[0] - self.xy[0], xyNew[1] - self.xy[1]]
                 self.linkedScan.clearFramePoints()
-
-                print(f"Start xy: {self.xy}. Motion xy: {xy}. Delta: {deltaPixels}.")
-                for i, point in enumerate(self.dragPoints):
-                    new_point = [point[0] + deltaPixels[0], point[1] - deltaPixels[1]]
-                    print(f"\t\t Old point: {point}. New point: {new_point}.")
-                    point = su.pixelsToDisplay(new_point, self.fd, self.dd)
-                    self.linkedScan.addOrRemovePoint(point)
+                # Drag each point on the frame by delta amount.
+                for pointPix in self.framePointsPix:
+                    # This y-portion of the equation is confusing, but it works.
+                    pointDisplay = su.pixelsToDisplay([pointPix[0], self.fd[0] - pointPix[1]], self.fd, self.dd)
+                    pointNew = [pointDisplay[0] + dxy[0], pointDisplay[1] - dxy[1]]
+                    self.linkedScan.addOrRemovePoint(pointNew)
                 self.updateDisplay()
+
 
     def _axisReleaseEvent(self, event):
         """Handle left releases on axis 1 and 2. AddRemove if no drag took place"""
@@ -80,7 +79,6 @@ class FrameCanvas(FigureCanvasQTAgg):
             if not self.dragAttempted:
                 if event.button == 1:
                     displayPoint = [event.x, event.y]
-                    print(f'Add point: {su.displayToPixels(displayPoint, self.fd, self.dd)}')
                     if self.showPointsBox.isChecked():
                         self.linkedScan.addOrRemovePoint(displayPoint)
                         self.updateDisplay()
