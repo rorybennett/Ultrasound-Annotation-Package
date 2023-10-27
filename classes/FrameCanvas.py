@@ -72,7 +72,6 @@ class FrameCanvas(FigureCanvasQTAgg):
                     self.linkedScan.addOrRemovePoint(pointNew)
                 self.updateDisplay()
 
-
     def _axisReleaseEvent(self, event):
         """Handle left releases on axis 1 and 2. AddRemove if no drag took place"""
         if self.linkedScan is not None:

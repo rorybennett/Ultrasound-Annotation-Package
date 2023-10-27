@@ -1,10 +1,11 @@
-from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QFormLayout, QVBoxLayout, QLabel
+from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QLabel
 
 
 class ErrorDialog(QDialog):
     """
     Custom dialog to show and error message with the error below the message.
     """
+
     def __init__(self, parent=None, message=None, error=None):
         super().__init__(parent)
 
