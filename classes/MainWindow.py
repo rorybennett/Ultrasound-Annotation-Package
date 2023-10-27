@@ -573,6 +573,7 @@ def except_hook(cls, exception, traceback):
 
 
 def main():
+    qdarktheme.enable_hi_dpi()
     editingApp = QApplication([])
 
     qdarktheme.setup_theme()

@@ -4,3 +4,6 @@
 /IPV/Models/
 /Export/
 !/classes/Testing.py
+!/build/
+
+!/dist/
