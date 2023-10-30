@@ -340,7 +340,7 @@ class Main(QMainWindow):
         if not ok or not address or not modelName:
             return
 
-        loading = LoadingDialog(loadingMessage='Inferring IPV Points...')
+        loading = LoadingDialog(loadingMessage='Inferring IPV Points...', basedir=basedir)
 
         worker = IPVInferenceWorker(self.s1 if scan == 1 else self.s2, address, modelName)
 
@@ -576,20 +576,17 @@ def except_hook(cls, exception, traceback):
 
 
 if __name__ == "__main__":
-    try:
-        multiprocessing.freeze_support()
-        sys.excepthook = except_hook
-        # main()
-        qdarktheme.enable_hi_dpi()
-        editingApp = QApplication([])
+    multiprocessing.freeze_support()
+    sys.excepthook = except_hook
+    # main()
+    qdarktheme.enable_hi_dpi()
+    editingApp = QApplication([])
 
-        qdarktheme.setup_theme()
+    qdarktheme.setup_theme()
 
-        mainWindow = Main()
+    mainWindow = Main()
 
-        sys.exit(editingApp.exec())
-    except Exception as e:
-        print(e)
+    sys.exit(editingApp.exec())
 
 # To create an executable:
 # pyinstaller main.py

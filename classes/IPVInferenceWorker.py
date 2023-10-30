@@ -1,5 +1,6 @@
 import requests
 from PyQt6.QtCore import QRunnable, pyqtSlot, pyqtSignal, QObject
+from PyQt6.QtWidgets import QMainWindow
 
 from classes import Scan
 from classes.ErrorDialog import ErrorDialog
@@ -65,8 +66,10 @@ class IPVInferenceWorker(QRunnable):
                 print(f'\tIPV result returned: {result.json()}')
                 self.scan.updateIPVInferredPoints(result.json()['result'], frameName)
             else:
-                ErrorDialog(None, f'Error with inference', result.status_code)
+                # ErrorDialog(None, f'Error with inference', result.status_code)
+                print('Error with inference.')
         except Exception as e:
-            ErrorDialog(None, f'Error in http request', e)
+            # ErrorDialog(None, f'Error in http request', e)
+            print('Error with http request')
 
         self.signals.finished.emit()

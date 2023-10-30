@@ -8,3 +8,8 @@
 
 !/dist/
 !/MainWindow.spec
+!/build/
+
+!/dist/
+
+!/main.spec

@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QLabel, QDialog, QVBoxLayout
 
 
 class LoadingDialog(QDialog):
-    def __init__(self, parent=None, loadingMessage='Loading...'):
+    def __init__(self, basedir, parent=None, loadingMessage='Loading...'):
         super().__init__(parent)
         # self.setFixedSize(400, 400)
         self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.FramelessWindowHint)
@@ -17,7 +17,7 @@ class LoadingDialog(QDialog):
         labelAnimation = QLabel(self)
         labelAnimation.setStyleSheet('border:none')
 
-        self.movie = QMovie('../resources/loading.gif')
+        self.movie = QMovie(f'{basedir}/resources/loading.gif')
         self.movie.setScaledSize(QSize(200, 200))
         labelAnimation.setMovie(self.movie)
 
@@ -27,11 +27,9 @@ class LoadingDialog(QDialog):
         self.setLayout(self.layout)
 
     def start(self):
-        print('Starting')
         self.movie.start()
         self.exec()
 
     def stop(self):
-        print('Stopping')
         self.movie.stop()
         self.close()
