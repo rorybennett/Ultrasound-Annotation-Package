@@ -5,7 +5,7 @@ from pathlib import Path
 import cv2
 from PyQt6.QtWidgets import QInputDialog, QWidget
 
-import ExportUtil as eu
+from classes import ExportUtil as eu
 from classes import Scan
 from classes.ErrorDialog import ErrorDialog
 

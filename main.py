@@ -1,6 +1,8 @@
-# MainWindow.py
+# main.py
 
 """Main Window for viewing and editing ultrasound scans."""
+import multiprocessing
+import os
 import sys
 from pathlib import Path
 
@@ -11,8 +13,8 @@ from PyQt6.QtGui import QFont, QAction, QIcon
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
     QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar, QSpinBox
 
-import Scan
 from classes import Export, Utils
+from classes import Scan
 from classes.ErrorDialog import ErrorDialog
 from classes.FrameCanvas import FrameCanvas
 from classes.IPVInferenceWorker import IPVInferenceWorker
@@ -23,8 +25,10 @@ from processes import PlayCine, AxisAnglePlot
 INFER_LOCAL = 'INFER-LOCAL'
 INFER_ONLINE = 'INFER-ONLINE'
 
+basedir = os.path.dirname(__file__)
 
-class MainWindow(QMainWindow):
+
+class Main(QMainWindow):
     labelFont = QFont('Arial', 14)
 
     def __init__(self):
@@ -98,25 +102,23 @@ class MainWindow(QMainWindow):
         self.axisAngleProcess = [AxisAnglePlot.AxisAnglePlot(),
                                  AxisAnglePlot.AxisAnglePlot()]
 
+        self.showMaximized()
+
     def _createToolBars(self, scan):
         """Create left and right toolbars (mirrored)."""
         toolbar = self.segmentationTB[scan - 1]
         self.addToolBar(Qt.ToolBarArea.LeftToolBarArea if scan == 1 else Qt.ToolBarArea.RightToolBarArea, toolbar)
 
-        previousIcon = QIcon("../resources/copy_previous.png")
-        copyPreviousAction = QAction(previousIcon, "Copy points from previous frame.", self)
+        copyPreviousAction = QAction(QIcon(f"{basedir}/resources/copy_previous.png"), "Copy points from previous frame.", self)
         copyPreviousAction.triggered.connect(lambda: self._copyFramePoints(scan, Scan.PREVIOUS))
         toolbar.addAction(copyPreviousAction)
 
-        nextIcon = QIcon("../resources/copy_next.png")
-        copyNextAction = QAction(nextIcon, "Copy points from next frame.", self)
+        copyNextAction = QAction(QIcon(f"{basedir}/resources/copy_next.png"), "Copy points from next frame.", self)
         copyNextAction.triggered.connect(lambda: self._copyFramePoints(scan, Scan.NEXT))
         toolbar.addAction(copyNextAction)
 
-        shrinkIcon = QIcon("../resources/shrink.png")
-        shrinkAction = QAction(shrinkIcon, "Shrink points around centre of mass.", self)
-        shrinkAction.triggered.connect(
-            lambda: self._shrinkExpandPoints(scan, -shrinkSpinBox.value()))
+        shrinkAction = QAction(QIcon(f"{basedir}/resources/shrink.png"), "Shrink points around centre of mass.", self)
+        shrinkAction.triggered.connect(lambda: self._shrinkExpandPoints(scan, -shrinkSpinBox.value()))
         toolbar.addAction(shrinkAction)
 
         shrinkSpinBox = QSpinBox(minimum=1, value=5)
@@ -124,10 +126,8 @@ class MainWindow(QMainWindow):
         shrinkSpinBox.setToolTip("Shrink Scale (minimum 1)")
         toolbar.addWidget(shrinkSpinBox)
 
-        expandIcon = QIcon("../resources/expand.png")
-        expandAction = QAction(expandIcon, "Expand points around centre of mass.", self)
-        expandAction.triggered.connect(
-            lambda: self._shrinkExpandPoints(scan, expandSpinBox.value()))
+        expandAction = QAction(QIcon(f"{basedir}/resources/expand.png"), "Expand points around centre of mass.", self)
+        expandAction.triggered.connect(lambda: self._shrinkExpandPoints(scan, expandSpinBox.value()))
         toolbar.addAction(expandAction)
 
         expandSpinBox = QSpinBox(minimum=1, value=5)
@@ -135,8 +135,7 @@ class MainWindow(QMainWindow):
         expandSpinBox.setToolTip("Expand Scale (minimum 1)")
         toolbar.addWidget(expandSpinBox)
 
-        dragIcon = QIcon("../resources/drag.png")
-        dragButton = QAction(dragIcon, "Drag all points on frame.", self)
+        dragButton = QAction(QIcon(f"{basedir}/resources/drag.png"), "Drag all points on frame.", self)
         dragButton.setCheckable(True)
         toolbar.addAction(dragButton)
 
@@ -202,19 +201,19 @@ class MainWindow(QMainWindow):
 
         patientLabel = QLabel(f'Patient: ')
         patientLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        patientLabel.setFont(MainWindow.labelFont)
+        patientLabel.setFont(Main.labelFont)
         typeLabel = QLabel(f'Type:')
         typeLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        typeLabel.setFont(MainWindow.labelFont)
+        typeLabel.setFont(Main.labelFont)
         planeLabel = QLabel(f'Plane:')
         planeLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        planeLabel.setFont(MainWindow.labelFont)
+        planeLabel.setFont(Main.labelFont)
         numberLabel = QLabel(f'Number:')
         numberLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        numberLabel.setFont(MainWindow.labelFont)
+        numberLabel.setFont(Main.labelFont)
         frameLabel = QLabel(f'Frames:')
         frameLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        frameLabel.setFont(MainWindow.labelFont)
+        frameLabel.setFont(Main.labelFont)
 
         layout.addWidget(patientLabel, 0)
         layout.addWidget(typeLabel, 0)
@@ -572,18 +571,27 @@ def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
 
 
-def main():
-    qdarktheme.enable_hi_dpi()
-    editingApp = QApplication([])
-
-    qdarktheme.setup_theme()
-
-    mainWindow = MainWindow()
-    mainWindow.showMaximized()
-
-    sys.exit(editingApp.exec())
+# def main():
+#
 
 
 if __name__ == "__main__":
-    sys.excepthook = except_hook
-    main()
+    try:
+        multiprocessing.freeze_support()
+        sys.excepthook = except_hook
+        # main()
+        qdarktheme.enable_hi_dpi()
+        editingApp = QApplication([])
+
+        qdarktheme.setup_theme()
+
+        mainWindow = Main()
+
+        sys.exit(editingApp.exec())
+    except Exception as e:
+        print(e)
+
+# To create an executable:
+# pyinstaller main.py
+# Add resources to main .spec - a=[..., datas=[('resources', 'resources')],...]
+# pyinstaller main.spec

@@ -2,7 +2,7 @@ import matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 
-import ScanUtil as su
+from classes import ScanUtil as su
 from classes import Scan
 
 matplotlib.use('Qt5Agg')

@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import QMainWindow
 from natsort import natsorted
 from pyquaternion import Quaternion
 
-import ScanUtil as su
+from classes import ScanUtil as su
 from classes import FrameCanvas, Utils
 from classes.ErrorDialog import ErrorDialog
 
