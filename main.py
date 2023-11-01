@@ -109,7 +109,8 @@ class Main(QMainWindow):
         toolbar = self.segmentationTB[scan - 1]
         self.addToolBar(Qt.ToolBarArea.LeftToolBarArea if scan == 1 else Qt.ToolBarArea.RightToolBarArea, toolbar)
 
-        copyPreviousAction = QAction(QIcon(f"{basedir}/resources/copy_previous.png"), "Copy points from previous frame.", self)
+        copyPreviousAction = QAction(QIcon(f"{basedir}/resources/copy_previous.png"),
+                                     "Copy points from previous frame.", self)
         copyPreviousAction.triggered.connect(lambda: self._copyFramePoints(scan, Scan.PREVIOUS))
         toolbar.addAction(copyPreviousAction)
 

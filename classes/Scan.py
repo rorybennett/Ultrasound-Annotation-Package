@@ -92,13 +92,11 @@ class Scan:
         cfi = self.currentFrame - 1
         frame = self.frames[cfi].copy()
         framePosition = self.currentFrame
-        name = self.frameNames[cfi]
         count = self.frameCount
         depths = self.depths[cfi]
         imuOffset = self.imuOffset
         imuPosition = self.imuPosition
         dd = self.displayDimensions
-        fd = frame.shape
         # Resize frame to fit display dimensions.
         frame = cv2.resize(frame, dd, cv2.INTER_CUBIC)
         # Corner markers.
@@ -106,7 +104,8 @@ class Scan:
         # Prepare axis and draw frame.
         su.drawFrameOnAxis(axis, frame)
         # Draw scan details on axis.
-        su.drawScanDataOnAxis(axis, frame, framePosition, count, depths, imuOffset, imuPosition, dd)
+        su.drawScanDataOnAxis(axis, frame, framePosition, count, depths, imuOffset, imuPosition,
+                              self.countFramePoints(), len(self.pointsPix), dd)
 
     def getPointsOnFrame(self, position=None):
         """
@@ -472,7 +471,7 @@ class Scan:
         Returns:
             axisAngles (list): List of axis angles (in degrees) relative to the first rotation (taken as 0 degrees).
         """
-        initialQ = Quaternion(self.quaternions[0]);
+        initialQ = Quaternion(self.quaternions[0])
         axis_angles = []
         # Get angle differences (as quaternion rotations).
         for row in self.quaternions:
@@ -501,3 +500,20 @@ class Scan:
                 self.pointsPix.append([self.frameNames[self.currentFrame - 1], newPoint[0], newPoint[1]])
 
             self.__saveToDisk(SAVE_POINT_DATA)
+
+    def countFramePoints(self, position=None):
+        """
+        Return number of points on a frame. If position is None, return number of points on current frame.
+
+        :param position: Index of frame.
+        :return: Count of points on frame.
+        """
+        if position is not None:
+            count = sum(1 for p in self.pointsPix if p[0] == self.frameNames[position])
+        else:
+            count = sum(1 for p in self.pointsPix if p[0] == self.frameNames[self.currentFrame - 1])
+
+        return count
+
+
+

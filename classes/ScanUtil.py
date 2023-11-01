@@ -59,7 +59,7 @@ def drawFrameOnAxis(axis: Axes, frame: np.ndarray):
 
 
 def drawScanDataOnAxis(axis: Axes, frame: np.ndarray, fNo: int, fCount: int, depths: list, imuOff: float, imuPos: float,
-                       dd: list):
+                       framePoints: int, totalPoints: int, dd: list):
     """
     Function for plotting extra details about the scan on the frame.
 
@@ -71,6 +71,8 @@ def drawScanDataOnAxis(axis: Axes, frame: np.ndarray, fNo: int, fCount: int, dep
         depths: Height and Width of scan in mm.
         imuOff: Offset of the imu from the end of the probe.
         imuPos: IMU position as a percent of frame width.
+        framePoints: Total point on current frame.
+        totalPoints: Total points on all frames in Scan.
         dd: Display dimensions - shape of the frame, first and second value swapped.
 
     Returns:
@@ -83,13 +85,12 @@ def drawScanDataOnAxis(axis: Axes, frame: np.ndarray, fNo: int, fCount: int, dep
     axis.text(20, 40, f'IMU Offset: {imuOff:.1f}mm', color='lightblue')
     axis.text(20, 60, f'IMU Position: {imuPos:.1f}%', color='lightblue')
     # Current frame number over total frames.
-    axis.text(dd[0] - 150, frame.shape[0] - 20, f'Frame {fNo} of {fCount}', color='white')
-    # Scan position indicator.
-    axis.plot([dd[0] - 20, dd[0] - 20], [dd[1] - 40, dd[1] - 240], color='white', linewidth=1)
-    axis.plot([dd[0] - 22, dd[0] - 16], [dd[1] - 40 - 201 * (fNo - 1) / fCount, dd[1] - 40 - 201 * (fNo - 1) / fCount],
-              color='white')
+    axis.text(dd[0] - 150, dd[1] - 20, f'Frame {fNo} of {fCount}', color='white')
     # Location of IMU in relation to width, a percentage of width.
     axis.plot([imuPos / 100 * dd[0], imuPos / 100 * dd[0]], [0, 10], color='white', linewidth=2)
+    # Total points' indicator.
+    axis.text(20, dd[1] - 20, f'Points: {framePoints}/{totalPoints}', color='white')
+
 
 
 def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, fd: list, dd: list):
