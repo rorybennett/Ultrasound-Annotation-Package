@@ -1,9 +1,11 @@
 import matplotlib
+import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
+from matplotlib.patches import Polygon
 
-from classes import ScanUtil as su
 from classes import Scan
+from classes import ScanUtil as su, Utils
 
 matplotlib.use('Qt5Agg')
 
@@ -25,8 +27,6 @@ class FrameCanvas(FigureCanvasQTAgg):
         self.enableDrag = False
         # Check if drag was attempted.
         self.dragAttempted = False
-        # Background (Frame with Scan details drawn) for blit.
-        self.background = None
         # Coordinates of cursor when drag starts in ??? coordinates.
         self.xy = [0, 0]
         # Points that are dragged on canvas (pixels).
@@ -110,3 +110,33 @@ class FrameCanvas(FigureCanvasQTAgg):
             su.drawIPVDataOnAxis(self.axis, self.linkedScan.ipvData, self.linkedScan.frameNames[cfi], fd, dd)
 
         self.draw()
+
+    def distributeFramePoints(self, count: int):
+        """
+        Distribute the points on the current frame evenly along a generated spline.
+        Args:
+            count: Number of points for distribution.
+        """
+        # Points on current frame.
+        pointsPix = self.linkedScan.getPointsOnFrame()
+        # Organise points in a clockwise manner.
+        pointsPix = np.asfarray(Utils.organiseClockwise(pointsPix))
+        # Add extra point on end to complete spline.
+        pointsPix = np.append(pointsPix, [pointsPix[0, :]], axis=0)
+        # Polygon, acting as spline.
+
+        poly = Polygon(np.column_stack([pointsPix[:, 0], pointsPix[:, 1]]))
+        # Extract points from polygon.
+        xs, ys = poly.xy.T
+        # Evenly space points along spline line.
+        xn, yn = Utils.interpolate(xs, ys, len(xs) if len(xs) > count else count + 1)
+        if xn is None:
+            return
+        # Get all points except the last one, which is a repeat.
+        endPointsPix = np.column_stack([xn, yn])[:-1]
+        self.linkedScan.clearFramePoints()
+        fd = self.linkedScan.frames[self.linkedScan.currentFrame - 1].shape
+
+        for pointPix in endPointsPix:
+            pointDisplay = su.pixelsToDisplay([pointPix[0], fd[0] - pointPix[1]], fd, self.linkedScan.displayDimensions)
+            self.linkedScan.addOrRemovePoint(pointDisplay)

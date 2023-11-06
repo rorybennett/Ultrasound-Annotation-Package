@@ -541,28 +541,4 @@ class Scan:
 
         return count
 
-    def distributeFramePoints(self):
-        """
-        Distribute the points on the current frame evenly along a generated spline.
-        """
-        # Points on current frame.
-        pointsPix = self.getPointsOnFrame()
-        # Organise points in a clockwise manner.
-        pointsPix = np.asfarray(Utils.organiseClockwise(pointsPix))
-        # Add extra point on end to complete spline.
-        pointsPix = np.append(pointsPix, [pointsPix[0, :]], axis=0)
-        # Polygon, acting as spline.
 
-        poly = Polygon(np.column_stack([pointsPix[:, 0], pointsPix[:, 1]]))
-        # Extract points from polygon.
-        xs, ys = poly.xy.T
-        # Evenly space points along spline line.
-        xn, yn = Utils.interpolate(xs, ys, len(xs))
-        # Get all points except the last one, which is a repeat.
-        endPointsPix = np.column_stack([xn, yn])[:-1]
-        self.clearFramePoints()
-        fd = self.frames[self.currentFrame - 1].shape
-
-        for pointPix in endPointsPix:
-            pointDisplay = su.pixelsToDisplay([pointPix[0], fd[0] - pointPix[1]], fd, self.displayDimensions)
-            self.addOrRemovePoint(pointDisplay)

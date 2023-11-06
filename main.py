@@ -14,12 +14,12 @@ from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout,
     QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar, QSpinBox
 
 from classes import Export, Utils
+from classes import Scan
 from classes.ErrorDialog import ErrorDialog
 from classes.FrameCanvas import FrameCanvas
 from classes.IPVInferenceWorker import IPVInferenceWorker
 from classes.InputDialog import InputDialog
 from classes.LoadingDialog import LoadingDialog
-from classes import Scan
 from processes import PlayCine, AxisAnglePlot
 
 INFER_LOCAL = 'INFER-LOCAL'
@@ -99,9 +99,9 @@ class Main(QMainWindow):
 
         self.showMaximized()
 
-    def _distributePoints(self, scan: int):
+    def _distributePoints(self, scan: int, count: int):
         """Distribute points along a generated spline."""
-        self.scans[scan].distributeFramePoints()
+        self.canvases[scan].distributeFramePoints(count)
         self._updateDisplay(scan)
 
     def _toggleSegmentationTB(self, scan: int):
@@ -163,8 +163,13 @@ class Main(QMainWindow):
         toolbar.addAction(dragButton)
 
         distAction = QAction(QIcon(f'{basedir}/res/distribute.png'), 'Distribute points along spline.', self)
-        distAction.triggered.connect(lambda: self._distributePoints(scan))
+        distAction.triggered.connect(lambda: self._distributePoints(scan, distSpinBox.value()))
         toolbar.addAction(distAction)
+
+        distSpinBox = QSpinBox(minimum=5, maximum=100, value=20)
+        distSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        distSpinBox.setToolTip("Number of points in even distribution.")
+        toolbar.addWidget(distSpinBox)
 
         toolbar.setDisabled(True)
         toolbar.setMovable(False)
@@ -497,7 +502,6 @@ class Main(QMainWindow):
 
 def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
-
 
 
 if __name__ == "__main__":

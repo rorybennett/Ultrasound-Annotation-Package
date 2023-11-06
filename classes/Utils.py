@@ -9,6 +9,8 @@ from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QSpacerItem, QSizePolicy
 from scipy.interpolate import splprep, splev
 
+from classes.ErrorDialog import ErrorDialog
+
 labelFont = QFont('Arial', 14)
 spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 stylesheet = """QToolTip { background-color: black; 
@@ -183,11 +185,15 @@ def interpolate(x, y, total_points):
     """
     Interpolate x and y using splprep and splev. Used by the Spline class.
     """
-    [tck, _] = splprep([x, y], s=0, per=True)
+    try:
+        [tck, _] = splprep([x, y], s=0, per=True)
 
-    xi, yi = splev(np.linspace(0, 1, total_points), tck)
+        xi, yi = splev(np.linspace(0, 1, total_points), tck)
 
-    return xi, yi
+        return xi, yi
+    except Exception as e:
+        ErrorDialog(None, 'Error interpolating points. Probably too few (>3).', e)
+        return None, None
 
 
 def createTitleLayout():
