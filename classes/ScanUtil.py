@@ -328,7 +328,7 @@ def ratioToCoordinates(pointRatio: list, dimensions: list):
     Returns:
         Point coordinates in either frame or display relative dimensions (int rounding).
     """
-    pointDisplay = [int(pointRatio[0] * dimensions[0]), int(pointRatio[1] * dimensions[1])]
+    pointDisplay = [round(pointRatio[0] * dimensions[0]), round(pointRatio[1] * dimensions[1])]
 
     return pointDisplay
 

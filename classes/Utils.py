@@ -1,4 +1,5 @@
 import os
+from operator import itemgetter
 from pathlib import Path
 
 import natsort
@@ -6,6 +7,7 @@ import numpy as np
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QSpacerItem, QSizePolicy
+from scipy.interpolate import splprep, splev
 
 labelFont = QFont('Arial', 14)
 spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
@@ -140,6 +142,52 @@ def shrinkExpandPoints(points: list, amount: int):
         newPoints.append([round(point[0] + com[0]), round(point[1] + com[1])])
 
     return newPoints
+
+
+def organiseClockwise(points: np.array):
+    """
+    Sort the given points in a clockwise manner. The origin is taken as the centre of mass of the points. This method
+    requires the points to be spread out in a more-or-less circular fashion to get a reasonable centre.
+
+    Args:
+        points (np.array): Array of x- and y-coordinates to be sorted.
+
+    Returns:
+        orderedPoints (list): Clockwise ordered list of points.
+    """
+    # Find centre-of-mass of points.
+    com = getCOM(points)
+    # Shift points to centre-of-mass origin.
+    shiftedPoints = []
+    for point in points:
+        shiftedPoints.append([point[0] - com[0], point[1] - com[1]])
+    # Convert shifted points to polar coordinates.
+    polarPoints = []
+    for point in shiftedPoints:
+        polarPoints.append(cartesianToPolar(point))
+    # Sort polar coordinates by phi (angle).
+    polarPoints.sort(key=itemgetter(1))
+    # Convert sorted polar coordinates back to cartesian coordinates.
+    cartesian_points = []
+    for point in polarPoints:
+        cartesian_points.append(polarToCartesian(point))
+    # Shift back to original position.
+    orderedPoints = []
+    for point in cartesian_points:
+        orderedPoints.append([point[0] + com[0], point[1] + com[1]])
+
+    return orderedPoints
+
+
+def interpolate(x, y, total_points):
+    """
+    Interpolate x and y using splprep and splev. Used by the Spline class.
+    """
+    [tck, _] = splprep([x, y], s=0, per=True)
+
+    xi, yi = splev(np.linspace(0, 1, total_points), tck)
+
+    return xi, yi
 
 
 def createTitleLayout():

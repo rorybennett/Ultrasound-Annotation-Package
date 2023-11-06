@@ -101,7 +101,8 @@ class Main(QMainWindow):
 
     def _distributePoints(self, scan: int):
         """Distribute points along a generated spline."""
-        # todo
+        self.scans[scan].distributeFramePoints()
+        self._updateDisplay(scan)
 
     def _toggleSegmentationTB(self, scan: int):
         """Toggle segmentation tool bar for scan."""
@@ -455,16 +456,16 @@ class Main(QMainWindow):
         if self.scans[0].loaded and self.canvases[0].underMouse():
             menu = QMenu()
             menuPoints = menu.addMenu('Points')
-            menuPoints.addAction('Clear Frame Points', lambda: self._clearFramePoints(1))
+            menuPoints.addAction('Clear Frame Points', lambda: self._clearFramePoints(0))
             menuPoints.addSeparator()
-            menuPoints.addAction('Clear All Points', lambda: self._clearScanPoints(1))
+            menuPoints.addAction('Clear All Points', lambda: self._clearScanPoints(0))
             menuIPV = menu.addMenu('IPV')
             menuIPV.addAction('Add Center',
                               lambda: self._updateIPVCentre(0, Scan.ADD_POINT,
                                                             self.canvases[0].mapFromGlobal(event.globalPos())))
             menuIPV.addSeparator()
             menuIPV.addAction('Remove Center', lambda: self._updateIPVCentre(0, Scan.REMOVE_POINT,
-                                                                             self.canvases[1].mapFromGlobal(
+                                                                             self.canvases[0].mapFromGlobal(
                                                                                  event.globalPos())))
             menuIPV.addSeparator()
             menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(0))
