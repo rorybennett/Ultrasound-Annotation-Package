@@ -16,6 +16,13 @@ class Export:
         self.totalPatients = eu.getTotalPatients(self.scansPath)
         self.patients = [f'{x}' for x in range(1, self.totalPatients + 1)]
 
+    def exportIPVAUSData(self, scanType, mainWindow: QWidget):
+        """Export AUS transverse or sagittal frames for ipv inference."""
+        if scanType == Scan.PLANE_TRANSVERSE:
+            self.exportIPVAUSTransverseData(mainWindow)
+        else:
+            self.exportIPVAUSSagittalData(mainWindow)
+
     def exportAllSaveData(self):
         """Export all save data from all patients - For backup."""
         print(f'Exporting all Save Data from all patients...')

@@ -9,17 +9,17 @@ from pathlib import Path
 import qdarktheme
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, QPoint, QThreadPool
-from PyQt6.QtGui import QFont, QAction, QIcon
+from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
-    QLabel, QSpacerItem, QSizePolicy, QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar, QSpinBox
+    QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar, QSpinBox
 
 from classes import Export, Utils
-from classes import Scan
 from classes.ErrorDialog import ErrorDialog
 from classes.FrameCanvas import FrameCanvas
 from classes.IPVInferenceWorker import IPVInferenceWorker
 from classes.InputDialog import InputDialog
 from classes.LoadingDialog import LoadingDialog
+from classes import Scan
 from processes import PlayCine, AxisAnglePlot
 
 INFER_LOCAL = 'INFER-LOCAL'
@@ -28,8 +28,8 @@ INFER_ONLINE = 'INFER-ONLINE'
 basedir = os.path.dirname(__file__)
 
 
+# noinspection PyUnresolvedReferences
 class Main(QMainWindow):
-    labelFont = QFont('Arial', 14)
 
     def __init__(self):
         """Initialise MainWindow."""
@@ -37,54 +37,50 @@ class Main(QMainWindow):
         super().__init__()
         self.setWindowTitle("Ultrasound Scan Editing")
         # Tooltip style.
-        self.setStyleSheet("""QToolTip { background-color: black; 
-                                   color: white; 
-                                   border: black solid 1px }""")
+        self.setStyleSheet(Utils.stylesheet)
 
         # Display 2 scans side-by-side inside central widget.
         self.mainWidget = QWidget(self)
         self.mainLayout = QHBoxLayout(self.mainWidget)
         self.mainWidget.installEventFilter(self)
 
+        # 2 vertical layouts.
+        self.layouts = [QVBoxLayout(), QVBoxLayout()]
         # Toolbars.
-        self.segmentationTB = [QToolBar("Left Tool Bar"), QToolBar("Right Tool Bar")]
+        self.toolbars = [self._createToolBars(0), self._createToolBars(1)]
+        # Title rows.
+        self.titles = [Utils.createTitleLayout(), Utils.createTitleLayout()]
+        # Buttons above canvas.
+        self.buttons = [self._createTopButtons(0), self._createTopButtons(1)]
+        # Boxes below canvas.
+        self.boxes = [self._createBoxes(0), self._createBoxes(1)]
+        # Canvases for displaying frames.
+        self.canvases = [FrameCanvas(updateDisplay=lambda: self._updateDisplay(0),
+                                     showPointsBox=self.boxes[0].itemAt(0).widget(),
+                                     showIPVBox=self.boxes[0].itemAt(1).widget(),
+                                     dragButton=self.toolbars[0].actions()[6]),
+                         FrameCanvas(updateDisplay=lambda: self._updateDisplay(1),
+                                     showPointsBox=self.boxes[1].itemAt(0).widget(),
+                                     showIPVBox=self.boxes[1].itemAt(1).widget(),
+                                     dragButton=self.toolbars[1].actions()[6])]
 
-        spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
         # Left side.
-        self.left = QVBoxLayout()
-        self.left.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        self.leftTitle = self._createTitle()
-        self.leftButtons = self._createTopButtons(1)
-        self.leftBoxes = self._createBoxes(1)
-        self._createToolBars(1)
-        self.canvas1 = FrameCanvas(updateDisplay=lambda: self._updateDisplay(1),
-                                   showPointsBox=self.leftBoxes.itemAt(0).widget(),
-                                   showIPVBox=self.leftBoxes.itemAt(1).widget(),
-                                   dragButton=self.segmentationTB[0].actions()[6])
-        self.left.addLayout(self.leftTitle)
-        self.left.addLayout(self.leftButtons)
-        self.left.addWidget(self.canvas1)
-        self.left.addLayout(self.leftBoxes)
-        self.left.addItem(spacer)
+        self.layouts[0].setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self.layouts[0].addLayout(self.titles[0])
+        self.layouts[0].addLayout(self.buttons[0])
+        self.layouts[0].addWidget(self.canvases[0])
+        self.layouts[0].addLayout(self.boxes[0])
+        self.layouts[0].addItem(Utils.spacer)
         # Right side.
-        self.right = QVBoxLayout()
-        self.right.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        self.rightTitle = self._createTitle()
-        self.rightButtons = self._createTopButtons(2)
-        self.rightBoxes = self._createBoxes(2)
-        self._createToolBars(2)
-        self.canvas2 = FrameCanvas(updateDisplay=lambda: self._updateDisplay(2),
-                                   showPointsBox=self.rightBoxes.itemAt(0).widget(),
-                                   showIPVBox=self.rightBoxes.itemAt(1).widget(),
-                                   dragButton=self.segmentationTB[1].actions()[6])
-        self.right.addLayout(self.rightTitle)
-        self.right.addLayout(self.rightButtons)
-        self.right.addWidget(self.canvas2)
-        self.right.addLayout(self.rightBoxes)
-        self.right.addItem(spacer)
-
-        self.mainLayout.addLayout(self.left)
-        self.mainLayout.addLayout(self.right)
+        self.layouts[1].setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self.layouts[1].addLayout(self.titles[1])
+        self.layouts[1].addLayout(self.buttons[1])
+        self.layouts[1].addWidget(self.canvases[1])
+        self.layouts[1].addLayout(self.boxes[1])
+        self.layouts[1].addItem(Utils.spacer)
+        # Add left and right to mainLayout.
+        self.mainLayout.addLayout(self.layouts[0])
+        self.mainLayout.addLayout(self.layouts[1])
         self.setCentralWidget(self.mainWidget)
 
         self._createMainMenu()
@@ -92,8 +88,7 @@ class Main(QMainWindow):
         # Scan directory Path.
         self.scansPath = str(Path(Path.cwd().parent, 'Scans'))
         # Scans.
-        self.s1: Scan = None
-        self.s2: Scan = None
+        self.scans = [Scan.Scan(self), Scan.Scan(self)]
         # Class for exporting data for training.
         self.export = Export.Export(self.scansPath)
         # Thread pool.
@@ -104,44 +99,76 @@ class Main(QMainWindow):
 
         self.showMaximized()
 
+    def _distributePoints(self, scan: int):
+        """Distribute points along a generated spline."""
+        # todo
+
+    def _toggleSegmentationTB(self, scan: int):
+        """Toggle segmentation tool bar for scan."""
+        self.toolbars[scan].setEnabled(True if self.buttons[scan].itemAt(3).widget().isChecked() else False)
+
+    def _onAxisAngleClicked(self, scan):
+        """Start Axis Angle plotting process."""
+        self.axisAngleProcess[scan].start(self.scans[scan])
+
+    def _onNav50Clicked(self, scan: int):
+        """Travel to the frame at 50%."""
+        self.scans[scan].navigate(self.scans[scan].frameAtScanPercent(50))
+        self._updateDisplay(scan)
+
+    def _updateTitle(self, scan: int):
+        """Update title information."""
+        patient, scanType, scanPlane, scanNumber, scanFrames = self.scans[scan].getScanDetails()
+        self.titles[scan].itemAt(0).widget().setText(f'Patient: {patient}')
+        self.titles[scan].itemAt(0).widget().setText(f'Type: {scanType}')
+        self.titles[scan].itemAt(0).widget().setText(f'Plane: {scanPlane}')
+        self.titles[scan].itemAt(0).widget().setText(f'Number: {scanNumber}')
+        self.titles[scan].itemAt(0).widget().setText(f'Frames: {scanFrames}')
+
     def _createToolBars(self, scan):
         """Create left and right toolbars (mirrored)."""
-        toolbar = self.segmentationTB[scan - 1]
-        self.addToolBar(Qt.ToolBarArea.LeftToolBarArea if scan == 1 else Qt.ToolBarArea.RightToolBarArea, toolbar)
+        toolbar = QToolBar(f'ToolBar {scan}')
+        self.addToolBar(Qt.ToolBarArea.LeftToolBarArea if scan == 0 else Qt.ToolBarArea.RightToolBarArea, toolbar)
 
-        copyPreviousAction = QAction(QIcon(f"{basedir}/resources/copy_previous.png"),
-                                     "Copy points from previous frame.", self)
+        copyPreviousAction = QAction(QIcon(f"{basedir}/res/copy_previous.png"), "Copy previous frame points.",
+                                     self)
         copyPreviousAction.triggered.connect(lambda: self._copyFramePoints(scan, Scan.PREVIOUS))
         toolbar.addAction(copyPreviousAction)
 
-        copyNextAction = QAction(QIcon(f"{basedir}/resources/copy_next.png"), "Copy points from next frame.", self)
+        copyNextAction = QAction(QIcon(f"{basedir}/res/copy_next.png"), "Copy points from next frame.", self)
         copyNextAction.triggered.connect(lambda: self._copyFramePoints(scan, Scan.NEXT))
         toolbar.addAction(copyNextAction)
 
-        shrinkAction = QAction(QIcon(f"{basedir}/resources/shrink.png"), "Shrink points around centre of mass.", self)
+        shrinkAction = QAction(QIcon(f"{basedir}/res/shrink.png"), "Shrink points around CoM.", self)
         shrinkAction.triggered.connect(lambda: self._shrinkExpandPoints(scan, -shrinkSpinBox.value()))
         toolbar.addAction(shrinkAction)
 
-        shrinkSpinBox = QSpinBox(minimum=1, value=5)
+        shrinkSpinBox = QSpinBox(minimum=1, maximum=50, value=5)
         shrinkSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        shrinkSpinBox.setToolTip("Shrink Scale (minimum 1)")
+        shrinkSpinBox.setToolTip("Shrink Scale (minimum 1).")
         toolbar.addWidget(shrinkSpinBox)
 
-        expandAction = QAction(QIcon(f"{basedir}/resources/expand.png"), "Expand points around centre of mass.", self)
+        expandAction = QAction(QIcon(f"{basedir}/res/expand.png"), "Expand points around CoM.", self)
         expandAction.triggered.connect(lambda: self._shrinkExpandPoints(scan, expandSpinBox.value()))
         toolbar.addAction(expandAction)
 
-        expandSpinBox = QSpinBox(minimum=1, value=5)
+        expandSpinBox = QSpinBox(minimum=1, maximum=50, value=5)
         expandSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        expandSpinBox.setToolTip("Expand Scale (minimum 1)")
+        expandSpinBox.setToolTip("Expand Scale (minimum 1).")
         toolbar.addWidget(expandSpinBox)
 
-        dragButton = QAction(QIcon(f"{basedir}/resources/drag.png"), "Drag all points on frame.", self)
+        dragButton = QAction(QIcon(f"{basedir}/res/drag.png"), "Drag all points on frame.", self)
         dragButton.setCheckable(True)
         toolbar.addAction(dragButton)
 
+        distAction = QAction(QIcon(f'{basedir}/res/distribute.png'), 'Distribute points along spline.', self)
+        distAction.triggered.connect(lambda: self._distributePoints(scan))
+        toolbar.addAction(distAction)
+
         toolbar.setDisabled(True)
         toolbar.setMovable(False)
+
+        return toolbar
 
     def _createTopButtons(self, scan: int):
         """Create the layout for the top row of buttons"""
@@ -175,73 +202,6 @@ class Main(QMainWindow):
 
         return layout
 
-    def _toggleSegmentationTB(self, scan: int):
-        """Toggle segmentation tool bar for scan."""
-        if scan == 1:
-            self.segmentationTB[0].setEnabled(True if self.leftButtons.itemAt(3).widget().isChecked() else False)
-        else:
-            self.segmentationTB[1].setEnabled(True if self.rightButtons.itemAt(3).widget().isChecked() else False)
-
-    def _onAxisAngleClicked(self, scan):
-        """Start Axis Angle plotting process."""
-        self.axisAngleProcess[scan - 1].start(self.s1 if scan == 1 else self.s2)
-
-    def _onNav50Clicked(self, scan: int):
-        """Travel to the frame at 50%."""
-        if scan == 1:
-            self.s1.navigate(self.s1.frameAtScanPercent(50))
-        else:
-            self.s2.navigate(self.s2.frameAtScanPercent(50))
-
-        self._updateDisplay(scan)
-
-    @staticmethod
-    def _createTitle():
-        """Create title layout area."""
-        layout = QHBoxLayout()
-
-        patientLabel = QLabel(f'Patient: ')
-        patientLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        patientLabel.setFont(Main.labelFont)
-        typeLabel = QLabel(f'Type:')
-        typeLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        typeLabel.setFont(Main.labelFont)
-        planeLabel = QLabel(f'Plane:')
-        planeLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        planeLabel.setFont(Main.labelFont)
-        numberLabel = QLabel(f'Number:')
-        numberLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        numberLabel.setFont(Main.labelFont)
-        frameLabel = QLabel(f'Frames:')
-        frameLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        frameLabel.setFont(Main.labelFont)
-
-        layout.addWidget(patientLabel, 0)
-        layout.addWidget(typeLabel, 0)
-        layout.addWidget(planeLabel, 0)
-        layout.addWidget(numberLabel, 0)
-        layout.addWidget(frameLabel, 0)
-        layout.setSpacing(10)
-
-        return layout
-
-    def _updateTitle(self, scan: int):
-        """Update title information."""
-        if scan == 1:
-            patient, scanType, scanPlane, scanNumber, frameCount = self.s1.getScanDetails()
-            self.leftTitle.itemAt(0).widget().setText(f'Patient: {patient}')
-            self.leftTitle.itemAt(1).widget().setText(f'Type: {scanType}')
-            self.leftTitle.itemAt(2).widget().setText(f'Plane: {scanPlane}')
-            self.leftTitle.itemAt(3).widget().setText(f'Number: {scanNumber}')
-            self.leftTitle.itemAt(4).widget().setText(f'Frames: {frameCount}')
-        else:
-            patient, scanType, scanPlane, scanNumber, frameCount = self.s2.getScanDetails()
-            self.rightTitle.itemAt(0).widget().setText(f'Patient: {patient}')
-            self.rightTitle.itemAt(1).widget().setText(f'Type: {scanType}')
-            self.rightTitle.itemAt(2).widget().setText(f'Plane: {scanPlane}')
-            self.rightTitle.itemAt(3).widget().setText(f'Number: {scanNumber}')
-            self.rightTitle.itemAt(4).widget().setText(f'Frames: {frameCount}')
-
     def _createBoxes(self, scan: int):
         """Create checkboxes below canvas."""
         layout = QHBoxLayout()
@@ -263,50 +223,47 @@ class Main(QMainWindow):
 
     def _onCineClicked(self, scan: int):
         """Play a cine of the scan in a separate window."""
-        if scan == 1:
-            patient, scanType, scanPlane, _, _ = self.s1.getScanDetails()
-            cine = PlayCine.PlayCine(self.s1.frames, patient, scanType, scanPlane)
-            cine.startProcess()
-        else:
-            patient, scanType, scanPlane, _, _ = self.s2.getScanDetails()
-            cine = PlayCine.PlayCine(self.s2.frames, patient, scanType, scanPlane)
-            cine.startProcess()
+        patient, scanType, scanPlane, _, _ = self.scans[scan].getScanDetails()
+        cine = PlayCine.PlayCine(self.scans[scan].frames, patient, scanType, scanPlane)
+        cine.startProcess()
 
     def _createMainMenu(self):
         """Create menus."""
         # Load scans menu.
         self.menuLoadScans = self.menuBar().addMenu("Load Scans")
-        self.menuLoadScans.addAction("Select Scan 1 Folder...", lambda: self._selectScanDialog(1))
-        self.menuLoadScans.addAction("Open Scan 1 Directory...", lambda: self._openScanDirectory(1)).setDisabled(True)
+        self.menuLoadScans.addAction("Select Scan 1 Folder...", lambda: self._selectScanDialog(0))
+        self.menuLoadScans.addAction("Open Scan 1 Directory...",
+                                     lambda: self.scans[0].openDirectory()).setDisabled(True)
         self.menuLoadScans.addSeparator()
-        self.menuLoadScans.addAction("Select Scan 2 Folder...", lambda: self._selectScanDialog(2))
-        self.menuLoadScans.addAction("Open Scan 2 Directory...", lambda: self._openScanDirectory(2)).setDisabled(True)
+        self.menuLoadScans.addAction("Select Scan 2 Folder...", lambda: self._selectScanDialog(1))
+        self.menuLoadScans.addAction("Open Scan 2 Directory...",
+                                     lambda: self.scans[1].openDirectory()).setDisabled(True)
         # Inference menu.
         menuInference = self.menuBar().addMenu('Inference')
         menuIPV = menuInference.addMenu('IPV Inference')
-        self.menuIPV1 = menuIPV.addAction('Infer Scan 1', lambda: self._ipvInference(1))
+        self.menuIPV1 = menuIPV.addAction('Infer Scan 1', lambda: self._ipvInference(0))
         self.menuIPV1.setDisabled(True)
-        self.menuIPV2 = menuIPV.addAction('Infer Scan 2', lambda: self._ipvInference(2))
+        self.menuIPV2 = menuIPV.addAction('Infer Scan 2', lambda: self._ipvInference(1))
         self.menuIPV2.setDisabled(True)
         # Load data menu
         menuLoadData = self.menuBar().addMenu("Load Data")
         self.menuLoadData1 = menuLoadData.addMenu('Load Scan 1 Data')
         self.menuLoadData1.setDisabled(True)
-        self.menuLoadData1.aboutToShow.connect(lambda: self._populateLoadScanData(1))
+        self.menuLoadData1.aboutToShow.connect(lambda: self._populateLoadScanData(0))
         menuLoadData.addSeparator()
         self.menuLoadData2 = menuLoadData.addMenu('Load Scan 2 Data')
         self.menuLoadData2.setDisabled(True)
-        self.menuLoadData2.aboutToShow.connect(lambda: self._populateLoadScanData(2))
+        self.menuLoadData2.aboutToShow.connect(lambda: self._populateLoadScanData(1))
         # Save data menu.
         self.menuSaveData = self.menuBar().addMenu("Save Data")
-        self.menuSaveData.addAction('Save Scan 1 Data', lambda: self._saveData(1)).setDisabled(True)
+        self.menuSaveData.addAction('Save Scan 1 Data', lambda: self._saveData(0)).setDisabled(True)
         self.menuSaveData.addSeparator()
-        self.menuSaveData.addAction('Save Scan 2 Data', lambda: self._saveData(2)).setDisabled(True)
+        self.menuSaveData.addAction('Save Scan 2 Data', lambda: self._saveData(1)).setDisabled(True)
         # Export data menu.
         self.menuExport = self.menuBar().addMenu("Export Data")
         menuExportIPV = self.menuExport.addMenu('IPV')
-        menuExportIPV.addAction('Transverse', lambda: self._exportDataIPV(Scan.PLANE_TRANSVERSE))
-        menuExportIPV.addAction('Sagittal', lambda: self._exportDataIPV(Scan.PLANE_SAGITTAL))
+        menuExportIPV.addAction('Transverse', lambda: self.export.exportIPVAUSData(Scan.PLANE_TRANSVERSE, self))
+        menuExportIPV.addAction('Sagittal', lambda: self.export.exportIPVAUSData(Scan.PLANE_SAGITTAL, self))
         self.menuExport.addAction('Save Data', lambda: self.export.exportAllSaveData())
         # Reset data menu.
         self.menuReset = self.menuBar().addMenu("Reset Data")
@@ -324,16 +281,8 @@ class Main(QMainWindow):
             dialog.setWindowTitle('Reset Editing Data')
             dialog.exec()
 
-    def _exportDataIPV(self, scanType: str):
-        """Export save data for model training."""
-        if scanType == Scan.PLANE_TRANSVERSE:
-            self.export.exportIPVAUSTransverseData(self)
-        else:
-            self.export.exportIPVAUSSagittalData(self)
-
     def _ipvInference(self, scan: int):
         """Send current frame for IPV inference, either online or locally."""
-
         dlg = InputDialog()
         ok = dlg.exec()
         address, modelName = dlg.getInputs()
@@ -343,7 +292,7 @@ class Main(QMainWindow):
 
         loading = LoadingDialog(loadingMessage='Inferring IPV Points...', basedir=basedir)
 
-        worker = IPVInferenceWorker(self.s1 if scan == 1 else self.s2, address, modelName)
+        worker = IPVInferenceWorker(self.scans[scan], address, modelName)
 
         worker.signals.started.connect(lambda: self.setDisabled(True))
         worker.signals.started.connect(lambda: loading.start())
@@ -359,28 +308,17 @@ class Main(QMainWindow):
 
         if ok:
             if not userName:
-                print(f'User Name is empty...')
+                ErrorDialog(self, 'User name is empty.', '')
                 self._saveData(scan)
                 return
-            self.s1.saveUserData(userName) if scan == 1 else self.s2.saveUserData(userName)
-
-    def _loadSaveData(self, scan: int, fileName: str):
-        """Load save data of scan and update display."""
-        if scan == 1:
-            self.s1.loadSaveData(fileName)
-            self.s1 = Scan.Scan(self.s1.path, self.s1.currentFrame)
-        else:
-            self.s2.loadSaveData(fileName)
-            self.s2 = Scan.Scan(self.s2.path, self.s2.currentFrame)
-
-        self._updateDisplay(scan)
+            self.scans[scan].saveUserData(userName)
 
     def _populateLoadScanData(self, scan: int):
         """Populate the load submenu just before opening."""
-        if scan == 1:
+        if scan == 0:
             self.menuLoadData1.clear()
             actions = []
-            for fileName in self.s1.getSaveData():
+            for fileName in self.scans[scan].getSaveData():
                 action = QAction(fileName, self)
                 action.triggered.connect(lambda _, x=fileName: self._loadSaveData(scan, x))
                 actions.append(action)
@@ -388,80 +326,74 @@ class Main(QMainWindow):
         else:
             self.menuLoadData2.clear()
             actions = []
-            for fileName in self.s2.getSaveData():
+            for fileName in self.scans[scan].getSaveData():
                 action = QAction(fileName, self)
                 action.triggered.connect(lambda _, x=fileName: self._loadSaveData(scan, x))
                 actions.append(action)
             self.menuLoadData2.addActions(actions)
 
+    def _loadSaveData(self, scan: int, fileName: str):
+        """Load save data of scan and update display."""
+        self.scans[scan].loadSaveData(fileName)
+        self._refreshScanData(scan)
+
     def _selectScanDialog(self, scan: int):
         """Show dialog for selecting a scan folder."""
-        scanPath = QFileDialog.getExistingDirectory(self, caption=f'Select Scan {scan}', directory=self.scansPath)
+        scanPath = QFileDialog.getExistingDirectory(self, caption=f'Select Scan {scan + 1}', directory=self.scansPath)
 
         if not scanPath:
             return
 
         try:
-            if scan == 1:
-                self.s1 = Scan.Scan(scanPath, window=self)
-                self.canvas1.linkedScan = self.s1
+            self.scans[scan].load(scanPath)
+            self.canvases[scan].linkedScan = self.scans[scan]
+            for i in range(self.buttons[scan].count()):
+                self.buttons[scan].itemAt(i).widget().setEnabled(True)
+            self.layouts[scan].itemAt(2).widget().setFixedSize(self.scans[scan].displayDimensions[0],
+                                                               self.scans[scan].displayDimensions[1])
+            for i in range(self.boxes[scan].count()):
+                self.boxes[scan].itemAt(i).widget().setEnabled(True)
+
+            if scan == 0:
                 self.menuLoadScans.actions()[1].setEnabled(True)
                 self.menuIPV1.setEnabled(True)
                 self.menuLoadData1.setEnabled(True)
                 self.menuSaveData.actions()[0].setEnabled(True)
-                for i in range(self.leftButtons.count()):
-                    self.leftButtons.itemAt(i).widget().setEnabled(True)
-                self.left.itemAt(2).widget().setFixedSize(self.s1.displayDimensions[0],
-                                                          self.s1.displayDimensions[1])
-                for i in range(self.leftBoxes.count()):
-                    self.leftBoxes.itemAt(i).widget().setEnabled(True)
             else:
-                self.s2 = Scan.Scan(scanPath, window=self)
-                self.canvas2.linkedScan = self.s2
                 self.menuLoadScans.actions()[4].setEnabled(True)
                 self.menuIPV2.setEnabled(True)
                 self.menuLoadData2.setEnabled(True)
                 self.menuSaveData.actions()[2].setEnabled(True)
-                for i in range(self.rightButtons.count()):
-                    self.rightButtons.itemAt(i).widget().setEnabled(True)
-                self.right.itemAt(2).widget().setFixedSize(self.s2.displayDimensions[0],
-                                                           self.s2.displayDimensions[1])
-                self.rightBoxes.itemAt(0).widget().setEnabled(True)
-                for i in range(self.rightBoxes.count()):
-                    self.rightBoxes.itemAt(i).widget().setEnabled(True)
+
             self._updateTitle(scan)
             self._updateDisplay(scan)
         except Exception as e:
             ErrorDialog(self, 'Error loading Scan data', e)
 
-    def _openScanDirectory(self, scan: int):
-        """Open directory of Scan."""
-        self.s1.openDirectory() if scan == 1 else self.s2.openDirectory()
-
     def _updateDisplay(self, scan: int):
         """Update the shown frame and position on plot."""
-        self.canvas1.updateAxis() if scan == 1 else self.canvas2.updateAxis()
-        self.axisAngleProcess[scan - 1].updateIndex(self.s1.currentFrame - 1 if scan == 1 else self.s2.currentFrame - 1)
+        self.canvases[scan].updateAxis()
+        self.axisAngleProcess[scan].updateIndex(self.scans[scan].currentFrame)
 
     def _shrinkExpandPoints(self, scan: int, amount):
         """Expand or shrink points around centre of mass."""
-        self.s1.shrinkExpandPoints(amount) if scan == 1 else self.s2.shrinkExpandPoints(amount)
+        self.scans[scan].shrinkExpandPoints(amount)
         self._updateDisplay(scan)
 
     def _clearScanPoints(self, scan: int):
         """Clear all points in a Scan, then update display."""
-        self.s1.clearScanPoints() if scan == 1 else self.s2.clearScanPoints()
+        self.scans[scan].clearScanPoints()
         self._updateDisplay(scan)
 
     def _clearFramePoints(self, scan: int):
         """Clear frame points from scan, then update display."""
-        self.s1.clearFramePoints() if scan == 1 else self.s2.clearFramePoints()
+        self.scans[scan].clearFramePoints()
         self._updateDisplay(scan)
 
     def _updateIPVCentre(self, scan: int, addOrRemove: str, position: QPoint):
         """Add or remove IPV centre then update display."""
-        position = [position.x(), self.s1.displayDimensions[1] - position.y()]
-        self.s1.updateIPVCentre(position, addOrRemove) if scan == 1 else self.s2.updateIPVCentre(position, addOrRemove)
+        position = [position.x(), self.scans[scan].displayDimensions[1] - position.y()]
+        self.scans[scan].updateIPVCentre(position, addOrRemove)
         self._updateDisplay(scan)
 
     def _updateIPVRadius(self, scan: int):
@@ -471,46 +403,40 @@ class Main(QMainWindow):
         if ok:
             try:
                 radius = int(radius)
-                self.s1.updateIPVRadius(radius) if scan == 1 else self.s2.updateIPVRadius(radius)
+                self.scans[scan].updateIPVRadius(radius)
                 self._updateDisplay(scan)
             except Exception as e:
                 ErrorDialog(self, f'Error converting radius to int', e)
 
     def _removeIPVData(self, scan: int):
         """Remove all IPV data of the Scan."""
-        self.s1.removeIPVData() if scan == 1 else self.s2.removeIPVData()
-
+        self.scans[scan].removeIPVData()
         self._updateDisplay(scan)
 
     def _copyFramePoints(self, scan: int, location):
         """Copy points from either previous or next frame."""
-        self.s1.copyFramePoints(location) if scan == 1 else self.s2.copyFramePoints(location)
-
+        self.scans[scan].copyFramePoints(location)
         self._updateDisplay(scan)
 
     def _refreshScanData(self, scan: int):
         """Refresh scan data by re-reading files."""
-        if scan == 1:
-            self.s1 = Scan.Scan(self.s1.path, self.s1.currentFrame)
-        else:
-            self.s2 = Scan.Scan(self.s2.path, self.s2.currentFrame)
-
+        self.scans[scan].load(self.scans[scan].path, self.scans[scan].currentFrame)
         self._updateDisplay(scan)
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         """Handle key press events."""
-        if self.s1 and self.canvas1.underMouse():
+        if self.scans[0].loaded and self.canvases[0].underMouse():
             if event.key() == Qt.Key.Key_W:
-                self.s1.navigate(Scan.NAVIGATION['w'])
+                self.scans[0].navigate(Scan.NAVIGATION['w'])
             elif event.key() == Qt.Key.Key_S:
-                self.s1.navigate(Scan.NAVIGATION['s'])
+                self.scans[0].navigate(Scan.NAVIGATION['s'])
+            self._updateDisplay(0)
+        elif self.scans[1].loaded and self.canvases[1].underMouse():
+            if event.key() == Qt.Key.Key_W:
+                self.scans[1].navigate(Scan.NAVIGATION['w'])
+            elif event.key() == Qt.Key.Key_S:
+                self.scans[1].navigate(Scan.NAVIGATION['s'])
             self._updateDisplay(1)
-        elif self.s2 and self.canvas2.underMouse():
-            if event.key() == Qt.Key.Key_W:
-                self.s2.navigate(Scan.NAVIGATION['w'])
-            elif event.key() == Qt.Key.Key_S:
-                self.s2.navigate(Scan.NAVIGATION['s'])
-            self._updateDisplay(2)
 
     # def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
     #     QMainWindow.resizeEvent(self, a0)
@@ -526,7 +452,27 @@ class Main(QMainWindow):
     #         self._updateDisplay(2)
 
     def contextMenuEvent(self, event):
-        if self.s1 and self.canvas1.underMouse():
+        if self.scans[0].loaded and self.canvases[0].underMouse():
+            menu = QMenu()
+            menuPoints = menu.addMenu('Points')
+            menuPoints.addAction('Clear Frame Points', lambda: self._clearFramePoints(1))
+            menuPoints.addSeparator()
+            menuPoints.addAction('Clear All Points', lambda: self._clearScanPoints(1))
+            menuIPV = menu.addMenu('IPV')
+            menuIPV.addAction('Add Center',
+                              lambda: self._updateIPVCentre(0, Scan.ADD_POINT,
+                                                            self.canvases[0].mapFromGlobal(event.globalPos())))
+            menuIPV.addSeparator()
+            menuIPV.addAction('Remove Center', lambda: self._updateIPVCentre(0, Scan.REMOVE_POINT,
+                                                                             self.canvases[1].mapFromGlobal(
+                                                                                 event.globalPos())))
+            menuIPV.addSeparator()
+            menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(0))
+            menuIPV.addSeparator()
+            menuIPV.addAction('Clear IPV Data', lambda: self._removeIPVData(0))
+            menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(0))
+            menu.exec(event.globalPos())
+        elif self.scans[1].loaded and self.canvases[1].underMouse():
             menu = QMenu()
             menuPoints = menu.addMenu('Points')
             menuPoints.addAction('Clear Frame Points', lambda: self._clearFramePoints(1))
@@ -535,10 +481,10 @@ class Main(QMainWindow):
             menuIPV = menu.addMenu('IPV')
             menuIPV.addAction('Add Center',
                               lambda: self._updateIPVCentre(1, Scan.ADD_POINT,
-                                                            self.canvas1.mapFromGlobal(event.globalPos())))
+                                                            self.canvases[1].mapFromGlobal(event.globalPos())))
             menuIPV.addSeparator()
             menuIPV.addAction('Remove Center', lambda: self._updateIPVCentre(1, Scan.REMOVE_POINT,
-                                                                             self.canvas1.mapFromGlobal(
+                                                                             self.canvases[1].mapFromGlobal(
                                                                                  event.globalPos())))
             menuIPV.addSeparator()
             menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(1))
@@ -546,34 +492,11 @@ class Main(QMainWindow):
             menuIPV.addAction('Clear IPV Data', lambda: self._removeIPVData(1))
             menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(1))
             menu.exec(event.globalPos())
-        elif self.s2 and self.canvas2.underMouse():
-            menu = QMenu()
-            menuPoints = menu.addMenu('Points')
-            menuPoints.addAction('Clear Frame Points', lambda: self._clearFramePoints(2))
-            menuPoints.addSeparator()
-            menuPoints.addAction('Clear All Points', lambda: self._clearScanPoints(2))
-            menuIPV = menu.addMenu('IPV')
-            menuIPV.addAction('Add Center',
-                              lambda: self._updateIPVCentre(2, Scan.ADD_POINT,
-                                                            self.canvas2.mapFromGlobal(event.globalPos())))
-            menuIPV.addSeparator()
-            menuIPV.addAction('Remove Center', lambda: self._updateIPVCentre(1, Scan.REMOVE_POINT,
-                                                                             self.canvas2.mapFromGlobal(
-                                                                                 event.globalPos())))
-            menuIPV.addSeparator()
-            menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(2))
-            menuIPV.addSeparator()
-            menuIPV.addAction('Clear IPV Data', lambda: self._removeIPVData(2))
-            menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(2))
-            menu.exec(event.globalPos())
 
 
 def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
 
-
-# def main():
-#
 
 
 if __name__ == "__main__":
@@ -591,5 +514,5 @@ if __name__ == "__main__":
 
 # To create an executable:
 # pyinstaller main.py
-# Add resources to main .spec - a=[..., datas=[('resources', 'resources')],...]
+# Add res to main .spec - a=[..., datas=[('res', 'res')],...]
 # pyinstaller main.spec

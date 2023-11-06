@@ -4,12 +4,10 @@
 /IPV/Models/
 /Export/
 !/classes/Testing.py
-!/build/
 
 !/dist/
 !/MainWindow.spec
 !/build/
 
-!/dist/
 
 !/main.spec

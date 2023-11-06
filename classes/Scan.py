@@ -13,8 +13,8 @@ from PyQt6.QtWidgets import QMainWindow
 from natsort import natsorted
 from pyquaternion import Quaternion
 
-from classes import ScanUtil as su
 from classes import FrameCanvas, Utils
+from classes import ScanUtil as su
 from classes.ErrorDialog import ErrorDialog
 
 # Scan Types.
@@ -46,40 +46,62 @@ EXPAND = '-EXPAND-'
 
 
 class Scan:
-    def __init__(self, path: str, startingFrame=1, window: QMainWindow = None):
+
+    def __init__(self, window: QMainWindow):
         """
-        Initialise a Scan object using the given path string.
+        Creates all attributes, mostly set as None values, to be properly instantiated in self.load.
+
+        Args:
+            window: QMainWindow, for sizing of frames.
+        """
+        # Main Window (used for dimension calculations)
+        self.window = window
+        # Path to Recording directory.
+        self.path = None
+        # Recording frames, stored in working memory.
+        self.frames = None
+        # Shape of frames, assumed equal for all frames.
+        self.frameShape = None
+        # Total number of frames.
+        self.frameCount = None
+        # Current frame being displayed.
+        self.currentFrame = None
+        # IMU data.txt file information.
+        self.frameNames, self.accelerations, self.quaternions, self.depths, self.duration = None, None, None, None, None
+        # EditingData.txt file information.
+        self.editPath, self.imuOffset, self.imuPosition = None, None, None
+        # Type of scan and plane.
+        self.scanType, self.scanPlane = None, None
+        # Display dimensions.
+        self.displayDimensions = None
+        # Point data from PointData.txt.
+        self.pointPath, self.pointsPix = None, None
+        # IPV data from IPV.JSON.
+        self.ipvPath, self.ipvData = None, None
+        # Has a Scan been loaded?
+        self.loaded = False
+
+    def load(self, path: str, startingFrame=1):
+        """
+        Load a Scan object using the given path string. See __init__ for attribute details
 
         Args:
             path: Path to Scan directory as a String.
             startingFrame: Starting frame position.
-            window: QMainWindow, for sizing of frames.
         """
-        # Path to Recording directory.
         self.path = path
-        # Recording frames, stored in working memory.
         self.frames = su.loadFrames(self.path)
-        # Shape of frames, assumed equal for all frames.
         self.frameShape = self.frames[0].shape
-        # Total number of frames.
         self.frameCount = len(self.frames)
-        # Current frame being displayed.
         self.currentFrame = startingFrame if startingFrame < self.frameCount else 1
-        # IMU data.txt file information.
         self.frameNames, self.accelerations, self.quaternions, self.depths, self.duration = su.getIMUDataFromFile(
             self.path)
-        # EditingData.txt file information.
         self.editPath, self.imuOffset, self.imuPosition = su.getEditDataFromFile(self.path)
-        # Type of scan and plane.
         _, self.scanType, self.scanPlane, _, _ = self.getScanDetails()
-        # Main Window (used for dimension calculations)
-        self.window = window
-        # Display dimensions.
         self.displayDimensions = self.getDisplayDimensions()
-        # Point data from PointData.txt.
         self.pointPath, self.pointsPix = su.getPointDataFromFile(self.path)
-        # IPV data from IPV.JSON.
         self.ipvPath, self.ipvData = su.getIPVDataFromFile(self.path)
+        self.loaded = True
 
     def drawFrameOnAxis(self, canvas: FrameCanvas):
         """
@@ -196,7 +218,7 @@ class Scan:
 
     def addOrRemovePoint(self, pointDisplay: list):
         """
-        Add or remove a point to/from self.points. Point data is save din pixel values. If the new point is within
+        Add or remove a point to/from self.points. Point data is saved in pixel values. If the new point is within
         a radius of an old point, the old point is removed.
 
         Args:
@@ -238,7 +260,7 @@ class Scan:
 
             if saveType in [SAVE_POINT_DATA, SAVE_ALL]:
                 with open(self.pointPath, 'w') as pointFile:
-                    self.pointsPix = natsorted(self.pointsPix, key=lambda l: l[0])
+                    self.pointsPix = natsorted(self.pointsPix, key=lambda frameNumber: frameNumber[0])
                     for point in self.pointsPix:
                         pointFile.write(f'{point[0]},{point[1]},{point[2]}\n')
 
@@ -465,8 +487,8 @@ class Scan:
                current quaternion.
             3. Calculate the axis angle of r (the difference quaternion).
 
-        Converting the raw quaternions to their axis angle representation for rotation comparisons is not the correct way
-        to do it, the axis angle has to be calculated from the quaternion difference.
+        Converting the raw quaternions to their axis angle representation for rotation comparisons is not the correct
+        way to do it, the axis angle has to be calculated from the quaternion difference.
 
         Returns:
             axisAngles (list): List of axis angles (in degrees) relative to the first rotation (taken as 0 degrees).
@@ -514,6 +536,3 @@ class Scan:
             count = sum(1 for p in self.pointsPix if p[0] == self.frameNames[self.currentFrame - 1])
 
         return count
-
-
-

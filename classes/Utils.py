@@ -3,6 +3,15 @@ from pathlib import Path
 
 import natsort
 import numpy as np
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QHBoxLayout, QLabel, QSpacerItem, QSizePolicy
+
+labelFont = QFont('Arial', 14)
+spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+stylesheet = """QToolTip { background-color: black; 
+                                   color: white; 
+                                   border: black solid 1px }"""
 
 
 def resetEditingData(scansPath: str):
@@ -131,3 +140,33 @@ def shrinkExpandPoints(points: list, amount: int):
         newPoints.append([round(point[0] + com[0]), round(point[1] + com[1])])
 
     return newPoints
+
+
+def createTitleLayout():
+    """Create title layout area."""
+    layout = QHBoxLayout()
+
+    patientLabel = QLabel(f'Patient: ')
+    patientLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    patientLabel.setFont(labelFont)
+    typeLabel = QLabel(f'Type:')
+    typeLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    typeLabel.setFont(labelFont)
+    planeLabel = QLabel(f'Plane:')
+    planeLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    planeLabel.setFont(labelFont)
+    numberLabel = QLabel(f'Number:')
+    numberLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    numberLabel.setFont(labelFont)
+    frameLabel = QLabel(f'Frames:')
+    frameLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    frameLabel.setFont(labelFont)
+
+    layout.addWidget(patientLabel, 0)
+    layout.addWidget(typeLabel, 0)
+    layout.addWidget(planeLabel, 0)
+    layout.addWidget(numberLabel, 0)
+    layout.addWidget(frameLabel, 0)
+    layout.setSpacing(10)
+
+    return layout
