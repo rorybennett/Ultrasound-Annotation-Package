@@ -36,6 +36,7 @@ class Main(QMainWindow):
         # Setup GUI.
         super().__init__()
         self.setWindowTitle("Ultrasound Scan Editing")
+        self.setWindowIcon(QIcon(f'{basedir}/res/main.png'))
         # Tooltip style.
         self.setStyleSheet(Utils.stylesheet)
 
@@ -86,7 +87,7 @@ class Main(QMainWindow):
         self._createMainMenu()
 
         # Scan directory Path.
-        self.scansPath = str(Path(Path.cwd().parent, 'Scans'))
+        self.scansPath = f'{basedir}/Scans'
         # Scans.
         self.scans = [Scan.Scan(self), Scan.Scan(self)]
         # Class for exporting data for training.
@@ -436,6 +437,8 @@ class Main(QMainWindow):
                 self.scans[0].navigate(Scan.NAVIGATION['w'])
             elif event.key() == Qt.Key.Key_S:
                 self.scans[0].navigate(Scan.NAVIGATION['s'])
+            elif self.buttons[0].itemAt(3).widget().isChecked() and event.key() == Qt.Key.Key_D:
+                self.toolbars[0].actions()[7].trigger()
             self._updateDisplay(0)
         elif self.scans[1].loaded and self.canvases[1].underMouse():
             if event.key() == Qt.Key.Key_W:

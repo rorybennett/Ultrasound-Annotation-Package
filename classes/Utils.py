@@ -192,7 +192,7 @@ def interpolate(x, y, total_points):
 
         return xi, yi
     except Exception as e:
-        ErrorDialog(None, 'Error interpolating points. Probably too few (>3).', e)
+        ErrorDialog(None, 'Error interpolating points (too few, must be > 2).', e)
         return None, None
 
 

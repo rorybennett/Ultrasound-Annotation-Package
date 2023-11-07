@@ -114,11 +114,14 @@ class FrameCanvas(FigureCanvasQTAgg):
     def distributeFramePoints(self, count: int):
         """
         Distribute the points on the current frame evenly along a generated spline.
+
         Args:
             count: Number of points for distribution.
         """
         # Points on current frame.
         pointsPix = self.linkedScan.getPointsOnFrame()
+        if len(pointsPix) == 0:
+            return
         # Organise points in a clockwise manner.
         pointsPix = np.asfarray(Utils.organiseClockwise(pointsPix))
         # Add extra point on end to complete spline.
@@ -134,9 +137,10 @@ class FrameCanvas(FigureCanvasQTAgg):
             return
         # Get all points except the last one, which is a repeat.
         endPointsPix = np.column_stack([xn, yn])[:-1]
+        # Clear current points from frame.
         self.linkedScan.clearFramePoints()
         fd = self.linkedScan.frames[self.linkedScan.currentFrame - 1].shape
-
+        # Save points.
         for pointPix in endPointsPix:
             pointDisplay = su.pixelsToDisplay([pointPix[0], fd[0] - pointPix[1]], fd, self.linkedScan.displayDimensions)
             self.linkedScan.addOrRemovePoint(pointDisplay)
