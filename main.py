@@ -44,6 +44,10 @@ class Main(QMainWindow):
         self.mainLayout = QHBoxLayout(self.mainWidget)
         self.mainWidget.installEventFilter(self)
 
+        # Menu IPV.
+        self.menuIPV = []
+        # Menu load data.
+        self.menuLoadData = []
         # 2 vertical layouts.
         self.layouts = [QVBoxLayout(), QVBoxLayout()]
         # Toolbars.
@@ -99,32 +103,47 @@ class Main(QMainWindow):
 
         self.showMaximized()
 
-    def _distributePoints(self, scan: int, count: int):
-        """Distribute points along a generated spline."""
-        self.canvases[scan].distributeFramePoints(count)
-        self._updateDisplay(scan)
-
-    def _toggleSegmentationTB(self, scan: int):
-        """Toggle segmentation tool bar for scan."""
-        self.toolbars[scan].setEnabled(True if self.buttons[scan].itemAt(3).widget().isChecked() else False)
-
-    def _onAxisAngleClicked(self, scan):
-        """Start Axis Angle plotting process."""
-        self.axisAngleProcess[scan].start(self.scans[scan])
-
-    def _onNav50Clicked(self, scan: int):
-        """Travel to the frame at 50%."""
-        self.scans[scan].navigate(self.scans[scan].frameAtScanPercent(50))
-        self._updateDisplay(scan)
-
-    def _updateTitle(self, scan: int):
-        """Update title information."""
-        patient, scanType, scanPlane, scanNumber, scanFrames = self.scans[scan].getScanDetails()
-        self.titles[scan].itemAt(0).widget().setText(f'Patient: {patient}')
-        self.titles[scan].itemAt(0).widget().setText(f'Type: {scanType}')
-        self.titles[scan].itemAt(0).widget().setText(f'Plane: {scanPlane}')
-        self.titles[scan].itemAt(0).widget().setText(f'Number: {scanNumber}')
-        self.titles[scan].itemAt(0).widget().setText(f'Frames: {scanFrames}')
+    def _createMainMenu(self):
+        """Create menus."""
+        # Load scans menu.
+        self.menuLoadScans = self.menuBar().addMenu("Load Scans")
+        self.menuLoadScans.addAction("Select Scan 1 Folder...", lambda: self._selectScanDialog(0))
+        self.menuLoadScans.addAction("Open Scan 1 Directory...",
+                                     lambda: self.scans[0].openDirectory()).setDisabled(True)
+        self.menuLoadScans.addSeparator()
+        self.menuLoadScans.addAction("Select Scan 2 Folder...", lambda: self._selectScanDialog(1))
+        self.menuLoadScans.addAction("Open Scan 2 Directory...",
+                                     lambda: self.scans[1].openDirectory()).setDisabled(True)
+        # Inference menu.
+        menuInference = self.menuBar().addMenu('Inference')
+        menuIPV = menuInference.addMenu('IPV Inference')
+        self.menuIPV.append(menuIPV.addAction('Infer Scan 1', lambda: self._ipvInference(0)))
+        self.menuIPV.append(menuIPV.addAction('Infer Scan 2', lambda: self._ipvInference(1)))
+        self.menuIPV[0].setDisabled(True)
+        self.menuIPV[1].setDisabled(True)
+        # Load data menu
+        menuLoadData = self.menuBar().addMenu("Load Data")
+        self.menuLoadData.append(menuLoadData.addMenu('Load Scan 1 Data'))
+        menuLoadData.addSeparator()
+        self.menuLoadData.append(menuLoadData.addMenu('Load Scan 2 Data'))
+        self.menuLoadData[0].setDisabled(True)
+        self.menuLoadData[1].setDisabled(True)
+        self.menuLoadData[0].aboutToShow.connect(lambda: self._populateLoadScanData(0))
+        self.menuLoadData[1].aboutToShow.connect(lambda: self._populateLoadScanData(1))
+        # Save data menu.
+        self.menuSaveData = self.menuBar().addMenu("Save Data")
+        self.menuSaveData.addAction('Save Scan 1 Data', lambda: self._saveData(0)).setDisabled(True)
+        self.menuSaveData.addSeparator()
+        self.menuSaveData.addAction('Save Scan 2 Data', lambda: self._saveData(1)).setDisabled(True)
+        # Export data menu.
+        self.menuExport = self.menuBar().addMenu("Export Data")
+        menuExportIPV = self.menuExport.addMenu('IPV')
+        menuExportIPV.addAction('Transverse', lambda: self.export.exportIPVAUSData(Scan.PLANE_TRANSVERSE, self))
+        menuExportIPV.addAction('Sagittal', lambda: self.export.exportIPVAUSData(Scan.PLANE_SAGITTAL, self))
+        self.menuExport.addAction('Save Data', lambda: self.export.exportAllSaveData())
+        # Reset data menu.
+        self.menuReset = self.menuBar().addMenu("Reset Data")
+        self.menuReset = self.menuReset.addAction("Reset Editing Data", lambda: self._resetEditingData())
 
     def _createToolBars(self, scan):
         """Create left and right toolbars (mirrored)."""
@@ -227,53 +246,38 @@ class Main(QMainWindow):
 
         return layout
 
+    def _distributePoints(self, scan: int, count: int):
+        """Distribute points along a generated spline."""
+        self.canvases[scan].distributeFramePoints(count)
+        self._updateDisplay(scan)
+
+    def _toggleSegmentationTB(self, scan: int):
+        """Toggle segmentation tool bar for scan."""
+        self.toolbars[scan].setEnabled(True if self.buttons[scan].itemAt(3).widget().isChecked() else False)
+
+    def _onAxisAngleClicked(self, scan):
+        """Start Axis Angle plotting process."""
+        self.axisAngleProcess[scan].start(self.scans[scan])
+
+    def _onNav50Clicked(self, scan: int):
+        """Travel to the frame at 50%."""
+        self.scans[scan].navigate(self.scans[scan].frameAtScanPercent(50))
+        self._updateDisplay(scan)
+
+    def _updateTitle(self, scan: int):
+        """Update title information."""
+        patient, scanType, scanPlane, scanNumber, scanFrames = self.scans[scan].getScanDetails()
+        self.titles[scan].itemAt(0).widget().setText(f'Patient: {patient}')
+        self.titles[scan].itemAt(0).widget().setText(f'Type: {scanType}')
+        self.titles[scan].itemAt(0).widget().setText(f'Plane: {scanPlane}')
+        self.titles[scan].itemAt(0).widget().setText(f'Number: {scanNumber}')
+        self.titles[scan].itemAt(0).widget().setText(f'Frames: {scanFrames}')
+
     def _onCineClicked(self, scan: int):
         """Play a cine of the scan in a separate window."""
         patient, scanType, scanPlane, _, _ = self.scans[scan].getScanDetails()
         cine = PlayCine.PlayCine(self.scans[scan].frames, patient, scanType, scanPlane)
         cine.startProcess()
-
-    def _createMainMenu(self):
-        """Create menus."""
-        # Load scans menu.
-        self.menuLoadScans = self.menuBar().addMenu("Load Scans")
-        self.menuLoadScans.addAction("Select Scan 1 Folder...", lambda: self._selectScanDialog(0))
-        self.menuLoadScans.addAction("Open Scan 1 Directory...",
-                                     lambda: self.scans[0].openDirectory()).setDisabled(True)
-        self.menuLoadScans.addSeparator()
-        self.menuLoadScans.addAction("Select Scan 2 Folder...", lambda: self._selectScanDialog(1))
-        self.menuLoadScans.addAction("Open Scan 2 Directory...",
-                                     lambda: self.scans[1].openDirectory()).setDisabled(True)
-        # Inference menu.
-        menuInference = self.menuBar().addMenu('Inference')
-        menuIPV = menuInference.addMenu('IPV Inference')
-        self.menuIPV1 = menuIPV.addAction('Infer Scan 1', lambda: self._ipvInference(0))
-        self.menuIPV1.setDisabled(True)
-        self.menuIPV2 = menuIPV.addAction('Infer Scan 2', lambda: self._ipvInference(1))
-        self.menuIPV2.setDisabled(True)
-        # Load data menu
-        menuLoadData = self.menuBar().addMenu("Load Data")
-        self.menuLoadData1 = menuLoadData.addMenu('Load Scan 1 Data')
-        self.menuLoadData1.setDisabled(True)
-        self.menuLoadData1.aboutToShow.connect(lambda: self._populateLoadScanData(0))
-        menuLoadData.addSeparator()
-        self.menuLoadData2 = menuLoadData.addMenu('Load Scan 2 Data')
-        self.menuLoadData2.setDisabled(True)
-        self.menuLoadData2.aboutToShow.connect(lambda: self._populateLoadScanData(1))
-        # Save data menu.
-        self.menuSaveData = self.menuBar().addMenu("Save Data")
-        self.menuSaveData.addAction('Save Scan 1 Data', lambda: self._saveData(0)).setDisabled(True)
-        self.menuSaveData.addSeparator()
-        self.menuSaveData.addAction('Save Scan 2 Data', lambda: self._saveData(1)).setDisabled(True)
-        # Export data menu.
-        self.menuExport = self.menuBar().addMenu("Export Data")
-        menuExportIPV = self.menuExport.addMenu('IPV')
-        menuExportIPV.addAction('Transverse', lambda: self.export.exportIPVAUSData(Scan.PLANE_TRANSVERSE, self))
-        menuExportIPV.addAction('Sagittal', lambda: self.export.exportIPVAUSData(Scan.PLANE_SAGITTAL, self))
-        self.menuExport.addAction('Save Data', lambda: self.export.exportAllSaveData())
-        # Reset data menu.
-        self.menuReset = self.menuBar().addMenu("Reset Data")
-        self.menuReset = self.menuReset.addAction("Reset Editing Data", lambda: self._resetEditingData())
 
     def _resetEditingData(self):
         """Reset all editing data after confirmation."""
@@ -321,22 +325,14 @@ class Main(QMainWindow):
 
     def _populateLoadScanData(self, scan: int):
         """Populate the load submenu just before opening."""
-        if scan == 0:
-            self.menuLoadData1.clear()
-            actions = []
-            for fileName in self.scans[scan].getSaveData():
-                action = QAction(fileName, self)
-                action.triggered.connect(lambda _, x=fileName: self._loadSaveData(scan, x))
-                actions.append(action)
-            self.menuLoadData1.addActions(actions)
-        else:
-            self.menuLoadData2.clear()
-            actions = []
-            for fileName in self.scans[scan].getSaveData():
-                action = QAction(fileName, self)
-                action.triggered.connect(lambda _, x=fileName: self._loadSaveData(scan, x))
-                actions.append(action)
-            self.menuLoadData2.addActions(actions)
+        self.menuLoadData[scan].clear()
+        actions = []
+        for fileName in self.scans[scan].getSaveData():
+            action = QAction(fileName, self)
+            action.triggered.connect(lambda _, x=fileName: self._loadSaveData(scan, x))
+            actions.append(action)
+        self.menuLoadData[scan].addActions(actions)
+
 
     def _loadSaveData(self, scan: int, fileName: str):
         """Load save data of scan and update display."""
@@ -360,16 +356,10 @@ class Main(QMainWindow):
             for i in range(self.boxes[scan].count()):
                 self.boxes[scan].itemAt(i).widget().setEnabled(True)
 
-            if scan == 0:
-                self.menuLoadScans.actions()[1].setEnabled(True)
-                self.menuIPV1.setEnabled(True)
-                self.menuLoadData1.setEnabled(True)
-                self.menuSaveData.actions()[0].setEnabled(True)
-            else:
-                self.menuLoadScans.actions()[4].setEnabled(True)
-                self.menuIPV2.setEnabled(True)
-                self.menuLoadData2.setEnabled(True)
-                self.menuSaveData.actions()[2].setEnabled(True)
+            self.menuIPV[scan].setEnabled(True)
+            self.menuLoadData[scan].setEnabled(True)
+            self.menuLoadScans.actions()[1 if scan == 0 else 4].setEnabled(True)
+            self.menuSaveData.actions()[0 if scan == 0 else 2].setEnabled(True)
 
             self._updateTitle(scan)
             self._updateDisplay(scan)
@@ -444,6 +434,8 @@ class Main(QMainWindow):
                 self.scans[1].navigate(Scan.NAVIGATION['w'])
             elif event.key() == Qt.Key.Key_S:
                 self.scans[1].navigate(Scan.NAVIGATION['s'])
+            elif self.buttons[1].itemAt(3).widget().isChecked() and event.key() == Qt.Key.Key_D:
+                self.toolbars[1].actions()[7].trigger()
             self._updateDisplay(1)
 
     def contextMenuEvent(self, event):
