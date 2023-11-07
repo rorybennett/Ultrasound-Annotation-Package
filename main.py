@@ -447,19 +447,6 @@ class Main(QMainWindow):
                 self.scans[1].navigate(Scan.NAVIGATION['s'])
             self._updateDisplay(1)
 
-    # def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
-    #     QMainWindow.resizeEvent(self, a0)
-    #     if self.s1:
-    #         self.s1 = Scan.Scan(self.s1.path, startingFrame=self.s1.currentFrame, window=self)
-    #         self.left.itemAt(2).widget().setFixedSize(self.s1.displayDimensions[0],
-    #                                                   self.s1.displayDimensions[1])
-    #         self._updateDisplay(1)
-    #     if self.s2:
-    #         self.s2 = Scan.Scan(self.s2.path, startingFrame=self.s2.currentFrame, window=self)
-    #         self.right.itemAt(2).widget().setFixedSize(self.s2.displayDimensions[0],
-    #                                                    self.s2.displayDimensions[1])
-    #         self._updateDisplay(2)
-
     def contextMenuEvent(self, event):
         if self.scans[0].loaded and self.canvases[0].underMouse():
             menu = QMenu()
