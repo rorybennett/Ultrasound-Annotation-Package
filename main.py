@@ -4,7 +4,6 @@
 import multiprocessing
 import os
 import sys
-from pathlib import Path
 
 import qdarktheme
 from PyQt6 import QtGui
@@ -448,46 +447,27 @@ class Main(QMainWindow):
             self._updateDisplay(1)
 
     def contextMenuEvent(self, event):
-        if self.scans[0].loaded and self.canvases[0].underMouse():
-            menu = QMenu()
-            menuPoints = menu.addMenu('Points')
-            menuPoints.addAction('Clear Frame Points', lambda: self._clearFramePoints(0))
-            menuPoints.addSeparator()
-            menuPoints.addAction('Clear All Points', lambda: self._clearScanPoints(0))
-            menuIPV = menu.addMenu('IPV')
-            menuIPV.addAction('Add Center',
-                              lambda: self._updateIPVCentre(0, Scan.ADD_POINT,
-                                                            self.canvases[0].mapFromGlobal(event.globalPos())))
-            menuIPV.addSeparator()
-            menuIPV.addAction('Remove Center', lambda: self._updateIPVCentre(0, Scan.REMOVE_POINT,
-                                                                             self.canvases[0].mapFromGlobal(
-                                                                                 event.globalPos())))
-            menuIPV.addSeparator()
-            menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(0))
-            menuIPV.addSeparator()
-            menuIPV.addAction('Clear IPV Data', lambda: self._removeIPVData(0))
-            menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(0))
-            menu.exec(event.globalPos())
-        elif self.scans[1].loaded and self.canvases[1].underMouse():
-            menu = QMenu()
-            menuPoints = menu.addMenu('Points')
-            menuPoints.addAction('Clear Frame Points', lambda: self._clearFramePoints(1))
-            menuPoints.addSeparator()
-            menuPoints.addAction('Clear All Points', lambda: self._clearScanPoints(1))
-            menuIPV = menu.addMenu('IPV')
-            menuIPV.addAction('Add Center',
-                              lambda: self._updateIPVCentre(1, Scan.ADD_POINT,
-                                                            self.canvases[1].mapFromGlobal(event.globalPos())))
-            menuIPV.addSeparator()
-            menuIPV.addAction('Remove Center', lambda: self._updateIPVCentre(1, Scan.REMOVE_POINT,
-                                                                             self.canvases[1].mapFromGlobal(
-                                                                                 event.globalPos())))
-            menuIPV.addSeparator()
-            menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(1))
-            menuIPV.addSeparator()
-            menuIPV.addAction('Clear IPV Data', lambda: self._removeIPVData(1))
-            menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(1))
-            menu.exec(event.globalPos())
+        for i in [0, 1]:
+            if self.scans[i].loaded and self.canvases[i].underMouse():
+                menu = QMenu()
+                menuPoints = menu.addMenu('Points')
+                menuPoints.addAction('Clear Frame Points', lambda: self._clearFramePoints(i))
+                menuPoints.addSeparator()
+                menuPoints.addAction('Clear All Points', lambda: self._clearScanPoints(i))
+                menuIPV = menu.addMenu('IPV')
+                menuIPV.addAction('Add Center',
+                                  lambda: self._updateIPVCentre(i, Scan.ADD_POINT,
+                                                                self.canvases[i].mapFromGlobal(event.globalPos())))
+                menuIPV.addSeparator()
+                menuIPV.addAction('Remove Center', lambda: self._updateIPVCentre(i, Scan.REMOVE_POINT,
+                                                                                 self.canvases[i].mapFromGlobal(
+                                                                                     event.globalPos())))
+                menuIPV.addSeparator()
+                menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(i))
+                menuIPV.addSeparator()
+                menuIPV.addAction('Clear IPV Data', lambda: self._removeIPVData(i))
+                menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(i))
+                menu.exec(event.globalPos())
 
 
 def except_hook(cls, exception, traceback):
