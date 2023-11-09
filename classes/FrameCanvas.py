@@ -108,6 +108,8 @@ class FrameCanvas(FigureCanvasQTAgg):
         # Draw IPV data on canvas if box ticked.
         if self.showIPVBox.isChecked():
             su.drawIPVDataOnAxis(self.axis, self.linkedScan.ipvData, self.linkedScan.frameNames[cfi], fd, dd)
+        # Draw Bullet data on canvas if box is ticked.
+        su.drawBulletDataOnAxis(self.axis, self.linkedScan.frameNames[cfi], self.linkedScan.bulletData, fd, dd)
 
         self.draw()
 

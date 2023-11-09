@@ -35,7 +35,7 @@ REMOVE_POINT = '-REMOVE-POINT-'
 # Save data to disk.
 SAVE_EDITING_DATA = '-SAVE-EDITING-DATA-'
 SAVE_POINT_DATA = '-SAVE-POINT-DATA-'
-SAVE_PLANE_DATA = '-SAVE-PLANE-DATA-'
+SAVE_BULLET_DATA = '-SAVE-PLANE-DATA-'
 SAVE_IPV_DATA = '-SAVE-IPV-DATA-'
 SAVE_ALL = '-SAVE-ALL-'
 # Copy points from previous or next frame.
@@ -79,6 +79,8 @@ class Scan:
         self.pointPath, self.pointsPix = None, None
         # IPV data from IPV.JSON.
         self.ipvPath, self.ipvData = None, None
+        # Bullet data from Bullet.json
+        self.bulletPath, self.bulletData = None, None
         # Has a Scan been loaded?
         self.loaded = False
 
@@ -102,6 +104,7 @@ class Scan:
         self.displayDimensions = self.getDisplayDimensions()
         self.pointPath, self.pointsPix = su.getPointDataFromFile(self.path)
         self.ipvPath, self.ipvData = su.getIPVDataFromFile(self.path)
+        self.bulletPath, self.bulletData = su.getBulletDataFromFile(self.path)
         self.loaded = True
 
     def drawFrameOnAxis(self, canvas: FrameCanvas):
@@ -265,10 +268,10 @@ class Scan:
                     for point in self.pointsPix:
                         pointFile.write(f'{point[0]},{point[1]},{point[2]}\n')
 
-            # if saveType in [SAVE_PLANE_DATA, SAVE_ALL]:
-            #     with open(self.plane_path, 'w') as plane_file:
-            #         json.dump(self.plane_mm, plane_file, indent=4)
-            #
+            if saveType in [SAVE_BULLET_DATA, SAVE_ALL]:
+                with open(self.bulletPath, 'w') as bulletFile:
+                    json.dump(self.bulletData, bulletFile, indent=4)
+
             if saveType in [SAVE_IPV_DATA, SAVE_ALL]:
                 with open(self.ipvPath, 'w') as ipvFile:
                     json.dump(self.ipvData, ipvFile, indent=4)
@@ -304,11 +307,11 @@ class Scan:
             successFlags (bool): True if the load was successful, else False.
         """
         successFlags = [True, True, True, True]
-        # try:
-        #     shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.plane_path.name), self.plane_path)
-        # except Exception as e:
-        #     print(f'\tError loading plane data: {e}.')
-        #     successFlags[0] = False
+        try:
+            shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.bulletPath.name), self.bulletPath)
+        except Exception as e:
+            print(f'\tError loading plane data: {e}.')
+            successFlags[0] = False
 
         print(f'Loading Data: {saveName}')
 

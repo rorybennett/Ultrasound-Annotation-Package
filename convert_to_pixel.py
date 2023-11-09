@@ -144,25 +144,27 @@ def points_to_pixels(scan_dir, dd):
 scans_dir = 'Scans'
 # Get all patient directories.
 patients = sorted(Path(scans_dir).iterdir())
+
 # Deal with one patient at a time (only AUS).
-for p in patients:
-    position_dir = f'{p}/AUS'
-    planes = ['sagittal', 'transverse']
-    # Deal with one plane at a time (sagittal and transverse).
-    for plane in planes:
-        plane_dir = f'{position_dir}/{plane}'
-        try:
-            scans = sorted([i for i in sorted(Path(plane_dir).iterdir())])
-            # Deal with one scan at a time (either 1 or Clarius).
-            for scan in [i for i in scans if i.is_dir()]:
-                data_dir = f'{scan}/data.txt'
-                # Convert bullet to pixels.
-                bullet_to_pixels(scan, data_dir)
-                # Convert points to pixels.
-                points_to_pixels(scan, data_dir)
-                # Deal with Sava Data folder.
-                for save_dir in [i for i in Path(f'{scan}/Save Data').iterdir()]:
-                    bullet_to_pixels(save_dir, data_dir)
-                    points_to_pixels(save_dir, data_dir)
-        except FileNotFoundError as e:
-            print(f'{e}.')
+# for p in patients:
+#     position_dir = f'{p}/AUS'
+#     planes = ['sagittal', 'transverse']
+#     # Deal with one plane at a time (sagittal and transverse).
+#     for plane in planes:
+#         plane_dir = f'{position_dir}/{plane}'
+#         try:
+#             scans = sorted([i for i in sorted(Path(plane_dir).iterdir())])
+#             # Deal with one scan at a time (either 1 or Clarius).
+#             for scan in [i for i in scans if i.is_dir()]:
+#                 data_dir = f'{scan}/data.txt'
+#                 # Convert bullet to pixels.
+#                 bullet_to_pixels(scan, data_dir)
+#                 # Convert points to pixels.
+#                 points_to_pixels(scan, data_dir)
+#                 # Deal with Sava Data folder.
+#                 for save_dir in [i for i in Path(f'{scan}/Save Data').iterdir()]:
+#                     bullet_to_pixels(save_dir, data_dir)
+#                     points_to_pixels(save_dir, data_dir)
+#         except FileNotFoundError as e:
+#             print(f'{e}.')
+

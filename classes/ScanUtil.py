@@ -17,6 +17,17 @@ from pyquaternion import Quaternion
 m = MarkerStyle('+')
 m._transform.rotate_deg(45)
 
+# Bullet marking colours.
+# Colours used by axis plots for plane data.
+BULLET_COL = {
+    'L1': (1, 1, 1),
+    'L2': (1, 1, 1),
+    'W1': (1, 0, 0),
+    'W2': (1, 0, 0),
+    'H1': (.2, 1, 1),
+    'H2': (.2, 1, 1)
+}
+
 
 def loadFrames(scanPath: str):
     """
@@ -92,7 +103,6 @@ def drawScanDataOnAxis(axis: Axes, frame: np.ndarray, fNo: int, fCount: int, dep
     axis.text(20, dd[1] - 20, f'Points: {framePoints}/{totalPoints}', color='white')
 
 
-
 def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, fd: list, dd: list):
     """
         Plot the IPV data onto the frame.
@@ -123,6 +133,38 @@ def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, fd: list, dd: list):
                 # circle = plt.Circle(point_display, 40, fill=False, color='red', linestyle='--')
                 # ax.add_artist(circle)
                 axis.plot(point_display[0], point_display[1], marker='o', color='red')
+
+
+def drawBulletDataOnAxis(axis: Axes, name: str, bullet: dict, fd: list, dd: list):
+    """
+    Plot the bullet data onto the frame.
+
+    Args:
+        axis: Axis displaying frame.
+        name: Frame name as a String.
+        bullet: Dictionary of bullet data.
+        fd: Dimensions of original frame (x, y).
+        dd: Display dimension - shape of the displayed frame.
+    """
+    # Plot all the bullet end points.
+    for k in bullet:
+        if bullet[k][0] == name:
+            pointDisplay = pixelsToDisplay(bullet[k][1:], fd, dd)
+            axis.plot(pointDisplay[0], pointDisplay[1], marker='*', color=BULLET_COL[k], markersize=5)
+            axis.text(pointDisplay[0] - 20, pointDisplay[1] - 10, k, color=BULLET_COL[k])
+    # Plot connecting lines where necessary.
+    if name == bullet['L1'][0] and name == bullet['L2'][0]:
+        l1 = pixelsToDisplay(bullet['L1'][1:], fd, dd)
+        l2 = pixelsToDisplay(bullet['L2'][1:], fd, dd)
+        axis.plot([l1[0], l2[0]], [l1[1], l2[1]], color=BULLET_COL['L1'], linewidth=1, linestyle='--')
+    if name == bullet['W1'][0] and name == bullet['W2'][0]:
+        w1 = pixelsToDisplay(bullet['W1'][1:], fd, dd)
+        w2 = pixelsToDisplay(bullet['W2'][1:], fd, dd)
+        axis.plot([w1[0], w2[0]], [w1[1], w2[1]], color=BULLET_COL['W1'], linewidth=1, linestyle='--')
+    if name == bullet['H1'][0] and name == bullet['H2'][0]:
+        h1 = pixelsToDisplay(bullet['H1'][1:], fd, dd)
+        h2 = pixelsToDisplay(bullet['H2'][1:], fd, dd)
+        axis.plot([h1[0], h2[0]], [h1[1], h2[1]], color=BULLET_COL['H1'], linewidth=1, linestyle='--')
 
 
 def getIMUDataFromFile(scanPath: str):
@@ -429,12 +471,35 @@ def quaternionsToAxisAngles(quaternions: list) -> list:
     return axisAngles
 
 
+def getBulletDataFromFile(scanPath: str):
+    """
+    Helper function to get Bullet data from file.
+
+    Args:
+        scanPath (str): String representation of the current Scan path.
+
+    Returns:
+        bulletPath: Path to Bullet.JSON file.
+        bulletData: Bullet data stored in Bullet.json file.
+    """
+    bulletPath = checkBulletDataFile(scanPath)
+
+    with open(bulletPath, 'r') as bulletFile:
+        bulletData = json.load(bulletFile)
+    # Changing H from 3D point to 2D, must change older values.
+    for k in bulletData:
+        if isinstance(bulletData[k][0], float):
+            print('\tOld 3-plane data detected, updating...')
+            bulletData[k] = ['', 0, 0]
+    return bulletPath, bulletData
+
+
 def getIPVDataFromFile(scanPath: str):
     """
     Helper function to get IPV data from file.
 
     Args:
-        scanPath (str): String representation of the current recording path.
+        scanPath (str): String representation of the current Scan path.
 
     Returns:
         ipvPath: Path to IPV.JSON file.
@@ -448,6 +513,32 @@ def getIPVDataFromFile(scanPath: str):
             ipvData['radius'] = 100
 
     return ipvPath, ipvData
+
+
+def checkBulletDataFile(scanPath: str) -> Path:
+    """
+    Check if the given folder contains a Bullet.json file, if True return a Path object to it, else create the file.
+
+    Args:
+        scanPath: String representation of the Scan path.
+
+    Returns:
+        bulletPath: Path object to existing or newly created Bullet.json file.
+    """
+    bulletPath = Path(scanPath, 'BulletData.json')
+    if not bulletPath.is_file():
+        print('\tNo Bullet data found. Creating...')
+        initialBullet = {
+            'L1': ['', 0, 0],
+            'L2': ['', 0, 0],
+            'W1': ['', 0, 0],
+            'W2': ['', 0, 0],
+            'H1': ['', 0, 0],
+            'H2': ['', 0, 0]
+        }
+        with open(bulletPath, 'w') as bulletFile:
+            json.dump(initialBullet, bulletFile, indent=4)
+    return bulletPath
 
 
 def checkIPVDataFile(scanPath: str) -> Path:
