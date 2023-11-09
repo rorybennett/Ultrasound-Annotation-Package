@@ -310,7 +310,8 @@ class Scan:
         try:
             shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.bulletPath.name), self.bulletPath)
         except Exception as e:
-            print(f'\tError loading plane data: {e}.')
+            ErrorDialog(None, 'Error loading bullet data.', 'Cannot find file.')
+            Path(self.bulletPath).unlink(missing_ok=True)
             successFlags[0] = False
 
         print(f'Loading Data: {saveName}')
@@ -318,13 +319,15 @@ class Scan:
         try:
             shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.pointPath.name), self.pointPath)
         except Exception as e:
-            ErrorDialog(None, 'Error loading point data', e)
+            ErrorDialog(None, 'Error loading point data', 'Cannot find file.')
+            Path(self.pointPath).unlink(missing_ok=True)
             successFlags[1] = False
 
         try:
             shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.editPath.name), self.editPath)
         except Exception as e:
-            ErrorDialog(None, 'Error loading editing data', e)
+            ErrorDialog(None, 'Error loading editing data', 'Cannot find file.')
+            Path(self.editPath).unlink(missing_ok=True)
             successFlags[2] = False
         #
         # try:
@@ -362,11 +365,11 @@ class Scan:
             # Create directory with username and current time in milliseconds.
             userPath.mkdir(parents=True, exist_ok=True)
             # Copy current files to new user directory.
-            # shutil.copy(self.plane_path, Path(userPath, self.plane_path.name))
+            shutil.copy(self.bulletPath, Path(userPath, self.bulletPath.name))
             shutil.copy(self.pointPath, Path(userPath, self.pointPath.name))
             shutil.copy(self.editPath, Path(userPath, self.editPath.name))
             shutil.copy(self.ipvPath, Path(userPath, self.ipvPath.name))
-            print(f'\tUser data save to {userPath.name}')
+            print(f'\tUser data saved to {userPath.name}')
 
         except Exception as e:
             print(f'\tError saving user data: {e}.')
