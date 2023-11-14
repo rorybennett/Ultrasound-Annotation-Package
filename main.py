@@ -225,6 +225,12 @@ class Main(QMainWindow):
         segmentationBox.setDisabled(True)
         layout.addWidget(segmentationBox)
 
+        bulletVolumeButton = QPushButton('Bullet')
+        bulletVolumeButton.setToolTip('Print bullet dimensions.')
+        bulletVolumeButton.clicked.connect(lambda: self.scans[scan].printBulletDimensions())
+        bulletVolumeButton.setDisabled(True)
+        layout.addWidget(bulletVolumeButton)
+
         return layout
 
     def _createBoxes(self, scan: int):

@@ -10,7 +10,6 @@ from pathlib import Path
 import cv2
 import numpy as np
 from PyQt6.QtWidgets import QMainWindow
-from matplotlib.patches import Polygon
 from natsort import natsorted
 from pyquaternion import Quaternion
 
@@ -547,4 +546,47 @@ class Scan:
 
         return count
 
+    def printBulletDimensions(self):
+        """
+        Calculate available bullet dimensions and print them to screen.
+        """
+        l1 = self.bulletData['L1']
+        l2 = self.bulletData['L2']
+        w1 = self.bulletData['W1']
+        w2 = self.bulletData['W2']
+        h1 = self.bulletData['H1']
+        h2 = self.bulletData['H2']
 
+        # Calculate L.
+        L = 0
+        try:
+            fd = self.frames[int(l1[0]) - 1].shape
+            depths = self.depths[int(l1[0]) - 1]
+            x = [depths[1] / fd[1] * l1[1], depths[1] / fd[1] * l2[1]]
+            y = [depths[0] / fd[0] * l1[2], depths[0] / fd[0] * l2[2]]
+            L = np.sqrt((x[0] - x[1]) ** 2 + (y[0] - y[1]) ** 2)
+        except Exception as e:
+            pass
+        # Calculate W.
+        W = 0
+        try:
+            fd = self.frames[int(w1[0]) - 1].shape
+            depths = self.depths[int(w1[0]) - 1]
+            x = [depths[1] / fd[1] * w1[1], depths[1] / fd[1] * w2[1]]
+            y = [depths[0] / fd[0] * w1[2], depths[0] / fd[0] * w2[2]]
+            W = np.sqrt((x[0] - x[1]) ** 2 + (y[0] - y[1]) ** 2)
+        except Exception as e:
+            pass
+        # Calculate H.
+        H = 0
+        try:
+            fd = self.frames[int(h1[0]) - 1].shape
+            depths = self.depths[int(h1[0]) - 1]
+            x = [depths[1] / fd[1] * h1[1], depths[1] / fd[1] * h2[1]]
+            y = [depths[0] / fd[0] * h1[2], depths[0] / fd[0] * h2[2]]
+            H = np.sqrt((x[0] - x[1]) ** 2 + (y[0] - y[1]) ** 2)
+        except Exception as e:
+            pass
+        print(f'Length = {L:0.2f}')
+        print(f'Width = {W:0.2f}')
+        print(f'Height = {H:0.2f}')
