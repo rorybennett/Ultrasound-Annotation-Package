@@ -144,6 +144,10 @@ class Main(QMainWindow):
         # Reset data menu.
         self.menuReset = self.menuBar().addMenu("Reset Data")
         self.menuReset = self.menuReset.addAction("Reset Editing Data", lambda: self._resetEditingData())
+        # Extra functions menu.
+        self.menuExtras = self.menuBar().addMenu("Extras")
+        self.menuExtras.addAction('Bullet Scan 1', lambda: self.scans[0].printBulletDimensions()).setDisabled(True)
+        self.menuExtras.addAction('Bullet Scan 2', lambda: self.scans[1].printBulletDimensions()).setDisabled(True)
 
     def _createToolBars(self, scan):
         """Create left and right toolbars (mirrored)."""
@@ -225,12 +229,6 @@ class Main(QMainWindow):
         segmentationBox.setDisabled(True)
         layout.addWidget(segmentationBox)
 
-        bulletVolumeButton = QPushButton('Bullet')
-        bulletVolumeButton.setToolTip('Print bullet dimensions.')
-        bulletVolumeButton.clicked.connect(lambda: self.scans[scan].printBulletDimensions())
-        bulletVolumeButton.setDisabled(True)
-        layout.addWidget(bulletVolumeButton)
-
         return layout
 
     def _createBoxes(self, scan: int):
@@ -274,10 +272,10 @@ class Main(QMainWindow):
         """Update title information."""
         patient, scanType, scanPlane, scanNumber, scanFrames = self.scans[scan].getScanDetails()
         self.titles[scan].itemAt(0).widget().setText(f'Patient: {patient}')
-        self.titles[scan].itemAt(0).widget().setText(f'Type: {scanType}')
-        self.titles[scan].itemAt(0).widget().setText(f'Plane: {scanPlane}')
-        self.titles[scan].itemAt(0).widget().setText(f'Number: {scanNumber}')
-        self.titles[scan].itemAt(0).widget().setText(f'Frames: {scanFrames}')
+        self.titles[scan].itemAt(1).widget().setText(f'Type: {scanType}')
+        self.titles[scan].itemAt(2).widget().setText(f'Plane: {scanPlane}')
+        self.titles[scan].itemAt(3).widget().setText(f'Number: {scanNumber}')
+        self.titles[scan].itemAt(4).widget().setText(f'Frames: {scanFrames}')
 
     def _onCineClicked(self, scan: int):
         """Play a cine of the scan in a separate window."""
@@ -339,7 +337,6 @@ class Main(QMainWindow):
             actions.append(action)
         self.menuLoadData[scan].addActions(actions)
 
-
     def _loadSaveData(self, scan: int, fileName: str):
         """Load save data of scan and update display."""
         self.scans[scan].loadSaveData(fileName)
@@ -366,6 +363,7 @@ class Main(QMainWindow):
             self.menuLoadData[scan].setEnabled(True)
             self.menuLoadScans.actions()[1 if scan == 0 else 4].setEnabled(True)
             self.menuSaveData.actions()[0 if scan == 0 else 2].setEnabled(True)
+            self.menuExtras.actions()[scan].setEnabled(True)
 
             self._updateTitle(scan)
             self._updateDisplay(scan)

@@ -207,6 +207,7 @@ class Scan:
         scanPlane = path[-2].lower().capitalize()
         scanNumber = path[-1]
 
+
         return patient, scanType, scanPlane, scanNumber, self.frameCount
 
     def openDirectory(self):
@@ -587,6 +588,6 @@ class Scan:
             H = np.sqrt((x[0] - x[1]) ** 2 + (y[0] - y[1]) ** 2)
         except Exception as e:
             pass
-        print(f'Length = {L:0.2f}')
-        print(f'Width = {W:0.2f}')
-        print(f'Height = {H:0.2f}')
+        print(f'\tLength = {L:0.2f}')
+        print(f'\tWidth = {W:0.2f}')
+        print(f'\tHeight = {H:0.2f}')
