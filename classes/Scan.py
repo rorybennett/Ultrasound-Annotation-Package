@@ -91,8 +91,8 @@ class Scan:
             path: Path to Scan directory as a String.
             startingFrame: Starting frame position.
         """
+        self.frames = su.loadFrames(path)
         self.path = path
-        self.frames = su.loadFrames(self.path)
         self.frameShape = self.frames[0].shape
         self.frameCount = len(self.frames)
         self.currentFrame = startingFrame if startingFrame < self.frameCount else 1

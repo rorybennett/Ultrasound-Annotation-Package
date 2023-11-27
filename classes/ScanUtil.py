@@ -251,7 +251,7 @@ def checkEditDataFile(scanPath: str) -> Path:
     """
     editPath = Path(scanPath, 'EditingData.txt')
     if not editPath.is_file():
-        print(f'EditingData.txt does not exist, creating now.')
+        print(f'\tEditingData.txt does not exist, creating now.')
         with open(editPath, 'a') as editingFile:
             editingFile.write('imuOffset:0\n')
             editingFile.write('imuPosition:50\n')

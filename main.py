@@ -149,8 +149,14 @@ class Main(QMainWindow):
         self.menuExtras.addAction('Bullet Scan 1', lambda: self.scans[0].printBulletDimensions()).setDisabled(True)
         self.menuExtras.addAction('Bullet Scan 2', lambda: self.scans[1].printBulletDimensions()).setDisabled(True)
         self.menuExtras.addSeparator()
-        self.menuExtras.addAction(f'Next Patient: Scan 1', lambda: self._nextPatient(0)).setDisabled(True)
-        self.menuExtras.addAction(f'Next Patient: Scan 2', lambda: self._nextPatient(1)).setDisabled(True)
+        menuExtrasNext = self.menuExtras.addMenu("Next")
+        menuExtrasNext.addAction(f'Scan 1', lambda: self._navigatePatients(0, Scan.NEXT)).setDisabled(True)
+        menuExtrasNext.addAction(f'Scan 2', lambda: self._navigatePatients(1, Scan.NEXT)).setDisabled(True)
+        menuExtrasNext.addAction(f'Patient', lambda: self._navigatePatients(-1, Scan.NEXT)).setDisabled(True)
+        menuExtrasPrevious = self.menuExtras.addMenu("Previous")
+        menuExtrasPrevious.addAction(f'Scan 1', lambda: self._navigatePatients(0, Scan.PREVIOUS)).setDisabled(True)
+        menuExtrasPrevious.addAction(f'Scan 2', lambda: self._navigatePatients(1, Scan.PREVIOUS)).setDisabled(True)
+        menuExtrasPrevious.addAction(f'Patient', lambda: self._navigatePatients(-1, Scan.PREVIOUS)).setDisabled(True)
 
     def _createToolBars(self, scan):
         """Create left and right toolbars (mirrored)."""
@@ -345,11 +351,22 @@ class Main(QMainWindow):
         self.scans[scan].loadSaveData(fileName)
         self._refreshScanData(scan)
 
-    def _nextPatient(self, scan: int):
-        """Load next patient."""
-        patient, scanType, scanPlane, scanNumber, _ = self.scans[scan].getScanDetails()
-        nextScanPath = f'{self.scansPath}/{int(patient) + 1}/{scanType}/{scanPlane}/{scanNumber}'
-        self._loadScan(scan, nextScanPath)
+    def _navigatePatients(self, scan: int, direction: str):
+        """Load previous or next patient."""
+        if scan > -1:
+            patient, scanType, scanPlane, scanNumber, _ = self.scans[scan].getScanDetails()
+            nextScanPath = (f'{self.scansPath}/'
+                            f'{int(patient) - 1 if direction == Scan.PREVIOUS else int(patient) + 1}/'
+                            f'{scanType}/{scanPlane}/{scanNumber}')
+            self._loadScan(scan, nextScanPath)
+        else:
+            for i in range(2):
+                if self.scans[i].loaded:
+                    patient, scanType, scanPlane, scanNumber, _ = self.scans[i].getScanDetails()
+                    nextScanPath = (f'{self.scansPath}/'
+                                    f'{int(patient) - 1 if direction == Scan.PREVIOUS else int(patient) + 1}/'
+                                    f'{scanType}/{scanPlane}/{scanNumber}')
+                    self._loadScan(i, nextScanPath)
 
     def _selectScanDialog(self, scan: int):
         """Show dialog for selecting a scan folder."""
@@ -377,7 +394,10 @@ class Main(QMainWindow):
             self.menuLoadScans.actions()[1 if scan == 0 else 4].setEnabled(True)
             self.menuSaveData.actions()[0 if scan == 0 else 2].setEnabled(True)
             self.menuExtras.actions()[scan].setEnabled(True)
-            self.menuExtras.actions()[scan + 3].setEnabled(True)
+            self.menuExtras.menuInAction(self.menuExtras.actions()[3]).actions()[scan].setEnabled(True)
+            self.menuExtras.menuInAction(self.menuExtras.actions()[3]).actions()[2].setEnabled(True)
+            self.menuExtras.menuInAction(self.menuExtras.actions()[4]).actions()[scan].setEnabled(True)
+            self.menuExtras.menuInAction(self.menuExtras.actions()[4]).actions()[2].setEnabled(True)
 
             self._updateTitle(scan)
             self._updateDisplay(scan)
