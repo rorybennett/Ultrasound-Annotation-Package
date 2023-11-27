@@ -65,7 +65,7 @@ def drawFrameOnAxis(axis: Axes, frame: np.ndarray):
     axis.cla()
     axis.axis('off')
     axis.imshow(frame, cmap='gray')
-    axis.set_xlim(-0.5, frame.shape[1])
+    axis.set_xlim(-.1, frame.shape[1])
     axis.set_ylim(frame.shape[0], -0.5)
 
 

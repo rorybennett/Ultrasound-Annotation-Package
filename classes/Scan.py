@@ -207,7 +207,6 @@ class Scan:
         scanPlane = path[-2].lower().capitalize()
         scanNumber = path[-1]
 
-
         return patient, scanType, scanPlane, scanNumber, self.frameCount
 
     def openDirectory(self):

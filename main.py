@@ -113,6 +113,7 @@ class Main(QMainWindow):
                                          lambda x=i: self.scans[x].openDirectory()).setDisabled(True)
 
             self.menuLoadScans.addSeparator()
+        self.menuLoadScans.addAction('Load AUS Patient', lambda: self._selectAUSPatientDialog())
 
         # Inference menu.
         menuInference = self.menuBar().addMenu('Inference')
@@ -367,6 +368,18 @@ class Main(QMainWindow):
                                     f'{int(patient) - 1 if direction == Scan.PREVIOUS else int(patient) + 1}/'
                                     f'{scanType}/{scanPlane}/{scanNumber}')
                     self._loadScan(i, nextScanPath)
+
+    def _selectAUSPatientDialog(self):
+        """Load both scans of an AUS patient."""
+        scanPath = QFileDialog.getExistingDirectory(self, caption=f'Select Patient', directory=self.scansPath)
+
+        if not scanPath:
+            return
+
+        transverse = f'{scanPath}/AUS/Transverse/1'
+        self._loadScan(0, transverse)
+        sagittal = f'{scanPath}/AUS/Sagittal/1'
+        self._loadScan(1, sagittal)
 
     def _selectScanDialog(self, scan: int):
         """Show dialog for selecting a scan folder."""
