@@ -130,29 +130,29 @@ def getIMUData(saveDir):
     return imuOffset, imuPosition
 
 
-def getFramesWithPoints(scanPath, pointDataMm):
+def getFramesWithPoints(scanPath, pointData):
     """
     Return frames in specified recording path that contain points on them.
 
     Args:
         scanPath: Path (str) to scan (directory in scan type).
-        pointDataMm: Point data with file names, used to find frames to return.
+        pointData: Point data with file names, used to find frames to return.
 
     Returns:
         frames: np.array of frames corresponding to point data frame names, else False.
     """
-    if len(pointDataMm) == 0:
+    if len(pointData) == 0:
         return False
 
     # Remove duplicates
-    frame_names = [row[0] for row in pointDataMm]
+    frame_names = [row[0] for row in pointData]
     frame_names = list(dict.fromkeys(frame_names))
 
     # Read frames into array
     frames = []
     frameNumbers = []
     for row in frame_names:
-        framePath = scanPath + '/' + row
+        framePath = scanPath + '/' + row + '.png'
         frames.append(cv2.imread(framePath))
         frameNumbers.append(row.split('.')[0])
 

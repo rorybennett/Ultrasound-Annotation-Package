@@ -3,6 +3,8 @@ import shutil
 from pathlib import Path
 
 import cv2
+import matplotlib.pyplot as plt
+import numpy as np
 from PyQt6.QtWidgets import QInputDialog, QWidget
 
 from classes import ExportUtil as eu
@@ -123,26 +125,36 @@ class Export:
                         continue
                     # Path to PointData.txt file.
                     pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.txt'
-                    # Get point data in mm from f()ile.
+                    # Get point data from file.
                     pointDataPix = eu.getPointData(pointDataPath)
                     # Get frames with points on them.
                     framesWithPoints, frameNumbers = eu.getFramesWithPoints(scanPath, pointDataPix)
                     if not framesWithPoints:
                         print(f'\tNo frames with point data available.')
                         return
+                    # Sort points in IPV order (TOP, RIGHT, BOTTOM, LEFT).
+                    points = []
+                    for point in pointDataPix:
+                        points.append(point[1])
+                        points.append(point[2])
+                    points = np.array([[points[i], points[i + 1]] for i in range(0, len(points) - 1, 2)])
+                    bottom = points[np.argmin(points[:, 1])]
+                    right = points[np.argmax(points[:, 0])]
+                    top = points[np.argmax(points[:, 1])]
+                    left = points[np.argmin(points[:, 0])]
 
                     # Loop through frames with points on them.
                     for index, frame in enumerate(framesWithPoints):
-                        saveName = f'{patient}_{frameNumbers[index]}.png'
+                        saveName = f'{patient}_{frameNumbers[index]}.jpg'
                         # Save frame to disk.
                         cv2.imwrite(f'{savePath}/transverse/{saveName}', frame)
                         # Save point data.
                         with open(f'{savePath}/transverse_mark_list.txt', 'a') as pointFile:
                             pointFile.write(
-                                f'{saveName} ({pointDataPix[0][1]}, {pointDataPix[0][2]}) '
-                                f'({pointDataPix[1][1]}, {pointDataPix[1][2]}) '
-                                f'({pointDataPix[2][1]}, {pointDataPix[2][2]}) '
-                                f'({pointDataPix[3][1]}, {pointDataPix[3][2]})\n')
+                                f'{saveName} ({bottom[0]}, {bottom[1]}) '
+                                f'({right[0]}, {right[1]}) '
+                                f'({top[0]}, {top[1]}) '
+                                f'({left[0]}, {left[1]})\n')
             except WindowsError as e:
-                ErrorDialog(None, f'Error creating transverse data', e)
+                print(None, f'Error creating transverse data', e)
         print(f'\tAUS transverse exporting completed.')
