@@ -107,13 +107,13 @@ class Main(QMainWindow):
         """Create menus."""
         # Load scans menu.
         self.menuLoadScans = self.menuBar().addMenu("Load Scans")
-        self.menuLoadScans.addAction("Select Scan 1 Folder...", lambda: self._selectScanDialog(0))
-        self.menuLoadScans.addAction("Open Scan 1 Directory...",
-                                     lambda: self.scans[0].openDirectory()).setDisabled(True)
-        self.menuLoadScans.addSeparator()
-        self.menuLoadScans.addAction("Select Scan 2 Folder...", lambda: self._selectScanDialog(1))
-        self.menuLoadScans.addAction("Open Scan 2 Directory...",
-                                     lambda: self.scans[1].openDirectory()).setDisabled(True)
+        for i in range(2):
+            self.menuLoadScans.addAction(f"Select Scan {i + 1} Folder...", lambda x=i: self._selectScanDialog(x))
+            self.menuLoadScans.addAction(f"Open Scan {i + 1} Directory...",
+                                         lambda x=i: self.scans[x].openDirectory()).setDisabled(True)
+
+            self.menuLoadScans.addSeparator()
+
         # Inference menu.
         menuInference = self.menuBar().addMenu('Inference')
         menuIPV = menuInference.addMenu('IPV Inference')
@@ -148,6 +148,9 @@ class Main(QMainWindow):
         self.menuExtras = self.menuBar().addMenu("Extras")
         self.menuExtras.addAction('Bullet Scan 1', lambda: self.scans[0].printBulletDimensions()).setDisabled(True)
         self.menuExtras.addAction('Bullet Scan 2', lambda: self.scans[1].printBulletDimensions()).setDisabled(True)
+        self.menuExtras.addSeparator()
+        self.menuExtras.addAction(f'Next Patient: Scan 1', lambda: self._nextPatient(0)).setDisabled(True)
+        self.menuExtras.addAction(f'Next Patient: Scan 2', lambda: self._nextPatient(1)).setDisabled(True)
 
     def _createToolBars(self, scan):
         """Create left and right toolbars (mirrored)."""
@@ -342,6 +345,12 @@ class Main(QMainWindow):
         self.scans[scan].loadSaveData(fileName)
         self._refreshScanData(scan)
 
+    def _nextPatient(self, scan: int):
+        """Load next patient."""
+        patient, scanType, scanPlane, scanNumber, _ = self.scans[scan].getScanDetails()
+        nextScanPath = f'{self.scansPath}/{int(patient) + 1}/{scanType}/{scanPlane}/{scanNumber}'
+        self._loadScan(scan, nextScanPath)
+
     def _selectScanDialog(self, scan: int):
         """Show dialog for selecting a scan folder."""
         scanPath = QFileDialog.getExistingDirectory(self, caption=f'Select Scan {scan + 1}', directory=self.scansPath)
@@ -349,6 +358,10 @@ class Main(QMainWindow):
         if not scanPath:
             return
 
+        self._loadScan(scan, scanPath)
+
+    def _loadScan(self, scan: int, scanPath: str):
+        """Load a scan."""
         try:
             self.scans[scan].load(scanPath)
             self.canvases[scan].linkedScan = self.scans[scan]
@@ -364,6 +377,7 @@ class Main(QMainWindow):
             self.menuLoadScans.actions()[1 if scan == 0 else 4].setEnabled(True)
             self.menuSaveData.actions()[0 if scan == 0 else 2].setEnabled(True)
             self.menuExtras.actions()[scan].setEnabled(True)
+            self.menuExtras.actions()[scan + 3].setEnabled(True)
 
             self._updateTitle(scan)
             self._updateDisplay(scan)
@@ -373,7 +387,7 @@ class Main(QMainWindow):
     def _updateDisplay(self, scan: int):
         """Update the shown frame and position on plot."""
         self.canvases[scan].updateAxis()
-        self.axisAngleProcess[scan].updateIndex(self.scans[scan].currentFrame)
+        self.axisAngleProcess[scan].updateIndex(self.scans[scan].currentFrame - 1)
 
     def _shrinkExpandPoints(self, scan: int, amount):
         """Expand or shrink points around centre of mass."""

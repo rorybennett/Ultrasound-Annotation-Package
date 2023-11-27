@@ -39,7 +39,7 @@ def fix_bullet_transverse(dir):
     with open(f'{dir}/BulletData.json', 'w') as bulletFile:
         json.dump(bulletData, bulletFile, indent=4)
 
-scans_dir = 'Scans'
+scans_dir = '../Scans'
 # Get all patient directories.
 patients = sorted(Path(scans_dir).iterdir())
 # Deal with one patient at a time (only AUS).

@@ -141,7 +141,7 @@ def points_to_pixels(scan_dir, dd):
             pointFile.write(f'{point[0]},{point[1]},{point[2]}\n')
 
 
-scans_dir = 'Scans'
+scans_dir = '../Scans'
 # Get all patient directories.
 patients = sorted(Path(scans_dir).iterdir())
 

@@ -72,7 +72,8 @@ def plottingProcess(lifoQueue, scanPath: str, frameIndex: int):
         scanPath: Path to Scan object.
         lifoQueue (LifoQueue): MyManager queue object operating with LIFO principle.
     """
-    scan = Scan.Scan(scanPath)
+    scan = Scan.Scan()
+    scan.load(scanPath)
     axisAngles = scan.quaternionsToAxisAngles()
     patient, scanType, scanPlane, scanNumber, _ = scan.getScanDetails()
 

@@ -47,7 +47,7 @@ EXPAND = '-EXPAND-'
 
 class Scan:
 
-    def __init__(self, window: QMainWindow):
+    def __init__(self, window: QMainWindow = None):
         """
         Creates all attributes, mostly set as None values, to be properly instantiated in self.load.
 
