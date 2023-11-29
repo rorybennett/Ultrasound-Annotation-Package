@@ -4,6 +4,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+from PIL import Image, ImageDraw
 from PyQt6.QtWidgets import QInputDialog, QWidget
 
 from classes import ExportUtil as eu
@@ -97,9 +98,15 @@ class Export:
                         return
                     # Loop through frames with points on them, gather points for mask creation.
                     for index, frameNumber in enumerate(frameNumbers):
-                        cv2.imshow('Test', framesWithPoints[index])
-                        print(frameNumber)
-                        print(pointData)
+                        cv2.imshow('Image', framesWithPoints[index])
+                        polygon = [(int(i[1]), int(i[2])) for i in pointData if i[0] == frameNumber]
+                        frameShape = framesWithPoints[index].shape
+                        print(polygon)
+                        print(frameShape)
+                        img = Image.new('L', (frameShape[1], frameShape[0]), 255)
+                        ImageDraw.Draw(img).polygon(polygon, outline=1, fill=1)
+                        mask = np.array(img)
+                        cv2.imshow('Mask', mask)
                         return
 
             except WindowsError as e:

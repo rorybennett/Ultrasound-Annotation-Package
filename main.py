@@ -261,6 +261,8 @@ class Main(QMainWindow):
         ipv.setDisabled(True)
         layout.addWidget(ipv)
 
+        mask = QCheckBox('Show Mask') #todo Add check box to show mask in canvas as a sanity check for exporting.
+
         return layout
 
     def _distributePoints(self, scan: int, count: int):
