@@ -9,27 +9,46 @@ from classes import Scan
 from classes.ErrorDialog import ErrorDialog
 
 
-def createIPVTrainingDirs(scanType: str):
+def creatennUAUSTrainingDirs(scanPlane: str):
     """
-    Create directories using training structure.
+    Create directories using nn-UNet training structure.
 
     Args:
-        scanType: Type of scan.
+        scanPlane: Plane of scan.
 
     Returns:
-        String to main directory if successful, else False
-
+        String to main directory if successful, else False.
     """
     # Create new, empty directories.
     try:
-        dataPath = f'../Export/IPV/{int(time.time())}_IPV_{scanType}_export/DATA'
+        dataPath = f'../Export/nnUNet/{int(time.time())}_nnUNet_{scanPlane}_export/DATA'
+        Path(f'{dataPath}/imagesTr').mkdir(parents=True, exist_ok=False)
+        Path(f'{dataPath}/labelsTr').mkdir(parents=True, exist_ok=False)
+    except FileExistsError as e:
+        ErrorDialog(None, 'Error creating nnUNet export directories', e)
+        return False
+
+
+def createIPVTrainingDirs(scanPlane: str):
+    """
+    Create directories using IPV training structure.
+
+    Args:
+        scanPlane: Plane of scan.
+
+    Returns:
+        String to main directory if successful, else False.
+    """
+    # Create new, empty directories.
+    try:
+        dataPath = f'../Export/IPV/{int(time.time())}_IPV_{scanPlane}_export/DATA'
         Path(f'{dataPath}/fold_lists').mkdir(parents=True, exist_ok=False)
-        if scanType == Scan.PLANE_TRANSVERSE:
+        if scanPlane == Scan.PLANE_TRANSVERSE:
             Path(f'{dataPath}/transverse').mkdir(exist_ok=False)
         else:
             Path(f'{dataPath}/sagittal').mkdir(exist_ok=False)
     except FileExistsError as e:
-        ErrorDialog(None, 'Error creating directories', e)
+        ErrorDialog(None, 'Error creating IPV export directories', e)
         return False
     return dataPath
 
@@ -53,7 +72,7 @@ def getTotalPatients(scansPath: str):
 
 def getSaveDirName(scanPath: str, prefix: str):
     """
-    Get name of the save data directory given the prefix (the timestamp is unknown).
+    Get name of the save data directory given the prefix (the timestamp is unknown). Will only return the first match.
 
     Args:
         scanPath: Path to Scan directory (including Scan time directory).
@@ -87,9 +106,6 @@ def getPointData(filePath: str):
         """
     with open(filePath, newline='\n') as pointFile:
         pointData = list(csv.reader(pointFile))
-
-    for i, r in enumerate(pointData):
-        pointData[i] = [r[0], round(float(r[1])), round(float(r[2]))]
 
     pointData.sort(key=lambda row: ([row[0]]))
 

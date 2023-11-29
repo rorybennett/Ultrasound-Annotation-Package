@@ -141,6 +141,9 @@ class Main(QMainWindow):
         menuExportIPV = self.menuExport.addMenu('IPV')
         menuExportIPV.addAction('Transverse', lambda: self.export.exportIPVAUSData(Scan.PLANE_TRANSVERSE, self))
         menuExportIPV.addAction('Sagittal', lambda: self.export.exportIPVAUSData(Scan.PLANE_SAGITTAL, self))
+        menuExportnnU = self.menuExport.addMenu('nnUNet')
+        menuExportnnU.addAction('Transverse', lambda: self.export.exportnnUAUSData(Scan.PLANE_TRANSVERSE, self))
+        menuExportnnU.addAction('Sagittal', lambda: self.export.exportnnUAUSData(Scan.PLANE_SAGITTAL, self))
         self.menuExport.addAction('Save Data', lambda: self.export.exportAllSaveData())
         # Reset data menu.
         self.menuReset = self.menuBar().addMenu("Reset Data")
@@ -328,7 +331,7 @@ class Main(QMainWindow):
 
     def _saveData(self, scan: int):
         """Save Scan point data. Check for overwrite"""
-        userName, ok = QInputDialog.getText(self, 'Save Current Data', 'Enter User Name:')
+        userName, ok = QInputDialog.getText(self, f'Save Scan {scan + 1} Data', 'Enter User Name:')
 
         if ok:
             if not userName:
@@ -479,6 +482,8 @@ class Main(QMainWindow):
                 self.scans[0].navigate(Scan.NAVIGATION['s'])
             elif self.buttons[0].itemAt(3).widget().isChecked() and event.key() == Qt.Key.Key_D:
                 self.toolbars[0].actions()[7].trigger()
+            elif event.key() == Qt.Key.Key_R:
+                self.scans[0].clearFramePoints()
             self._updateDisplay(0)
         elif self.scans[1].loaded and self.canvases[1].underMouse():
             if event.key() == Qt.Key.Key_W:
@@ -487,6 +492,8 @@ class Main(QMainWindow):
                 self.scans[1].navigate(Scan.NAVIGATION['s'])
             elif self.buttons[1].itemAt(3).widget().isChecked() and event.key() == Qt.Key.Key_D:
                 self.toolbars[1].actions()[7].trigger()
+            elif event.key() == Qt.Key.Key_R:
+                self.scans[1].clearFramePoints()
             self._updateDisplay(1)
 
     def contextMenuEvent(self, event):
