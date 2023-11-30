@@ -9,6 +9,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.markers import MarkerStyle
+from matplotlib.patches import Polygon
 from natsort import natsorted
 from numpy.lib.stride_tricks import sliding_window_view
 from pyquaternion import Quaternion
@@ -101,6 +102,23 @@ def drawScanDataOnAxis(axis: Axes, frame: np.ndarray, fNo: int, fCount: int, dep
     axis.plot([imuPos / 100 * dd[0], imuPos / 100 * dd[0]], [0, 10], color='white', linewidth=2)
     # Total points' indicator.
     axis.text(20, dd[1] - 20, f'Points: {framePoints}/{totalPoints}', color='white')
+
+
+def drawMaskOnAxis(axis: Axes, points: list, fd: list, dd: list):
+    """
+    Draw a polygon mask using the points given. If there are too few points the mask will not be drawn.
+
+    Args:
+        axis: Axis displaying frame.
+        points: Points on the currently displayed frame.
+        fd: Frame dimensions.
+        dd: Display dimensions.
+    """
+    # Convert points from frame coordinates to canvas coordinates.
+    points = [pixelsToDisplay(point, fd, dd) for point in points]
+    if len(points) > 1:
+        polygon = Polygon(points, closed=True, alpha=0.5)
+        axis.add_patch(polygon)
 
 
 def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, fd: list, dd: list):

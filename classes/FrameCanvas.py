@@ -12,7 +12,7 @@ matplotlib.use('Qt5Agg')
 
 class FrameCanvas(FigureCanvasQTAgg):
 
-    def __init__(self, updateDisplay, showPointsBox, showIPVBox, dragButton):
+    def __init__(self, updateDisplay, showPointsBox, showIPVBox, showMaskBox, dragButton):
         """Canvas for drawing frame and related point data."""
         # Related Scan object.
         self.linkedScan: Scan = None
@@ -21,6 +21,8 @@ class FrameCanvas(FigureCanvasQTAgg):
         # Show Points Box and Show IPV Box on MainWindow.
         self.showPointsBox = showPointsBox
         self.showIPVBox = showIPVBox
+        # Show mask Box on MainWindow.
+        self.showMaskBox = showMaskBox
         # Drag all points button on MainWindow.
         self.dragButton = dragButton
         # Enable click and drag of points.
@@ -108,6 +110,9 @@ class FrameCanvas(FigureCanvasQTAgg):
         # Draw IPV data on canvas if box ticked.
         if self.showIPVBox.isChecked():
             su.drawIPVDataOnAxis(self.axis, self.linkedScan.ipvData, self.linkedScan.frameNames[cfi], fd, dd)
+        # Draw mask on canvas if box ticked.
+        if self.showMaskBox.isChecked():
+            su.drawMaskOnAxis(self.axis, self.linkedScan.getPointsOnFrame(), fd, dd)
         # Draw Bullet data on canvas if box is ticked.
         su.drawBulletDataOnAxis(self.axis, self.linkedScan.frameNames[cfi], self.linkedScan.bulletData, fd, dd)
 

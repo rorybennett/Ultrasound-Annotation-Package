@@ -62,10 +62,12 @@ class Main(QMainWindow):
         self.canvases = [FrameCanvas(updateDisplay=lambda: self._updateDisplay(0),
                                      showPointsBox=self.boxes[0].itemAt(0).widget(),
                                      showIPVBox=self.boxes[0].itemAt(1).widget(),
+                                     showMaskBox=self.boxes[0].itemAt(2).widget(),
                                      dragButton=self.toolbars[0].actions()[6]),
                          FrameCanvas(updateDisplay=lambda: self._updateDisplay(1),
                                      showPointsBox=self.boxes[1].itemAt(0).widget(),
                                      showIPVBox=self.boxes[1].itemAt(1).widget(),
+                                     showMaskBox=self.boxes[1].itemAt(2).widget(),
                                      dragButton=self.toolbars[1].actions()[6])]
 
         # Left side.
@@ -261,7 +263,11 @@ class Main(QMainWindow):
         ipv.setDisabled(True)
         layout.addWidget(ipv)
 
-        mask = QCheckBox('Show Mask') #todo Add check box to show mask in canvas as a sanity check for exporting.
+        mask = QCheckBox('Show Mask')
+        mask.setChecked(False)
+        mask.stateChanged.connect(lambda: self._updateDisplay(scan))
+        mask.setDisabled(True)
+        layout.addWidget(mask)
 
         return layout
 
