@@ -62,19 +62,14 @@ class Export:
         # Get Save prefix.
         prefix, ok = QInputDialog.getText(mainWindow, 'Select Save for Transverse Export', 'Enter Prefix:')
         if not ok:
-            print('\tCreate Transverse IPV Data Cancelled.')
-            return
-        # Get Dataset name.
-        datasetName, ok = QInputDialog.getText(mainWindow, 'Get Dataset Name', 'Enter Dataset Name:')
-        if not ok:
-            print('\tCreate Transverse IPV Data Cancelled.')
+            print('\tCreate Transverse nnUNet Data Cancelled.')
             return
         # Create directories for transverse training data.
-        savePath = eu.creatennUAUSTrainingDirs(Scan.PLANE_TRANSVERSE)
+        imagesPath, labelsPath = eu.creatennUAUSTrainingDirs(Scan.PLANE_TRANSVERSE)
         # Create training data from each patient.
         for patient in self.patients:
             try:
-                print(f'\tCreating transverse nnUNet data for patient {patient}...')
+                print(f'\t\tCreating transverse nnUNet data for patient {patient}...')
                 transversePath = f'{self.scansPath}/{patient}/AUS/transverse'
                 scanDirs = Path(transversePath).iterdir()
                 for scan in scanDirs:
@@ -85,7 +80,7 @@ class Export:
                     scanPath = scan.as_posix()
                     saveDir = eu.getSaveDirName(scanPath, prefix)
                     if not saveDir:
-                        print(f'\t{prefix} not found in {scanPath}. Skipping...')
+                        print(f'\t\t\t{prefix} not found in {scanPath}. Skipping...')
                         continue
                     # Path to PointData.txt file.
                     pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.txt'
@@ -94,26 +89,68 @@ class Export:
                     # Get frames with points on them.
                     framesWithPoints, frameNumbers = eu.getFramesWithPoints(scanPath, pointData)
                     if not framesWithPoints:
-                        print(f'\tNo frames with point data available.')
+                        print(f'\t\t\tNo frames with point data available. Skipping...')
                         return
                     # Loop through frames with points on them, gather points for mask creation.
                     for index, frameNumber in enumerate(frameNumbers):
-                        cv2.imshow('Image', framesWithPoints[index])
                         polygon = [(int(i[1]), int(i[2])) for i in pointData if i[0] == frameNumber]
                         frameShape = framesWithPoints[index].shape
-                        print(polygon)
-                        print(frameShape)
                         img = Image.new('L', (frameShape[1], frameShape[0]), 255)
-                        ImageDraw.Draw(img).polygon(polygon, outline=1, fill=1)
+                        ImageDraw.Draw(img).polygon(polygon, fill=1)
                         mask = np.array(img)
-                        cv2.imshow('Mask', mask)
-                        return
+                        cv2.imwrite(f'{imagesPath}/t_P{patient}F{frameNumber}_0000.png', framesWithPoints[index])
+                        cv2.imwrite(f'{labelsPath}/t_P{patient}F{frameNumber}.png', mask)
 
             except WindowsError as e:
-                print(f'\tError creating nnUNet transverse data for patient {patient}', e)
+                print(f'\t\t\tError creating nnUNet transverse data for patient {patient}', e)
 
     def _exportnnUAUSSagittalData(self, mainWindow: QWidget):
         """Export AUS Sagittal frames for nn-Unet inference."""
+        print(f'\tExporting Sagittal frames for nn-Unet inference...')
+        # Get Save prefix.
+        prefix, ok = QInputDialog.getText(mainWindow, 'Select Save for Sagittal Export', 'Enter Prefix:')
+        if not ok:
+            print('\tCreate Sagittal nnUNet Data Cancelled.')
+            return
+        # Create directories for sagittal training data.
+        imagesPath, labelsPath = eu.creatennUAUSTrainingDirs(Scan.PLANE_SAGITTAL)
+        # Create training data from each patient.
+        for patient in self.patients:
+            try:
+                print(f'\t\tCreating sagittal nnUNet data for patient {patient}...')
+                sagittalPath = f'{self.scansPath}/{patient}/AUS/sagittal'
+                scanDirs = Path(sagittalPath).iterdir()
+                for scan in scanDirs:
+                    # Some files are .avi, they can be skipped.
+                    if scan.is_file():
+                        continue
+                    # Get save directory with given prefix.
+                    scanPath = scan.as_posix()
+                    saveDir = eu.getSaveDirName(scanPath, prefix)
+                    if not saveDir:
+                        print(f'\t\t\t{prefix} not found in {scanPath}. Skipping...')
+                        continue
+                    # Path to PointData.txt file.
+                    pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.txt'
+                    # Get point data from file.
+                    pointData = eu.getPointData(pointDataPath)
+                    # Get frames with points on them.
+                    framesWithPoints, frameNumbers = eu.getFramesWithPoints(scanPath, pointData)
+                    if not framesWithPoints:
+                        print(f'\t\t\tNo frames with point data available. Skipping...')
+                        return
+                    # Loop through frames with points on them, gather points for mask creation.
+                    for index, frameNumber in enumerate(frameNumbers):
+                        polygon = [(int(i[1]), int(i[2])) for i in pointData if i[0] == frameNumber]
+                        frameShape = framesWithPoints[index].shape
+                        img = Image.new('L', (frameShape[1], frameShape[0]), 255)
+                        ImageDraw.Draw(img).polygon(polygon, fill=1)
+                        mask = np.array(img)
+                        cv2.imwrite(f'{imagesPath}/s_P{patient}F{frameNumber}_0000.png', framesWithPoints[index])
+                        cv2.imwrite(f'{labelsPath}/s_P{patient}F{frameNumber}.png', mask)
+
+            except WindowsError as e:
+                print(f'\t\t\tError creating nnUNet sagittal data for patient {patient}', e)
 
     def _exportIPVAUSSagittalData(self, mainWindow: QWidget):
         """Export AUS sagittal frames for ipv inference."""
@@ -224,7 +261,8 @@ class Export:
                         for point in points:
                             pointsList.append(point[1])
                             pointsList.append(point[2])
-                        pointsList = np.array([[pointsList[i], pointsList[i + 1]] for i in range(0, len(pointsList) - 1, 2)])
+                        pointsList = np.array(
+                            [[pointsList[i], pointsList[i + 1]] for i in range(0, len(pointsList) - 1, 2)])
                         bottom = pointsList[np.argmin(pointsList[:, 1])]
                         right = pointsList[np.argmax(pointsList[:, 0])]
                         top = pointsList[np.argmax(pointsList[:, 1])]

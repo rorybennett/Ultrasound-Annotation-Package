@@ -339,21 +339,30 @@ class Main(QMainWindow):
 
     def _saveData(self, scan: int):
         """Save Scan point data. Check for overwrite"""
-        userName, ok = QInputDialog.getText(self, f'Save Scan {scan + 1} Data', 'Enter User Name:')
+        saveName, ok = QInputDialog.getText(self, f'Save Scan {scan + 1} Data', 'Enter User Name:')
 
         if ok:
-            if not userName:
+            if not saveName:
                 ErrorDialog(self, 'User name is empty.', '')
                 self._saveData(scan)
                 return
-            self.scans[scan].saveUserData(userName)
+            # "Overwrite" old save directories.
+            if saveName in [i.split('_')[0] for i in self.scans[scan].getSaveData()]:
+                confirm = QMessageBox.question(self, 'Overwrite Save Data', 'Overwrite old Save Data?',
+                                               buttons=QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+
+                if confirm == QMessageBox.StandardButton.Ok:
+                    self.scans[scan].deleteUserData(saveName)
+                else:
+                    return
+            self.scans[scan].saveUserData(saveName, scan)
 
     def _populateLoadScanData(self, scan: int):
         """Populate the load submenu just before opening."""
         self.menuLoadData[scan].clear()
         actions = []
         for fileName in self.scans[scan].getSaveData():
-            action = QAction(fileName, self)
+            action = QAction(fileName.split('_')[0], self)
             action.triggered.connect(lambda _, x=fileName: self._loadSaveData(scan, x))
             actions.append(action)
         self.menuLoadData[scan].addActions(actions)

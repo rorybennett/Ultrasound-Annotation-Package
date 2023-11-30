@@ -21,9 +21,12 @@ def creatennUAUSTrainingDirs(scanPlane: str):
     """
     # Create new, empty directories.
     try:
-        dataPath = f'../Export/nnUNet/{int(time.time())}_nnUNet_{scanPlane}_export/DATA'
-        Path(f'{dataPath}/imagesTr').mkdir(parents=True, exist_ok=False)
-        Path(f'{dataPath}/labelsTr').mkdir(parents=True, exist_ok=False)
+        dataPath = f'../Export/nnUNet/{int(time.time())}_{scanPlane[0].lower()}AUSProstate'
+        imagesPath = Path(f'{dataPath}/imagesTr')
+        imagesPath.mkdir(parents=True, exist_ok=False)
+        labelsPath = Path(f'{dataPath}/labelsTr')
+        labelsPath.mkdir(parents=True, exist_ok=False)
+        return imagesPath, labelsPath
     except FileExistsError as e:
         ErrorDialog(None, 'Error creating nnUNet export directories', e)
         return False

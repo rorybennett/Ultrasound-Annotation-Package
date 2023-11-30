@@ -348,13 +348,29 @@ class Scan:
 
         return folders
 
-    def saveUserData(self, username: str):
+    def deleteUserData(self, prefix):
+        """
+        Delete save data with the given prefix.
+
+        Args:
+            prefix: Save name to be deleted.
+        """
+        folders = [vd for vd in Path(f'{self.path}/Save Data').iterdir() if
+                   vd.is_dir() and vd.stem.split('_')[0] == prefix]
+
+        print(f'\tDeleting {len(folders)} save data folder(s)...')
+
+        for f in folders:
+            shutil.rmtree(f, onerror=su.remove_readonly)
+
+    def saveUserData(self, username: str, scan: int):
         """
         Save the current PointData.txt, BulletData.JSON, Editing.txt, and IPV.JSON files to the Save Data folder
         under the entered userName + time.
 
         Args:
             username (str): Username entered by user, will have time appended.
+            scan: Scan number.
         """
         try:
             # Create Save Data directory if not present.
@@ -368,7 +384,7 @@ class Scan:
             shutil.copy(self.pointPath, Path(userPath, self.pointPath.name))
             shutil.copy(self.editPath, Path(userPath, self.editPath.name))
             shutil.copy(self.ipvPath, Path(userPath, self.ipvPath.name))
-            print(f'\tUser data saved to {userPath.name}')
+            print(f'\tScan {scan+1} data saved to {userPath.name}')
 
         except Exception as e:
             print(f'\tError saving user data: {e}.')

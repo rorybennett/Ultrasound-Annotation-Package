@@ -2,6 +2,7 @@ import csv
 import json
 import math
 import os
+import stat
 from pathlib import Path
 
 import cv2
@@ -582,3 +583,11 @@ def checkIPVDataFile(scanPath: str) -> Path:
             json.dump(initialIPV, ipvFile, indent=4)
 
     return ipvPath
+
+
+def remove_readonly(func, path, excinfo):
+    """
+    Passed to shutil.rmtree to handle deleting read only files.
+    """
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
