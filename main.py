@@ -147,6 +147,8 @@ class Main(QMainWindow):
         menuExportnnU.addAction('Transverse', lambda: self.export.exportnnUAUSData(Scan.PLANE_TRANSVERSE, self))
         menuExportnnU.addAction('Sagittal', lambda: self.export.exportnnUAUSData(Scan.PLANE_SAGITTAL, self))
         self.menuExport.addAction('Save Data', lambda: self.export.exportAllSaveData())
+        self.menuExport.addSeparator()
+        self.menuExport.addAction('Open Export Directory', lambda: self.export.openExportDirectory(basedir))
         # Reset data menu.
         self.menuReset = self.menuBar().addMenu("Reset Data")
         self.menuReset = self.menuReset.addAction("Reset Editing Data", lambda: self._resetEditingData())

@@ -1,5 +1,6 @@
 import os
 import shutil
+import subprocess
 from pathlib import Path
 
 import cv2
@@ -9,6 +10,7 @@ from PyQt6.QtWidgets import QInputDialog, QWidget
 
 from classes import ExportUtil as eu
 from classes import Scan
+from classes.ErrorDialog import ErrorDialog
 
 
 class Export:
@@ -16,6 +18,15 @@ class Export:
         self.scansPath = scansPath
         self.totalPatients = eu.getTotalPatients(self.scansPath)
         self.patients = [f'{x}' for x in range(1, self.totalPatients + 1)]
+
+    @staticmethod
+    def openExportDirectory(basedir):
+        """Open the export folder in Windows explorer."""
+        path = f"{basedir}/Export".replace('/', '\\')
+        try:
+            subprocess.Popen(f'explorer "{path}"')
+        except Exception as e:
+            ErrorDialog(None, f'Error opening Windows explorer', e)
 
     def exportIPVAUSData(self, scanType, mainWindow: QWidget):
         """Export AUS transverse or sagittal frames for ipv inference."""
@@ -95,12 +106,12 @@ class Export:
                     for index, frameNumber in enumerate(frameNumbers):
                         polygon = [(int(i[1]), int(i[2])) for i in pointData if i[0] == frameNumber]
                         frameShape = framesWithPoints[index].shape
-                        img = Image.new('L', (frameShape[1], frameShape[0]), 255)
+                        img = Image.new('L', (frameShape[1], frameShape[0]), 0)
                         ImageDraw.Draw(img).polygon(polygon, fill=1)
                         mask = np.array(img)
+                        print(np.unique(mask))
                         cv2.imwrite(f'{imagesPath}/t_P{patient}F{frameNumber}_0000.png', framesWithPoints[index])
                         cv2.imwrite(f'{labelsPath}/t_P{patient}F{frameNumber}.png', mask)
-
             except WindowsError as e:
                 print(f'\t\t\tError creating nnUNet transverse data for patient {patient}', e)
 
@@ -143,12 +154,11 @@ class Export:
                     for index, frameNumber in enumerate(frameNumbers):
                         polygon = [(int(i[1]), int(i[2])) for i in pointData if i[0] == frameNumber]
                         frameShape = framesWithPoints[index].shape
-                        img = Image.new('L', (frameShape[1], frameShape[0]), 255)
+                        img = Image.new('L', (frameShape[1], frameShape[0]), 0)
                         ImageDraw.Draw(img).polygon(polygon, fill=1)
                         mask = np.array(img)
                         cv2.imwrite(f'{imagesPath}/s_P{patient}F{frameNumber}_0000.png', framesWithPoints[index])
                         cv2.imwrite(f'{labelsPath}/s_P{patient}F{frameNumber}.png', mask)
-
             except WindowsError as e:
                 print(f'\t\t\tError creating nnUNet sagittal data for patient {patient}', e)
 
