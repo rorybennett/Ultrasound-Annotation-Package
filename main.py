@@ -317,6 +317,7 @@ class Main(QMainWindow):
             dialog = QMessageBox(parent=self, text=text)
             dialog.setWindowTitle('Reset Editing Data')
             dialog.exec()
+            [self._refreshScanData(i) for i in [0, 1]]
 
     def _ipvInference(self, scan: int):
         """Send current frame for IPV inference, either online or locally."""
@@ -489,8 +490,9 @@ class Main(QMainWindow):
 
     def _refreshScanData(self, scan: int):
         """Refresh scan data by re-reading files."""
-        self.scans[scan].load(self.scans[scan].path, self.scans[scan].currentFrame)
-        self._updateDisplay(scan)
+        if self.scans[scan].loaded:
+            self.scans[scan].load(self.scans[scan].path, self.scans[scan].currentFrame)
+            self._updateDisplay(scan)
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         """Handle key press events."""

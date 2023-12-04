@@ -37,8 +37,7 @@ def resetEditingData(scansPath: str):
             totalPatients += 1
     print(f'Total patients to reset: {totalPatients}')
 
-    # Limit patients to first 19.
-    patients = natsort.natsorted(Path(scansPath).iterdir())[0:19]
+    patients = natsort.natsorted(Path(scansPath).iterdir())
     for patient in patients:
         try:
             for scanType in natsort.natsorted(patient.iterdir()):
