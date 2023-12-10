@@ -135,9 +135,11 @@ class Main(QMainWindow):
         self.menuLoadData[1].aboutToShow.connect(lambda: self._populateLoadScanData(1))
         # Save data menu.
         self.menuSaveData = self.menuBar().addMenu("Save Data")
-        self.menuSaveData.addAction('Save Scan 1 Data', lambda: self._saveData(0)).setDisabled(True)
+        self.menuSaveData.addAction('Save Scan 1 Data', lambda: self._saveData([0])).setDisabled(True)
         self.menuSaveData.addSeparator()
-        self.menuSaveData.addAction('Save Scan 2 Data', lambda: self._saveData(1)).setDisabled(True)
+        self.menuSaveData.addAction('Save Scan 2 Data', lambda: self._saveData([1])).setDisabled(True)
+        self.menuSaveData.addSeparator()
+        self.menuSaveData.addAction('Save Both', lambda: self._saveData([0, 1])).setDisabled(True)
         # Export data menu.
         self.menuExport = self.menuBar().addMenu("Export Data")
         menuExportIPV = self.menuExport.addMenu('IPV')
@@ -340,25 +342,27 @@ class Main(QMainWindow):
 
         self.threadPool.start(worker)
 
-    def _saveData(self, scan: int):
+    def _saveData(self, scans: list):
         """Save Scan point data. Check for overwrite"""
-        saveName, ok = QInputDialog.getText(self, f'Save Scan {scan + 1} Data', 'Enter User Name:')
+        for scan in scans:
+            saveName, ok = QInputDialog.getText(self, f'Save Scan {scan + 1} Data', 'Enter User Name:')
 
-        if ok:
-            if not saveName:
-                ErrorDialog(self, 'User name is empty.', '')
-                self._saveData(scan)
-                return
-            # "Overwrite" old save directories.
-            if saveName in [i.split('_')[0] for i in self.scans[scan].getSaveData()]:
-                confirm = QMessageBox.question(self, 'Overwrite Save Data', 'Overwrite old Save Data?',
-                                               buttons=QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
-
-                if confirm == QMessageBox.StandardButton.Ok:
-                    self.scans[scan].deleteUserData(saveName)
-                else:
+            if ok:
+                if not saveName:
+                    ErrorDialog(self, 'User name is empty.', '')
+                    self._saveData(scan)
                     return
-            self.scans[scan].saveUserData(saveName, scan)
+                self.scans[scan].checkSaveDataDirectory()
+                # "Overwrite" old save directories.
+                if saveName in [i.split('_')[0] for i in self.scans[scan].getSaveData()]:
+                    confirm = QMessageBox.question(self, 'Overwrite Save Data', 'Overwrite old Save Data?',
+                                                   buttons=QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+
+                    if confirm == QMessageBox.StandardButton.Ok:
+                        self.scans[scan].deleteUserData(saveName)
+                    else:
+                        return
+                self.scans[scan].saveUserData(saveName, scan)
 
     def _populateLoadScanData(self, scan: int):
         """Populate the load submenu just before opening."""
@@ -429,6 +433,8 @@ class Main(QMainWindow):
             self.menuLoadData[scan].setEnabled(True)
             self.menuLoadScans.actions()[1 if scan == 0 else 4].setEnabled(True)
             self.menuSaveData.actions()[0 if scan == 0 else 2].setEnabled(True)
+            self.menuSaveData.actions()[4].setEnabled(True) if self.scans[0].loaded and self.scans[1].loaded else \
+                self.menuSaveData.actions()[4].setDisabled(True)
             self.menuExtras.actions()[scan].setEnabled(True)
             self.menuExtras.menuInAction(self.menuExtras.actions()[3]).actions()[scan].setEnabled(True)
             self.menuExtras.menuInAction(self.menuExtras.actions()[3]).actions()[2].setEnabled(True)

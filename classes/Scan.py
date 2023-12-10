@@ -363,6 +363,16 @@ class Scan:
         for f in folders:
             shutil.rmtree(f, onerror=su.remove_readonly)
 
+    def checkSaveDataDirectory(self):
+        """
+        Check if the Save Data directory exists. If not, create it.
+
+        Returns:
+            saveDataPath: Path to SaveData directory.
+        """
+        # Create Save Data directory if not present.
+        saveDataPath = su.checkSaveDataDirectory(self.path)
+
     def saveUserData(self, username: str, scan: int):
         """
         Save the current PointData.txt, BulletData.JSON, Editing.txt, and IPV.JSON files to the Save Data folder
@@ -373,9 +383,7 @@ class Scan:
             scan: Scan number.
         """
         try:
-            # Create Save Data directory if not present.
-            saveDataPath = su.checkSaveDataDirectory(self.path)
-
+            saveDataPath = f'{self.path}/Save Data'
             userPath = Path(saveDataPath, f'{username}_{int(time.time() * 1000)}')
             # Create directory with username and current time in milliseconds.
             userPath.mkdir(parents=True, exist_ok=True)

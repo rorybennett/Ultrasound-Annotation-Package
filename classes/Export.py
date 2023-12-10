@@ -206,8 +206,8 @@ class Export:
                         # Sort points in IPV order (TOP, BOTTOM).
                         pointsList = []
                         for point in points:
-                            pointsList.append(point[1])
-                            pointsList.append(point[2])
+                            pointsList.append(int(float(point[1])))
+                            pointsList.append(int(float(point[2])))
                         pointsList = np.array(
                             [[pointsList[i], pointsList[i + 1]] for i in range(0, len(pointsList) - 1, 2)])
                         bottom = pointsList[np.argmin(pointsList[:, 1])]
@@ -254,6 +254,7 @@ class Export:
                     pointData = eu.getPointData(pointDataPath)
                     # Get frames with points on them.
                     framesWithPoints, frameNumbers = eu.getFramesWithPoints(scanPath, pointData)
+
                     if not framesWithPoints:
                         print(f'\tNo frames with point data available.')
                         return
@@ -269,8 +270,8 @@ class Export:
                         # Sort points in IPV order (TOP, RIGHT, BOTTOM, LEFT).
                         pointsList = []
                         for point in points:
-                            pointsList.append(point[1])
-                            pointsList.append(point[2])
+                            pointsList.append(int(float(point[1])))
+                            pointsList.append(int(float(point[2])))
                         pointsList = np.array(
                             [[pointsList[i], pointsList[i + 1]] for i in range(0, len(pointsList) - 1, 2)])
                         bottom = pointsList[np.argmin(pointsList[:, 1])]
