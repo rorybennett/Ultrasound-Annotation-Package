@@ -45,7 +45,8 @@ class Export:
     def exportAllSaveData(self):
         """Export all save data from all patients - For backup."""
         print(f'\tExporting all Save Data from all patients...')
-        scanTypes = ['Transverse', 'Sagittal']
+        scanTypes = ['AUS']
+        scanPlanes = ['Transverse', 'Sagittal']
         savePath = eu.createSaveDataExportDir()
         if not savePath:
             return
@@ -53,18 +54,22 @@ class Export:
         for patient in self.patients:
             # Loop through scan types within patient.
             for scanType in scanTypes:
-                src = f'../Scans/{patient}/{scanType}'
-                scans = os.listdir(src)
-                # Loop through scans in scan type in patient.
-                for scan in scans:
-                    src = f'{src}/{scan}/Save Data'
-                    # Copy contents.
+                for scanPlane in scanPlanes:
+                    typeSrc = f'../Scans/{patient}/{scanType}/{scanPlane}'
                     try:
-                        dst = f'{savePath}/{patient}/{scanType}/{scan}'
-                        shutil.copytree(src, dst)
+                        scans = os.listdir(typeSrc)
+                        # Loop through scans in scan type in patient.
+                        for scan in scans:
+                            userSrc = f'{typeSrc}/{scan}/Save Data'
+                            # Copy contents.
+                            try:
+                                dst = f'{savePath}/{patient}/{scanType}/{scanPlane}/{scan}'
+                                shutil.copytree(userSrc, dst)
+                            except FileNotFoundError as e:
+                                print(f'{userSrc}  -  does not exist, skipping...')
                     except FileNotFoundError as e:
-                        print(f'{src}  -  does not exist, skipping...')
-        print(f'\tSExporting completed.')
+                        print(f'{typeSrc} - does not exist, skipping...')
+        print(f'\tExporting completed.')
         return
 
     def _exportnnUAUSTransverseData(self, mainWindow: QWidget):

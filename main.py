@@ -521,6 +521,7 @@ class Main(QMainWindow):
             elif event.key() == Qt.Key.Key_R:
                 self.scans[0].clearFramePoints()
             self._updateDisplay(0)
+
         elif self.scans[1].loaded and self.canvases[1].underMouse():
             if event.key() == Qt.Key.Key_W:
                 self.scans[1].navigate(Scan.NAVIGATION['w'])
@@ -531,6 +532,12 @@ class Main(QMainWindow):
             elif event.key() == Qt.Key.Key_R:
                 self.scans[1].clearFramePoints()
             self._updateDisplay(1)
+
+        if self.scans[0].loaded and self.scans[1].loaded:
+            if event.key() == Qt.Key.Key_N:
+                self._navigatePatients(-1, Scan.NEXT)
+            elif event.key() == Qt.Key.Key_P:
+                self._navigatePatients(-1, Scan.PREVIOUS)
 
     def contextMenuEvent(self, event):
         for i in [0, 1]:

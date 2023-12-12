@@ -394,27 +394,39 @@ class Scan:
             shutil.copy(self.pointPath, Path(userPath, self.pointPath.name))
             shutil.copy(self.editPath, Path(userPath, self.editPath.name))
             shutil.copy(self.ipvPath, Path(userPath, self.ipvPath.name))
-            print(f'\tScan {scan+1} data saved to {userPath.name}')
+            print(f'\tScan {scan + 1} data saved to {userPath.name}')
 
         except Exception as e:
             print(f'\tError saving user data: {e}.')
 
     def frameAtTS1Centre(self):
         """
-        Get the frame index that has been marked as the centre by Tristan (TS1) if the save data exists. If TS1 save
-        data does not exist, show ErrorDialog. The current frame is changed to the found index. Sagittal TS1 markings
-        are spread over 5 frames, with the third frame taken as the centre.
+        Get the frame index that has been marked as the centre by Tristan (TS1) if the save data exists.
+        Sagittal TS1 markings are spread over 5 frames, with the third frame taken as the centre.
 
 
         Returns:
             Index of frame used as TS1 centre.
         """
+        folders = [vd.stem for vd in Path(f'{self.path}/Save Data').iterdir() if vd.is_dir()]
+        frame = self.currentFrame
+        for user in folders:
+            if user.split('_')[0] == 'TS1':
+                with open(f'{self.path}/Save Data/{user}/PointData.txt', 'r') as file:
+                    framesWithPoints = []
+                    for row in file.readlines():
+                        framesWithPoints.append(int(row.split(',')[0]))
+                framesWithPoints = sorted(set(framesWithPoints))
+                if self.scanPlane == PLANE_TRANSVERSE:
+                    frame = framesWithPoints[0]
+                else:
+                    frame = framesWithPoints[2]
+        return frame
 
     def frameAtScanPercent(self, percentage: int):
         """
         Find the frame at a percentage of the scan, using the axisAngles/quaternion of the frames. NB: The result is
-        based on indexing, and must be incremented by 1 to match frames stored from 0. The current frame is changed
-        to the found index.
+        based on indexing, and must be incremented by 1 to match frames stored from 0.
 
         Args:
             percentage (int): Percentage of scan to return as index.
