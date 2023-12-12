@@ -230,11 +230,17 @@ class Main(QMainWindow):
         cineButton.setDisabled(True)
         layout.addWidget(cineButton)
 
-        nav50Button = QPushButton('50%')
-        nav50Button.setToolTip('Show frame at 50% (based on IMU data).')
-        nav50Button.clicked.connect(lambda: self._onNav50Clicked(scan))
-        nav50Button.setDisabled(True)
-        layout.addWidget(nav50Button)
+        nav50IMUButton = QPushButton('IMU Centre')
+        nav50IMUButton.setToolTip('Show frame at 50% of sweep (based on IMU data).')
+        nav50IMUButton.clicked.connect(lambda: self._onNav50Clicked(scan, Scan.NAV_TYPE_IMU))
+        nav50IMUButton.setDisabled(True)
+        layout.addWidget(nav50IMUButton)
+
+        nav50TS1Button = QPushButton('TS1 Centre')
+        nav50TS1Button.setToolTip('Show frame at 50% of prostate (based on TS1 data).')
+        nav50TS1Button.clicked.connect(lambda: self._onNav50Clicked(scan, Scan.NAV_TYPE_TS1))
+        nav50TS1Button.setDisabled(True)
+        layout.addWidget(nav50TS1Button)
 
         axisAngleButton = QPushButton('Axis Angle Plot')
         axisAngleButton.setToolTip('Show axis angle plot.')
@@ -288,9 +294,12 @@ class Main(QMainWindow):
         """Start Axis Angle plotting process."""
         self.axisAngleProcess[scan].start(self.scans[scan])
 
-    def _onNav50Clicked(self, scan: int):
-        """Travel to the frame at 50%."""
-        self.scans[scan].navigate(self.scans[scan].frameAtScanPercent(50))
+    def _onNav50Clicked(self, scan: int, navType: str):
+        """Travel to the frame at 50% of scan or prostate."""
+        if navType == Scan.NAV_TYPE_IMU:
+            self.scans[scan].navigate(self.scans[scan].frameAtScanPercent(50))
+        else:
+            self.scans[scan].navigate(self.scans[scan].frameAtTS1Centre())
         self._updateDisplay(scan)
 
     def _updateTitle(self, scan: int):

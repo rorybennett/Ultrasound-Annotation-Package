@@ -28,6 +28,8 @@ NAVIGATION = {
     'w': 'UP',
     's': 'DOWN',
 }
+NAV_TYPE_IMU = '-NAV-IMU-'
+NAV_TYPE_TS1 = '-NAV-TS1-'
 # Add or remove points.
 ADD_POINT = '-ADD-POINT-'
 REMOVE_POINT = '-REMOVE-POINT-'
@@ -397,6 +399,17 @@ class Scan:
         except Exception as e:
             print(f'\tError saving user data: {e}.')
 
+    def frameAtTS1Centre(self):
+        """
+        Get the frame index that has been marked as the centre by Tristan (TS1) if the save data exists. If TS1 save
+        data does not exist, show ErrorDialog. The current frame is changed to the found index. Sagittal TS1 markings
+        are spread over 5 frames, with the third frame taken as the centre.
+
+
+        Returns:
+            Index of frame used as TS1 centre.
+        """
+
     def frameAtScanPercent(self, percentage: int):
         """
         Find the frame at a percentage of the scan, using the axisAngles/quaternion of the frames. NB: The result is
@@ -406,21 +419,23 @@ class Scan:
         Args:
             percentage (int): Percentage of scan to return as index.
 
+        Returns:
+            Index of frame at given percentage.
         """
-        index_at_percentage = 0
+        indexAtPercentage = 0
         # Find index.
         try:
             axisAngles = su.quaternionsToAxisAngles(self.quaternions)
 
-            index_start, index_end = su.estimateSlopeStartAndEnd(axisAngles)
+            indexStart, indexEnd = su.estimateSlopeStartAndEnd(axisAngles)
 
-            index_from_start = int((index_end - index_start) * (percentage / 100))
+            indexFromStart = int((indexEnd - indexStart) * (percentage / 100))
 
-            index_at_percentage = index_start + index_from_start
+            indexAtPercentage = indexStart + indexFromStart
         except Exception as e:
             ErrorDialog(None, f'Error finding axis angle centre', e)
 
-        return index_at_percentage
+        return indexAtPercentage
 
     def updateIPVCentre(self, pointDisplay: list, addOrRemove: str):
         """
