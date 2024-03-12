@@ -338,7 +338,7 @@ def drawPointDataOnAxis(axis, points, fd, dd):
     for point in points:
         pointDisplay = pixelsToDisplay(point, fd, dd)
 
-        axis.plot(pointDisplay[0], pointDisplay[1], marker=m, color='lime')
+        axis.plot(pointDisplay[0], pointDisplay[1], marker=m, color='lime', markersize=15)
 
 
 def pixelsToDisplay(pointPix: list, fd: list, dd: list):

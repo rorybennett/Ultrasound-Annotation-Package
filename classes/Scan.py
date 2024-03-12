@@ -597,6 +597,19 @@ class Scan:
 
         return count
 
+    # def distance(self):
+    #     """
+    #     Calculate distance between 2 points on a frame. This is for validation tests only.
+    #     """
+    #     point1 = self.pointsPix[0][1:]
+    #     point2 = self.pointsPix[1][1:]
+    #     fd = self.frames[self.currentFrame - 1].shape
+    #     depths = self.depths[self.currentFrame - 1]
+    #     x = [depths[1] / fd[1] * point1[0], depths[1] / fd[1] * point2[0]]
+    #     y = [depths[0] / fd[0] * point1[1], depths[0] / fd[0] * point2[1]]
+    #     distance = np.sqrt((x[0] - x[1]) ** 2 + (y[0] - y[1]) ** 2)
+    #
+    #     print(f'Distance: {distance}.')
     def printBulletDimensions(self):
         """
         Calculate available bullet dimensions and print them to screen.

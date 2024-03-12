@@ -288,7 +288,7 @@ class Main(QMainWindow):
 
     def _toggleSegmentationTB(self, scan: int):
         """Toggle segmentation tool bar for scan."""
-        self.toolbars[scan].setEnabled(True if self.buttons[scan].itemAt(3).widget().isChecked() else False)
+        self.toolbars[scan].setEnabled(True if self.buttons[scan].itemAt(4).widget().isChecked() else False)
 
     def _onAxisAngleClicked(self, scan):
         """Start Axis Angle plotting process."""

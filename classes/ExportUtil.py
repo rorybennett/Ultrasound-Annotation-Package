@@ -4,6 +4,7 @@ import time
 from pathlib import Path
 
 import cv2
+import numpy as np
 
 from classes import Scan
 from classes.ErrorDialog import ErrorDialog
@@ -115,19 +116,20 @@ def getPointData(filePath: str):
     return pointData
 
 
-def getDepths(scanPath: str):
+def getDepths(scanPath: str, frameNumber: int):
     """
-    Get the depth dimensions of a scan [height, width]
+    Get the depth dimensions of a scan [height, width].
 
     Args:
         scanPath: Path as String to Scan directory.
+        frameNumber: Frame number.
 
     Returns:
         depths: List of depth dimensions.
     """
     with open(f'{scanPath}/data.txt', 'r') as dataFile:
         lines = dataFile.readlines()
-        depths = [int(lines[0].split(',')[-3]), int(lines[0].split(',')[-2])]
+        depths = [int(lines[frameNumber - 1].split(',')[-3]), int(lines[frameNumber - 1].split(',')[-2])]
 
     return depths
 
@@ -192,3 +194,36 @@ def createSaveDataExportDir():
         ErrorDialog(None, f'Error creating Save Data Export Directory', e)
         return False
     return path
+
+
+def resampleImageAndPoints(frame: np.ndarray, scanDimensions, points, density=4):
+    """
+    Resample a given image to the required pixel density.
+
+    Args:
+        frame: Image to be resampled.
+        scanDimensions: Scan dimensions (height, width)
+        points: Points to be resampled.
+        density: Required pixel density (pixels / mm)
+
+    Returns:
+        Resampled/Resized frame and resampled points.
+    """
+    oldShape = frame.shape
+    # Resample Frame.
+    newHeight = scanDimensions[0] * density
+    newWidth = scanDimensions[1] * density
+
+    frame = cv2.resize(frame, dsize=(newWidth, newHeight), interpolation=cv2.INTER_CUBIC)
+
+    # Resample Points.
+    resampledPoints = []
+    newShape = frame.shape
+    for point in points:
+        # x value.
+        x = int(float(point[1])) / oldShape[1] * newShape[1]
+        # y value.
+        y = int(float(point[2])) / oldShape[0] * newShape[0]
+        resampledPoints.append([point[0], round(x), round(y)])
+
+    return frame, resampledPoints

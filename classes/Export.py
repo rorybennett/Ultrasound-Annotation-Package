@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import QInputDialog, QWidget
 from classes import ExportUtil as eu
 from classes import Scan
 from classes.ErrorDialog import ErrorDialog
+from classes.ExportDialog import ExportDialog
 
 
 class Export:
@@ -170,11 +171,12 @@ class Export:
     def _exportIPVAUSSagittalData(self, mainWindow: QWidget):
         """Export AUS sagittal frames for ipv inference."""
         print(f'\tExporting Sagittal frames for IPV inference...')
-        # Get Save prefix.
-        prefix, ok = QInputDialog.getText(mainWindow, 'Select Save for Sagittal Export', 'Enter Prefix:')
-        if not ok:
+        # Get Export Settings.
+        dlg = ExportDialog('IPV', 'Sagittal').executeDialog()
+        if not dlg:
             print('\tCreate Sagittal IPV Data Cancelled.')
             return
+        prefix, resample, pixelDensity = dlg
         # Create directories for sagittal training data.
         savePath = eu.createIPVTrainingDirs(Scan.PLANE_SAGITTAL)
         # Create training data from each patient.
@@ -204,10 +206,17 @@ class Export:
                     # Loop through frames with points on them.
                     for index, frameNumber in enumerate(frameNumbers):
                         saveName = f'{patient}_{frameNumber}.jpg'
+                        if resample:
+                            # Resample Frame and Points.
+                            depths = eu.getDepths(scanPath, int(frameNumber))
+                            frame, points = eu.resampleImageAndPoints(framesWithPoints[index], depths,
+                                                                      pointData[2 * index:2 * index + 2],
+                                                                      pixelDensity)
+                        else:
+                            frame = framesWithPoints[index]
+                            points = pointData[2 * index:2 * index + 2]
                         # Save frame to disk.
-                        cv2.imwrite(f'{savePath}/sagittal/{saveName}', framesWithPoints[index])
-                        # Get points on this frame (should only be 2).
-                        points = pointData[2 * index:2 * index + 2]
+                        cv2.imwrite(f'{savePath}/sagittal/{saveName}', frame)
                         # Sort points in IPV order (TOP, BOTTOM).
                         pointsList = []
                         for point in points:
@@ -230,11 +239,12 @@ class Export:
     def _exportIPVAUSTransverseData(self, mainWindow: QWidget):
         """Export AUS transverse frames for ipv inference."""
         print(f'\tExporting Transverse frames for IPV inference...')
-        # Get Save prefix.
-        prefix, ok = QInputDialog.getText(mainWindow, 'Select Save for Transverse Export', 'Enter Prefix:')
-        if not ok:
-            print('\tCreate Transverse IPV Data Cancelled.')
+        # Get Export Settings.
+        dlg = ExportDialog('IPV', 'Sagittal').executeDialog()
+        if not dlg:
+            print('\tCreate Sagittal IPV Data Cancelled.')
             return
+        prefix, resample, pixelDensity = dlg
         # Create directories for sagittal training data.
         savePath = eu.createIPVTrainingDirs(Scan.PLANE_TRANSVERSE)
         # Create training data from each patient.
@@ -265,13 +275,19 @@ class Export:
                         return
 
                     # Loop through frames with points on them.
-                    for index, frame in enumerate(framesWithPoints):
+                    for index, frameNumber in enumerate(frameNumbers):
                         saveName = f'{patient}_{frameNumbers[index]}.jpg'
+                        if resample:
+                            # Resample Frame and Points.
+                            depths = eu.getDepths(scanPath, int(frameNumber))
+                            frame, points = eu.resampleImageAndPoints(framesWithPoints[index], depths,
+                                                                      pointData[2 * index:2 * index + 4],
+                                                                      pixelDensity)
+                        else:
+                            frame = framesWithPoints[index]
+                            points = pointData[2 * index:2 * index + 4]
                         # Save frame to disk.
                         cv2.imwrite(f'{savePath}/transverse/{saveName}', frame)
-                        # Get points on this frame (should only be 4).
-                        points = pointData[2 * index:2 * index + 4]
-
                         # Sort points in IPV order (TOP, RIGHT, BOTTOM, LEFT).
                         pointsList = []
                         for point in points:
