@@ -87,7 +87,7 @@ class Scan:
 
     def load(self, path: str, startingFrame=1):
         """
-        Load a Scan object using the given path string. See __init__ for attribute details
+        Load a Scan object using the given path string. See __init__ for attribute details.
 
         Args:
             path: Path to Scan directory as a String.

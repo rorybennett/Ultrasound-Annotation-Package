@@ -153,7 +153,7 @@ def getIMUData(saveDir):
 
 def getFramesWithPoints(scanPath, pointData):
     """
-    Return frames in specified recording path that contain points on them.
+    Return frames in specified recording path that contain points on them. Frames are returned as grayscale images.
 
     Args:
         scanPath: Path (str) to scan (directory in scan type).
@@ -174,7 +174,7 @@ def getFramesWithPoints(scanPath, pointData):
     frameNumbers = []
     for row in frame_names:
         framePath = scanPath + '/' + row + '.png'
-        frames.append(cv2.imread(framePath))
+        frames.append(cv2.imread(framePath, cv2.IMREAD_GRAYSCALE))
         frameNumbers.append(row.split('.')[0])
 
     return frames, frameNumbers

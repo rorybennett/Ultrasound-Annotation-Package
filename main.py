@@ -116,6 +116,8 @@ class Main(QMainWindow):
 
             self.menuLoadScans.addSeparator()
         self.menuLoadScans.addAction('Load AUS Patient', lambda: self._selectAUSPatientDialog())
+        self.menuLoadScans.addSeparator()
+        self.menuLoadScans.addAction('Load PUS Patient', lambda: self._selectPUSPatientDialog())
 
         # Inference menu.
         menuInference = self.menuBar().addMenu('Inference')
@@ -415,6 +417,18 @@ class Main(QMainWindow):
         transverse = f'{scanPath}/AUS/Transverse/1'
         self._loadScan(0, transverse)
         sagittal = f'{scanPath}/AUS/Sagittal/1'
+        self._loadScan(1, sagittal)
+
+    def _selectPUSPatientDialog(self):
+        """Load both scans of a PUS patient."""
+        scanPath = QFileDialog.getExistingDirectory(self, caption=f'Select Patient', directory=self.scansPath)
+
+        if not scanPath:
+            return
+
+        transverse = f'{scanPath}/PUS/Transverse/1'
+        self._loadScan(0, transverse)
+        sagittal = f'{scanPath}/PUS/Sagittal/1'
         self._loadScan(1, sagittal)
 
     def _selectScanDialog(self, scan: int):
