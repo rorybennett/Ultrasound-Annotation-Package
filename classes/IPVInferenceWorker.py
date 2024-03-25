@@ -1,9 +1,7 @@
 import requests
 from PyQt6.QtCore import QRunnable, pyqtSlot, pyqtSignal, QObject
-from PyQt6.QtWidgets import QMainWindow
 
 from classes import Scan
-from classes.ErrorDialog import ErrorDialog
 
 
 class Signals(QObject):

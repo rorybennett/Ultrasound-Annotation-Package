@@ -11,7 +11,7 @@ from PyQt6.QtCore import Qt, QPoint, QThreadPool
 from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
     QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar, QSpinBox
-
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from classes import Export, Utils
 from classes import Scan
 from classes.ErrorDialog import ErrorDialog
@@ -69,12 +69,16 @@ class Main(QMainWindow):
                                      showIPVBox=self.boxes[1].itemAt(1).widget(),
                                      showMaskBox=self.boxes[1].itemAt(2).widget(),
                                      dragButton=self.toolbars[1].actions()[6])]
+        # Canvas navigation toolbars.
+        self.navBars = [NavigationToolbar(self.canvases[0], self),
+                        NavigationToolbar(self.canvases[1], self)]
 
         # Left side.
         self.layouts[0].setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.layouts[0].addLayout(self.titles[0])
         self.layouts[0].addLayout(self.buttons[0])
         self.layouts[0].addWidget(self.canvases[0])
+        self.layouts[0].addWidget(self.navBars[0])
         self.layouts[0].addLayout(self.boxes[0])
         self.layouts[0].addItem(Utils.spacer)
         # Right side.
@@ -82,6 +86,7 @@ class Main(QMainWindow):
         self.layouts[1].addLayout(self.titles[1])
         self.layouts[1].addLayout(self.buttons[1])
         self.layouts[1].addWidget(self.canvases[1])
+        self.layouts[1].addWidget(self.navBars[1])
         self.layouts[1].addLayout(self.boxes[1])
         self.layouts[1].addItem(Utils.spacer)
         # Add left and right to mainLayout.
