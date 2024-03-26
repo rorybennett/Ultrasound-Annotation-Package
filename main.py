@@ -61,13 +61,15 @@ class Main(QMainWindow):
         self.boxes = [self._createBoxes(0), self._createBoxes(1)]
         # Canvases for displaying frames.
         self.canvases = [FrameCanvas(updateDisplay=lambda: self._updateDisplay(0),
-                                     showPointsBox=self.boxes[0].itemAt(0).widget(),
                                      showIPVBox=self.boxes[0].itemAt(1).widget(),
-                                     showMaskBox=self.boxes[0].itemAt(2).widget()),
+                                     showMaskBox=self.boxes[0].itemAt(2).widget(),
+                                     segmentProstateBox=self.toolbars[0].actions()[8].defaultWidget(),
+                                     segmentBladderBox=self.toolbars[0].actions()[9].defaultWidget()),
                          FrameCanvas(updateDisplay=lambda: self._updateDisplay(1),
-                                     showPointsBox=self.boxes[1].itemAt(0).widget(),
                                      showIPVBox=self.boxes[1].itemAt(1).widget(),
-                                     showMaskBox=self.boxes[1].itemAt(2).widget())]
+                                     showMaskBox=self.boxes[1].itemAt(2).widget(),
+                                     segmentProstateBox=self.toolbars[1].actions()[8].defaultWidget(),
+                                     segmentBladderBox=self.toolbars[1].actions()[9].defaultWidget())]
         # Canvas navigation toolbars.
         self.navBars = [NavigationToolbar(self.canvases[0], self),
                         NavigationToolbar(self.canvases[1], self)]
@@ -179,8 +181,7 @@ class Main(QMainWindow):
         toolbar = QToolBar(f'ToolBar {scan}')
         self.addToolBar(Qt.ToolBarArea.LeftToolBarArea if scan == 0 else Qt.ToolBarArea.RightToolBarArea, toolbar)
 
-        copyPreviousAction = QAction(QIcon(f"{basedir}/res/copy_previous.png"), "Copy previous frame points.",
-                                     self)
+        copyPreviousAction = QAction(QIcon(f"{basedir}/res/copy_previous.png"), "Copy previous frame points.", self)
         copyPreviousAction.triggered.connect(lambda: self._copyFramePoints(scan, Scan.PREVIOUS))
         toolbar.addAction(copyPreviousAction)
 
@@ -214,6 +215,15 @@ class Main(QMainWindow):
         distSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         distSpinBox.setToolTip("Number of points in even distribution.")
         toolbar.addWidget(distSpinBox)
+
+        prostateSegmentationBox = QCheckBox("Prostate")
+        prostateSegmentationBox.setToolTip("Segment the prostate.")
+        prostateSegmentationBox.setChecked(True)
+        toolbar.addWidget(prostateSegmentationBox)
+
+        bladderSegmentationBox = QCheckBox("Bladder")
+        bladderSegmentationBox.setToolTip("Segment the bladder.")
+        toolbar.addWidget(bladderSegmentationBox)
 
         toolbar.setDisabled(True)
         toolbar.setMovable(False)
@@ -250,12 +260,6 @@ class Main(QMainWindow):
         axisAngleButton.setDisabled(True)
         layout.addWidget(axisAngleButton)
 
-        segmentationBox = QCheckBox('Segmentation')
-        segmentationBox.setToolTip('Enable segmentation tool bar.')
-        segmentationBox.stateChanged.connect(lambda: self._toggleSegmentationTB(scan))
-        segmentationBox.setDisabled(True)
-        layout.addWidget(segmentationBox)
-
         return layout
 
     def _createBoxes(self, scan: int):
@@ -287,10 +291,6 @@ class Main(QMainWindow):
         """Distribute points along a generated spline."""
         self.canvases[scan].distributeFramePoints(count)
         self._updateDisplay(scan)
-
-    def _toggleSegmentationTB(self, scan: int):
-        """Toggle segmentation tool bar for scan."""
-        self.toolbars[scan].setEnabled(True if self.buttons[scan].itemAt(4).widget().isChecked() else False)
 
     def _onAxisAngleClicked(self, scan):
         """Start Axis Angle plotting process."""
@@ -444,6 +444,8 @@ class Main(QMainWindow):
         """Load a scan."""
         try:
             self.scans[scan].load(scanPath)
+            self.toolbars[scan].setEnabled(True)
+            self.navBars[scan].setMaximumWidth(self.scans[scan].displayDimensions[0])
             self.canvases[scan].linkedScan = self.scans[scan]
             for i in range(self.buttons[scan].count()):
                 self.buttons[scan].itemAt(i).widget().setEnabled(True)
