@@ -12,6 +12,7 @@ from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
     QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar, QSpinBox
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+
 from classes import Export, Utils
 from classes import Scan
 from classes.ErrorDialog import ErrorDialog
@@ -62,13 +63,11 @@ class Main(QMainWindow):
         self.canvases = [FrameCanvas(updateDisplay=lambda: self._updateDisplay(0),
                                      showPointsBox=self.boxes[0].itemAt(0).widget(),
                                      showIPVBox=self.boxes[0].itemAt(1).widget(),
-                                     showMaskBox=self.boxes[0].itemAt(2).widget(),
-                                     dragButton=self.toolbars[0].actions()[6]),
+                                     showMaskBox=self.boxes[0].itemAt(2).widget()),
                          FrameCanvas(updateDisplay=lambda: self._updateDisplay(1),
                                      showPointsBox=self.boxes[1].itemAt(0).widget(),
                                      showIPVBox=self.boxes[1].itemAt(1).widget(),
-                                     showMaskBox=self.boxes[1].itemAt(2).widget(),
-                                     dragButton=self.toolbars[1].actions()[6])]
+                                     showMaskBox=self.boxes[1].itemAt(2).widget())]
         # Canvas navigation toolbars.
         self.navBars = [NavigationToolbar(self.canvases[0], self),
                         NavigationToolbar(self.canvases[1], self)]
@@ -206,10 +205,6 @@ class Main(QMainWindow):
         expandSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         expandSpinBox.setToolTip("Expand Scale (minimum 1).")
         toolbar.addWidget(expandSpinBox)
-
-        dragButton = QAction(QIcon(f"{basedir}/res/drag.png"), "Drag all points on frame.", self)
-        dragButton.setCheckable(True)
-        toolbar.addAction(dragButton)
 
         distAction = QAction(QIcon(f'{basedir}/res/distribute.png'), 'Distribute points along spline.', self)
         distAction.triggered.connect(lambda: self._distributePoints(scan, distSpinBox.value()))

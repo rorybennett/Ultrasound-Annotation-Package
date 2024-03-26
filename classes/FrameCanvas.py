@@ -12,7 +12,7 @@ matplotlib.use('Qt5Agg')
 
 class FrameCanvas(FigureCanvasQTAgg):
 
-    def __init__(self, updateDisplay, showPointsBox, showIPVBox, showMaskBox, dragButton):
+    def __init__(self, updateDisplay, showPointsBox, showIPVBox, showMaskBox):
         """Canvas for drawing frame and related point data."""
         # Related Scan object.
         self.linkedScan: Scan = None
@@ -23,16 +23,6 @@ class FrameCanvas(FigureCanvasQTAgg):
         self.showIPVBox = showIPVBox
         # Show mask Box on MainWindow.
         self.showMaskBox = showMaskBox
-        # Drag all points button on MainWindow.
-        self.dragButton = dragButton
-        # Enable click and drag of points.
-        self.enableDrag = False
-        # Check if drag was attempted.
-        self.dragAttempted = False
-        # Coordinates of cursor when drag starts in ??? coordinates.
-        self.xy = [0, 0]
-        # Points that are dragged on canvas (pixels).
-        self.framePointsPix = None
 
         # Figure to draw frames on.
         self.fig = Figure(dpi=100)
@@ -53,38 +43,20 @@ class FrameCanvas(FigureCanvasQTAgg):
         if self.linkedScan is not None:
             self.fd = self.linkedScan.frames[self.linkedScan.currentFrame - 1].shape
             self.dd = self.linkedScan.displayDimensions
-            if self.dragButton.isChecked():
-                self.xy = [event.xdata, event.ydata]
-                self.enableDrag = True
-                self.framePointsPix = self.linkedScan.getPointsOnFrame()
 
     def _axisMotionEvent(self, event):
         """Handle drag events on axis 1 and 2."""
         if self.linkedScan is not None:
-            if self.enableDrag:
-                self.dragAttempted = True
-                xyNew = [event.xdata, event.ydata]
-                dxy = [xyNew[0] - self.xy[0], xyNew[1] - self.xy[1]]
-                self.linkedScan.clearFramePoints()
-                # Drag each point on the frame by delta amount.
-                for pointPix in self.framePointsPix:
-                    # This y-portion of the equation is confusing, but it works.
-                    pointDisplay = su.pixelsToDisplay([pointPix[0], self.fd[0] - pointPix[1]], self.fd, self.dd)
-                    pointNew = [pointDisplay[0] + dxy[0], pointDisplay[1] - dxy[1]]
-                    self.linkedScan.addOrRemovePoint(pointNew)
-                self.updateDisplay()
+            pass
 
     def _axisReleaseEvent(self, event):
         """Handle left releases on axis 1 and 2. AddRemove if no drag took place"""
         if self.linkedScan is not None:
-            if not self.dragAttempted:
-                if event.button == 1:
-                    displayPoint = [event.x, event.y]
-                    if self.showPointsBox.isChecked():
-                        self.linkedScan.addOrRemovePoint(displayPoint)
-                        self.updateDisplay()
-        self.enableDrag = False
-        self.dragAttempted = False
+            if event.button == 1:
+                displayPoint = [event.x, event.y]
+                if self.showPointsBox.isChecked():
+                    self.linkedScan.addOrRemovePoint(displayPoint)
+                    self.updateDisplay()
 
     def _axisScrollEvent(self, event):
         """Handle scroll events on axis (canvas displaying image)."""
