@@ -61,10 +61,10 @@ class FrameCanvas(FigureCanvasQTAgg):
         if self.linkedScan is not None and self.showPointsBox.isChecked and not self.startDrag:
             if event.button == 1:
                 displayPoint = [event.xdata, event.ydata]
-                if self.segmentProstateBox.isChecked():
+                if self.segmentProstateBox.isChecked() and displayPoint[0] is not None:
                     self.linkedScan.addOrRemoveProstatePoint(displayPoint)
                     self.updateDisplay()
-                elif self.segmentBladderBox.isChecked():
+                elif self.segmentBladderBox.isChecked() and displayPoint[0] is not None:
                     self.linkedScan.addOrRemoveBladderPoint(displayPoint)
                     self.updateDisplay()
         self.startDrag = False
