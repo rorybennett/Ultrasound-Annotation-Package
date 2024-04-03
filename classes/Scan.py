@@ -456,10 +456,12 @@ class Scan:
         frame = self.currentFrame
         for user in folders:
             if user.split('_')[0] == 'TS1':
-                with open(f'{self.path}/Save Data/{user}/PointData.txt', 'r') as file:
+                with open(f'{self.path}/Save Data/{user}/PointData.json', 'r') as file:
+                    data = json.load(file)
+                    prostateData = data.get('Prostate')
                     framesWithPoints = []
-                    for row in file.readlines():
-                        framesWithPoints.append(int(row.split(',')[0]))
+                    for row in prostateData:
+                        framesWithPoints.append(row[0])
                 framesWithPoints = sorted(set(framesWithPoints))
                 if self.scanPlane == PLANE_TRANSVERSE:
                     frame = framesWithPoints[0]
