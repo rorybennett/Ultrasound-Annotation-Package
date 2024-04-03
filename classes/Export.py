@@ -100,24 +100,48 @@ class Export:
                     if not saveDir:
                         print(f'{prefix} not found in {scanPath}. Skipping...', end=' ')
                         continue
-                    # Path to PointData.txt file.
-                    pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.txt'
+                    # Path to PointData.json file.
+                    pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.json'
                     # Get point data from file.
-                    pointData = eu.getPointData(pointDataPath)
-                    # Get frames with points on them.
-                    framesWithPoints, frameNumbers = eu.getFramesWithPoints(scanPath, pointData)
-                    if not framesWithPoints:
-                        print(f'No frames with point data available. Skipping...')
-                        return
+                    prostatePoints, bladderPoints = eu.getPointData(pointDataPath)
+                    if prostatePoints is None:
+                        print(f'No frames with prostate point data available.', end=' ')
+                    if bladderPoints is None:
+                        print(f'No frames with bladder point data available.', end=' ')
+                    # Get frames with prostate points and bladder points.
+                    prostateFramesWithPoints, prostateFrameNumbers = eu.getFramesWithPoints(scanPath, prostatePoints)
+                    # Get frames with prostate points and bladder points.
+                    bladderFramesWithPoints, bladderFrameNumbers = eu.getFramesWithPoints(scanPath, bladderPoints)
+                    # Combine frame lists into one.
+                    framesWithPoints = []
+                    framesWithPoints += prostateFrameNumbers if prostateFrameNumbers is not None else []
+                    framesWithPoints += bladderFrameNumbers if bladderFrameNumbers is not None else []
+                    framesWithPoints = list(dict.fromkeys(framesWithPoints))
                     # Loop through frames with points on them, gather points for mask creation.
-                    for index, frameNumber in enumerate(frameNumbers):
-                        polygon = [(int(i[1]), int(i[2])) for i in pointData if i[0] == frameNumber]
-                        frameShape = framesWithPoints[index].shape
-                        img = Image.new('L', (frameShape[1], frameShape[0]))
-                        ImageDraw.Draw(img).polygon(polygon, fill=1)
-                        mask = np.array(img)
-                        cv2.imwrite(f'{imagesPath}/t_P{patient}F{frameNumber}_0000.png', framesWithPoints[index])
-                        cv2.imwrite(f'{labelsPath}/t_P{patient}F{frameNumber}.png', mask)
+                    for frameNumber in framesWithPoints:
+                        if frameNumber in prostateFrameNumbers:
+                            prostatePolygon = [(int(i[1]), int(i[2])) for i in prostatePoints if i[0] == frameNumber]
+                            frameShape = prostateFramesWithPoints[prostateFrameNumbers.index(frameNumber)].shape
+                            img = Image.new('L', (frameShape[1], frameShape[0]))
+                            ImageDraw.Draw(img).polygon(prostatePolygon, fill=1)
+                            prostateMask = np.array(img)
+                            cv2.imshow(f'Prostate {frameNumber}', prostateMask*255)
+                            cv2.waitKey()
+                            cv2.destroyAllWindows()
+
+                        if frameNumber in bladderFrameNumbers:
+                            bladderPolygon = [(int(i[1]), int(i[2])) for i in bladderPoints if i[0] == frameNumber]
+                            frameShape = bladderFramesWithPoints[bladderFrameNumbers.index(frameNumber)].shape
+                            img = Image.new('L', (frameShape[1], frameShape[0]))
+                            ImageDraw.Draw(img).polygon(bladderPolygon, fill=1)
+                            bladderMask = np.array(img)
+                            cv2.imshow(f'Bladder {frameNumber}', bladderMask*255)
+                            cv2.waitKey()
+                            cv2.destroyAllWindows()
+
+                        # cv2.imwrite(f'{imagesPath}/t_P{patient}F{frameNumber}_0000.png',
+                        #             prostateFramesWithPoints[index])
+                        # cv2.imwrite(f'{labelsPath}/t_P{patient}F{frameNumber}.png', mask)
                 print('Complete.')
             except WindowsError as e:
                 print(f'Error creating nnUNet tAUS data for patient {patient}', e)
@@ -199,9 +223,9 @@ class Export:
                     # Path to PointData.json file.
                     pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.json'
                     # Get point data from file.
-                    pointData = eu.getPointData(pointDataPath)
+                    prostatePoints, _ = eu.getPointData(pointDataPath)
                     # Get frames with points on them.
-                    framesWithPoints, frameNumbers = eu.getFramesWithPoints(scanPath, pointData)
+                    framesWithPoints, frameNumbers = eu.getFramesWithPoints(scanPath, prostatePoints)
                     if not framesWithPoints:
                         print(f'\tNo frames with point data available.')
                         return
@@ -212,11 +236,11 @@ class Export:
                             # Resample Frame and Points.
                             depths = eu.getDepths(scanPath, int(frameNumber))
                             frame, points = eu.resampleImageAndPoints(framesWithPoints[index], depths,
-                                                                      pointData[2 * index:2 * index + 2],
+                                                                      prostatePoints[2 * index:2 * index + 2],
                                                                       pixelDensity)
                         else:
                             frame = framesWithPoints[index]
-                            points = pointData[2 * index:2 * index + 2]
+                            points = prostatePoints[2 * index:2 * index + 2]
                         # Save frame to disk.
                         cv2.imwrite(f'{savePath}/sagittal/{saveName}', frame)
                         # Sort points in IPV order (TOP, BOTTOM).
@@ -268,9 +292,9 @@ class Export:
                     # Path to PointData.json file.
                     pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.json'
                     # Get point data from file.
-                    pointData = eu.getPointData(pointDataPath)
+                    prostatePoints, _ = eu.getPointData(pointDataPath)
                     # Get frames with points on them.
-                    framesWithPoints, frameNumbers = eu.getFramesWithPoints(scanPath, pointData)
+                    framesWithPoints, frameNumbers = eu.getFramesWithPoints(scanPath, prostatePoints)
 
                     if not framesWithPoints:
                         print(f'\tNo frames with point data available.')
@@ -283,11 +307,11 @@ class Export:
                             # Resample Frame and Points.
                             depths = eu.getDepths(scanPath, int(frameNumber))
                             frame, points = eu.resampleImageAndPoints(framesWithPoints[index], depths,
-                                                                      pointData[2 * index:2 * index + 4],
+                                                                      prostatePoints[2 * index:2 * index + 4],
                                                                       pixelDensity)
                         else:
                             frame = framesWithPoints[index]
-                            points = pointData[2 * index:2 * index + 4]
+                            points = prostatePoints[2 * index:2 * index + 4]
                         # Save frame to disk.
                         cv2.imwrite(f'{savePath}/transverse/{saveName}', frame)
                         # Sort points in IPV order (TOP, RIGHT, BOTTOM, LEFT).

@@ -295,7 +295,8 @@ class Main(QMainWindow):
 
     def _distributePoints(self, scan: int, count: int):
         """Distribute points along a generated spline."""
-        self.canvases[scan].distributeFramePoints(count)
+        pb = Scan.PROSTATE if self.toolbars[scan].actions()[8].defaultWidget().isChecked() else Scan.BLADDER
+        self.canvases[scan].distributeFramePoints(count, pb)
         self._updateDisplay(scan)
 
     def _onAxisAngleClicked(self, scan):
@@ -484,7 +485,8 @@ class Main(QMainWindow):
 
     def _shrinkExpandPoints(self, scan: int, amount):
         """Expand or shrink points around centre of mass."""
-        self.scans[scan].shrinkExpandPoints(amount)
+        pb = Scan.PROSTATE if self.toolbars[scan].actions()[8].defaultWidget().isChecked() else Scan.BLADDER
+        self.scans[scan].shrinkExpandPoints(amount, pb)
         self._updateDisplay(scan)
 
     def _clearScanPoints(self, scan: int):
@@ -492,14 +494,9 @@ class Main(QMainWindow):
         self.scans[scan].clearScanPoints()
         self._updateDisplay(scan)
 
-    def _clearFrameProstatePoints(self, scan: int):
+    def _clearFramePoints(self, scan: int, prostateBladder):
         """Clear frame prostate points from scan, then update display."""
-        self.scans[scan].clearFrameProstatePoints()
-        self._updateDisplay(scan)
-
-    def _clearFrameBladderPoints(self, scan: int):
-        """Clear frame bladder points from scan, then update display."""
-        self.scans[scan].clearFrameBladderPoints()
+        self.scans[scan].clearFramePoints(prostateBladder)
         self._updateDisplay(scan)
 
     def _updateIPVCentre(self, scan: int, addOrRemove: str, position: QPoint):
@@ -527,7 +524,8 @@ class Main(QMainWindow):
 
     def _copyFramePoints(self, scan: int, location):
         """Copy points from either previous or next frame."""
-        self.scans[scan].copyFramePoints(location)
+        pb = Scan.PROSTATE if self.toolbars[scan].actions()[8].defaultWidget().isChecked() else Scan.BLADDER
+        self.scans[scan].copyFramePoints(location, pb)
         self._updateDisplay(scan)
 
     def _refreshScanData(self, scan: int):
@@ -545,8 +543,6 @@ class Main(QMainWindow):
                 self.scans[0].navigate(Scan.NAVIGATION['s'])
             elif self.buttons[0].itemAt(3).widget().isChecked() and event.key() == Qt.Key.Key_D:
                 self.toolbars[0].actions()[7].trigger()
-            elif event.key() == Qt.Key.Key_R:
-                self.scans[0].clearFramePoints()
             self._updateDisplay(0)
 
         elif self.scans[1].loaded and self.canvases[1].underMouse():
@@ -556,8 +552,6 @@ class Main(QMainWindow):
                 self.scans[1].navigate(Scan.NAVIGATION['s'])
             elif self.buttons[1].itemAt(3).widget().isChecked() and event.key() == Qt.Key.Key_D:
                 self.toolbars[1].actions()[7].trigger()
-            elif event.key() == Qt.Key.Key_R:
-                self.scans[1].clearFramePoints()
             self._updateDisplay(1)
 
         if self.scans[0].loaded and self.scans[1].loaded:
@@ -571,8 +565,8 @@ class Main(QMainWindow):
             if self.scans[i].loaded and self.canvases[i].underMouse():
                 menu = QMenu()
                 menuPoints = menu.addMenu('Points')
-                menuPoints.addAction('Clear Frame Prostate Points', lambda: self._clearFrameProstatePoints(i))
-                menuPoints.addAction('Clear Frame Bladder Points', lambda: self._clearFrameBladderPoints(i))
+                menuPoints.addAction('Clear Frame Prostate Points', lambda: self._clearFramePoints(i, Scan.PROSTATE))
+                menuPoints.addAction('Clear Frame Bladder Points', lambda: self._clearFramePoints(i, Scan.BLADDER))
                 menuPoints.addSeparator()
                 menuPoints.addAction('Clear All Points', lambda: self._clearScanPoints(i))
                 menuIPV = menu.addMenu('IPV')

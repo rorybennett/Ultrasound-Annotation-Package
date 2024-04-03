@@ -62,10 +62,10 @@ class FrameCanvas(FigureCanvasQTAgg):
             if event.button == 1:
                 displayPoint = [event.xdata, event.ydata]
                 if self.segmentProstateBox.isChecked() and displayPoint[0] is not None:
-                    self.linkedScan.addOrRemoveProstatePoint(displayPoint)
+                    self.linkedScan.addOrRemovePoint(displayPoint, Scan.PROSTATE)
                     self.updateDisplay()
                 elif self.segmentBladderBox.isChecked() and displayPoint[0] is not None:
-                    self.linkedScan.addOrRemoveBladderPoint(displayPoint)
+                    self.linkedScan.addOrRemovePoint(displayPoint, Scan.BLADDER)
                     self.updateDisplay()
         self.startDrag = False
         self.downClick = False
@@ -93,8 +93,8 @@ class FrameCanvas(FigureCanvasQTAgg):
         dd = self.linkedScan.displayDimensions
         # Draw points on canvas if box ticked.
         if self.showPointsBox.isChecked():
-            su.drawPointDataOnAxis(self.axis, self.linkedScan.getProstatePointsOnFrame(), fd, dd, 'lime')
-            su.drawPointDataOnAxis(self.axis, self.linkedScan.getBladderPointsOnFrame(), fd, dd, 'dodgerblue')
+            su.drawPointDataOnAxis(self.axis, self.linkedScan.getPointsOnFrame(Scan.PROSTATE), fd, dd, 'lime')
+            su.drawPointDataOnAxis(self.axis, self.linkedScan.getPointsOnFrame(Scan.BLADDER), fd, dd, 'dodgerblue')
         # Draw IPV data on canvas if box ticked.
         if self.showIPVBox.isChecked():
             su.drawIPVDataOnAxis(self.axis, self.linkedScan.ipvData, self.linkedScan.frameNames[cfi], fd, dd)
@@ -110,15 +110,16 @@ class FrameCanvas(FigureCanvasQTAgg):
 
         self.draw()
 
-    def distributeFramePoints(self, count: int):
+    def distributeFramePoints(self, count: int, prostateBladder):
         """
         Distribute the points on the current frame evenly along a generated spline.
 
         Args:
             count: Number of points for distribution.
+            prostateBladder: Distribute either prostate or bladder points.
         """
         # Points on current frame.
-        pointsPix = self.linkedScan.getPointsOnFrame()
+        pointsPix = self.linkedScan.getPointsOnFrame(prostateBladder)
         if len(pointsPix) == 0:
             return
         # Organise points in a clockwise manner.
@@ -126,7 +127,6 @@ class FrameCanvas(FigureCanvasQTAgg):
         # Add extra point on end to complete spline.
         pointsPix = np.append(pointsPix, [pointsPix[0, :]], axis=0)
         # Polygon, acting as spline.
-
         poly = Polygon(np.column_stack([pointsPix[:, 0], pointsPix[:, 1]]))
         # Extract points from polygon.
         xs, ys = poly.xy.T
@@ -137,9 +137,9 @@ class FrameCanvas(FigureCanvasQTAgg):
         # Get all points except the last one, which is a repeat.
         endPointsPix = np.column_stack([xn, yn])[:-1]
         # Clear current points from frame.
-        self.linkedScan.clearFramePoints()
+        self.linkedScan.clearFramePoints(prostateBladder)
         fd = self.linkedScan.frames[self.linkedScan.currentFrame - 1].shape
         # Save points.
         for pointPix in endPointsPix:
             pointDisplay = su.pixelsToDisplay([pointPix[0], fd[0] - pointPix[1]], fd, self.linkedScan.displayDimensions)
-            self.linkedScan.addOrRemovePoint(pointDisplay)
+            self.linkedScan.addOrRemovePoint(pointDisplay, prostateBladder)

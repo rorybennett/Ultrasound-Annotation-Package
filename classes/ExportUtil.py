@@ -1,4 +1,3 @@
-import csv
 import json
 import os
 import time
@@ -100,22 +99,27 @@ def getSaveDirName(scanPath: str, prefix: str):
 
 def getPointData(filePath: str):
     """
-        Extract frame name and point data from given filePath (str). The point data is not always sorted in order as
-        that was only added later, so it is sorted by frame name here.
+    Extract frame name and point data from given filePath (str). The point data is not always sorted in order as
+    that was only added later, so it is sorted by frame name here.
 
-        Args:
-            filePath: Path to file, as a string, including file type.
+    Args:
+        filePath: Path to file, as a string, including file type.
 
-        Returns:
-            pointData: list of file names and associated point data, sorted by file name for grouping reasons.
-        """
+    Returns:
+        prostatePoints: list of file names and associated point data, sorted by file name for grouping reasons.
+    """
     with open(filePath, newline='\n') as pointFile:
         data = json.load(pointFile)
-        pointData = data.get('Prostate')
+        prostatePoints = data.get('Prostate')
+        bladderPoints = data.get('Bladder')
 
-    pointData.sort(key=lambda row: ([row[0]]))
+    if prostatePoints is not None:
+        prostatePoints.sort(key=lambda row: ([row[0]]))
 
-    return pointData
+    if bladderPoints is not None:
+        bladderPoints.sort(key=lambda row: ([row[0]]))
+
+    return prostatePoints, bladderPoints
 
 
 def getDepths(scanPath: str, frameNumber: int):
@@ -164,8 +168,8 @@ def getFramesWithPoints(scanPath, pointData):
     Returns:
         frames: np.array of frames corresponding to point data frame names, else False.
     """
-    if len(pointData) == 0:
-        return False
+    if pointData is None or len(pointData) == 0:
+        return None, None
 
     # Remove duplicates
     frame_names = [row[0] for row in pointData]

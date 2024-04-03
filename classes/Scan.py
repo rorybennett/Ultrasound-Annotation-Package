@@ -44,6 +44,9 @@ PREVIOUS = '-PREVIOUS-'
 # Shrink or expand points around centre of mass.
 SHRINK = '-SHRINK-'
 EXPAND = '-EXPAND-'
+# Prostate vs Bladder points.
+PROSTATE = '-PROSTATE-'
+BLADDER = '-BLADDER-'
 
 
 class Scan:
@@ -131,34 +134,27 @@ class Scan:
         su.drawFrameOnAxis(axis, frame)
         # Draw scan details on axis.
         su.drawScanDataOnAxis(axis, frame, framePosition, count, depths, imuOffset, imuPosition,
-                              self.countFrameProstatePoints() + self.countFrameBladderPoints(),
+                              self.countFramePoints(PROSTATE) + self.countFramePoints(BLADDER),
                               len(self.pointsProstate) + len(self.pointsBladder), dd)
 
-    def getProstatePointsOnFrame(self, position=None):
+    def getPointsOnFrame(self, prostateBladder, position=None):
         """
         Return a list of prostate points on the frame at 'position'. If position is None, use the current frame.
 
         :param position: Index of frame.
+        :param prostateBladder: Get either prostate or bladder points.
         :return: List of points on frame.
         """
-        if position is not None:
-            points = [[p[1], p[2]] for p in self.pointsProstate if p[0] == self.frameNames[position]]
+        if prostateBladder == PROSTATE:
+            if position is not None:
+                points = [[p[1], p[2]] for p in self.pointsProstate if p[0] == self.frameNames[position]]
+            else:
+                points = [[p[1], p[2]] for p in self.pointsProstate if p[0] == self.frameNames[self.currentFrame - 1]]
         else:
-            points = [[p[1], p[2]] for p in self.pointsProstate if p[0] == self.frameNames[self.currentFrame - 1]]
-
-        return points
-
-    def getBladderPointsOnFrame(self, position=None):
-        """
-        Return a list of bladder points on the frame at 'position'. If position is None, use the current frame.
-
-        :param position: Index of frame.
-        :return: List of points on frame.
-        """
-        if position is not None:
-            points = [[p[1], p[2]] for p in self.pointsBladder if p[0] == self.frameNames[position]]
-        else:
-            points = [[p[1], p[2]] for p in self.pointsBladder if p[0] == self.frameNames[self.currentFrame - 1]]
+            if position is not None:
+                points = [[p[1], p[2]] for p in self.pointsBladder if p[0] == self.frameNames[position]]
+            else:
+                points = [[p[1], p[2]] for p in self.pointsBladder if p[0] == self.frameNames[self.currentFrame - 1]]
 
         return points
 
@@ -235,59 +231,41 @@ class Scan:
         except Exception as e:
             ErrorDialog(None, f'Error opening Windows explorer', e)
 
-    def addOrRemoveProstatePoint(self, pointDisplay: list):
+    def addOrRemovePoint(self, pointDisplay: list, prostateBladder):
         """
-        Add or remove a point to/from self.pointsProstate. Point data is saved in pixel values. If the new point is
-        within a radius of an old point, the old point is removed.
+        Add or remove a point to/from self.pointsProstate or self.pointsBladder. Point data is saved in pixel values.
+        If the new point is within a radius of an old point, the old point is removed.
 
         Args:
             pointDisplay: x/width-, and y/height-coordinates returned by the canvas elements' event.
-
-        Returns:
-            Nothing, adds points directly to self.pointsProstate.
+            prostateBladder: Add or remove points to either prostate points or bladder points.
         """
         pointPixel = su.displayToPixels(pointDisplay, self.frames[self.currentFrame - 1].shape, self.displayDimensions)
 
         pointRemoved = False
 
-        for point in self.pointsProstate:
-            if self.frameNames[self.currentFrame - 1] == point[0]:
-                # If within radius of another point, remove that point.
-                if su.pointInRadius(point[1:], pointPixel, 5):
-                    self.pointsProstate.remove(point)
-                    pointRemoved = True
-                    break
-        # If no point was removed, add the new point.
-        if not pointRemoved:
-            self.pointsProstate.append([self.frameNames[self.currentFrame - 1], pointPixel[0], pointPixel[1]])
-        # Save point data to disk.
-        self.__saveToDisk(SAVE_POINT_DATA)
-
-    def addOrRemoveBladderPoint(self, pointDisplay: list):
-        """
-        Add or remove a point to/from self.pointsBladder. Point data is saved in pixel values. If the new point is
-        within a radius of an old point, the old point is removed.
-
-        Args:
-            pointDisplay: x/width-, and y/height-coordinates returned by the canvas elements' event.
-
-        Returns:
-            Nothing, adds points directly to self.pointsBladder.
-        """
-        pointPixel = su.displayToPixels(pointDisplay, self.frames[self.currentFrame - 1].shape, self.displayDimensions)
-
-        pointRemoved = False
-
-        for point in self.pointsBladder:
-            if self.frameNames[self.currentFrame - 1] == point[0]:
-                # If within radius of another point, remove that point.
-                if su.pointInRadius(point[1:], pointPixel, 5):
-                    self.pointsBladder.remove(point)
-                    pointRemoved = True
-                    break
-        # If no point was removed, add the new point.
-        if not pointRemoved:
-            self.pointsBladder.append([self.frameNames[self.currentFrame - 1], pointPixel[0], pointPixel[1]])
+        if prostateBladder == PROSTATE:
+            for point in self.pointsProstate:
+                if self.frameNames[self.currentFrame - 1] == point[0]:
+                    # If within radius of another point, remove that point.
+                    if su.pointInRadius(point[1:], pointPixel, 5):
+                        self.pointsProstate.remove(point)
+                        pointRemoved = True
+                        break
+            # If no point was removed, add the new point.
+            if not pointRemoved:
+                self.pointsProstate.append([self.frameNames[self.currentFrame - 1], pointPixel[0], pointPixel[1]])
+        else:
+            for point in self.pointsBladder:
+                if self.frameNames[self.currentFrame - 1] == point[0]:
+                    # If within radius of another point, remove that point.
+                    if su.pointInRadius(point[1:], pointPixel, 5):
+                        self.pointsBladder.remove(point)
+                        pointRemoved = True
+                        break
+            # If no point was removed, add the new point.
+            if not pointRemoved:
+                self.pointsBladder.append([self.frameNames[self.currentFrame - 1], pointPixel[0], pointPixel[1]])
         # Save point data to disk.
         self.__saveToDisk(SAVE_POINT_DATA)
 
@@ -322,19 +300,14 @@ class Scan:
         except Exception as e:
             print(f'\tError saving details to file: {e}')
 
-    def clearFrameProstatePoints(self):
+    def clearFramePoints(self, prostateBladder):
         """
         Clear points on the currently displayed frame, then save to disk.
         """
-        self.pointsProstate = [p for p in self.pointsProstate if not p[0] == self.frameNames[self.currentFrame - 1]]
-
-        self.__saveToDisk(SAVE_POINT_DATA)
-
-    def clearFrameBladderPoints(self):
-        """
-        Clear points on the currently displayed frame, then save to disk.
-        """
-        self.pointsBladder = [p for p in self.pointsBladder if not p[0] == self.frameNames[self.currentFrame - 1]]
+        if prostateBladder == PROSTATE:
+            self.pointsProstate = [p for p in self.pointsProstate if not p[0] == self.frameNames[self.currentFrame - 1]]
+        else:
+            self.pointsBladder = [p for p in self.pointsBladder if not p[0] == self.frameNames[self.currentFrame - 1]]
 
         self.__saveToDisk(SAVE_POINT_DATA)
 
@@ -557,13 +530,15 @@ class Scan:
 
         self.__saveToDisk(SAVE_IPV_DATA)
 
-    def copyFrameProstatePoints(self, location: str):
+    def copyFramePoints(self, location: str, prostateBladder):
         """
         Copy frame points from previous or next frame on to current frame. Deletes any points on current frame
-        then copies points on to frame.
+        then copies points on to frame. Either prostate points OR bladder points are copied, depending on which
+        is being used for segmentation.
 
         Args:
             location: Either NEXT frame or PREVIOUS frame.
+            prostateBladder: Either prostate or bladder points are copied.
         """
         # New frame.
         newFrame = self.currentFrame + 1 if location == NEXT else self.currentFrame - 1
@@ -571,13 +546,16 @@ class Scan:
         if newFrame <= 0 or newFrame > self.frameCount:
             return
         # Points on new frame.
-        newPoints = self.getProstatePointsOnFrame(position=newFrame - 1)
+        newPoints = self.getPointsOnFrame(prostateBladder, position=newFrame - 1)
 
         if newPoints:
             # Delete points on current frame.
-            self.clearFrameProstatePoints()
+            self.clearFramePoints(prostateBladder)
             for newPoint in newPoints:
-                self.pointsProstate.append([self.frameNames[self.currentFrame - 1], newPoint[0], newPoint[1]])
+                if prostateBladder == PROSTATE:
+                    self.pointsProstate.append([self.frameNames[self.currentFrame - 1], newPoint[0], newPoint[1]])
+                else:
+                    self.pointsBladder.append([self.frameNames[self.currentFrame - 1], newPoint[0], newPoint[1]])
             self.__saveToDisk(SAVE_POINT_DATA)
 
     def quaternionsToAxisAngles(self) -> list:
@@ -607,58 +585,52 @@ class Scan:
 
         return axis_angles
 
-    def shrinkExpandProstatePoints(self, amount):
+    def shrinkExpandPoints(self, amount, prostateBladder):
         """
         Shrink or expand points around their centre of mass. amount < 0 means shrink, amount > 0 means expand.
 
         Args:
             amount: How much to shrink or expand by.
+            prostateBladder: Shrink or expand either prostate or bladder points.
         """
-        points = self.getProstatePointsOnFrame()
+        points = self.getPointsOnFrame(prostateBladder)
 
         if points:
             newPoints = Utils.shrinkExpandPoints(points, amount)
 
-            self.clearFrameProstatePoints()
+            self.clearFramePoints(prostateBladder)
 
             for newPoint in newPoints:
-                self.pointsProstate.append([self.frameNames[self.currentFrame - 1], newPoint[0], newPoint[1]])
+                self.pointsProstate.append([self.frameNames[self.currentFrame - 1], newPoint[0],
+                                            newPoint[1]]) if prostateBladder == PROSTATE else self.pointsBladder.append(
+                    [self.frameNames[self.currentFrame - 1], newPoint[0], newPoint[1]])
 
             self.__saveToDisk(SAVE_POINT_DATA)
 
-    def countFrameProstatePoints(self, position=None):
+    def countFramePoints(self, prostateBladder, position=None):
         """
         Return number of prostate points on a frame. If position is None, return number of points on current frame.
 
         Args:
+            prostateBladder: Count either prostate or bladder points.
             position: Index of frame.
 
         Returns:
             count: Count of points on frame.
         """
-        if position is not None:
-            count = sum(1 for p in self.pointsProstate if p[0] == self.frameNames[position])
+        if prostateBladder == PROSTATE:
+            if position is not None:
+                count = sum(1 for p in self.pointsProstate if p[0] == self.frameNames[position])
+            else:
+                count = sum(1 for p in self.pointsProstate if p[0] == self.frameNames[self.currentFrame - 1])
         else:
-            count = sum(1 for p in self.pointsProstate if p[0] == self.frameNames[self.currentFrame - 1])
+            if position is not None:
+                count = sum(1 for p in self.pointsBladder if p[0] == self.frameNames[position])
+            else:
+                count = sum(1 for p in self.pointsBladder if p[0] == self.frameNames[self.currentFrame - 1])
 
         return count
 
-    def countFrameBladderPoints(self, position=None):
-        """
-        Return number of bladder points on a frame. If position is None, return number of points on current frame.
-
-        Args:
-            position: Index of frame.
-
-        Returns:
-            count: Count of points on frame.
-        """
-        if position is not None:
-            count = sum(1 for p in self.pointsBladder if p[0] == self.frameNames[position])
-        else:
-            count = sum(1 for p in self.pointsBladder if p[0] == self.frameNames[self.currentFrame - 1])
-
-        return count
 
     def printBulletDimensions(self):
         """
