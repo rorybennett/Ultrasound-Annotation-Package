@@ -1,4 +1,5 @@
 import csv
+import json
 import os
 import time
 from pathlib import Path
@@ -22,7 +23,7 @@ def creatennUAUSTrainingDirs(scanPlane: str):
     """
     # Create new, empty directories.
     try:
-        dataPath = f'../Export/nnUNet/{int(time.time())}_{scanPlane[0].lower()}AUSProstate'
+        dataPath = f'Export/nnUNet/{int(time.time())}_{scanPlane[0].lower()}AUSProstate'
         imagesPath = Path(f'{dataPath}/imagesTr')
         imagesPath.mkdir(parents=True, exist_ok=False)
         labelsPath = Path(f'{dataPath}/labelsTr')
@@ -45,7 +46,7 @@ def createIPVTrainingDirs(scanPlane: str):
     """
     # Create new, empty directories.
     try:
-        dataPath = f'../Export/IPV/{int(time.time())}_IPV_{scanPlane}_export/DATA'
+        dataPath = f'Export/IPV/{int(time.time())}_IPV_{scanPlane}_export/DATA'
         Path(f'{dataPath}/fold_lists').mkdir(parents=True, exist_ok=False)
         if scanPlane == Scan.PLANE_TRANSVERSE:
             Path(f'{dataPath}/transverse').mkdir(exist_ok=False)
@@ -109,7 +110,8 @@ def getPointData(filePath: str):
             pointData: list of file names and associated point data, sorted by file name for grouping reasons.
         """
     with open(filePath, newline='\n') as pointFile:
-        pointData = list(csv.reader(pointFile))
+        data = json.load(pointFile)
+        pointData = data.get('Prostate')
 
     pointData.sort(key=lambda row: ([row[0]]))
 

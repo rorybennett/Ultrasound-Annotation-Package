@@ -132,7 +132,6 @@ class Export:
             return
         # Create directories for sagittal training data.
         imagesPath, labelsPath = eu.creatennUAUSTrainingDirs(Scan.PLANE_SAGITTAL)
-        print(imagesPath)
         # Create training data from each patient.
         for patient in self.patients:
             try:
@@ -197,8 +196,8 @@ class Export:
                     if not saveDir:
                         print(f'\t{prefix} not found in {scanPath}. Skipping...')
                         continue
-                    # Path to PointData.txt file.
-                    pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.txt'
+                    # Path to PointData.json file.
+                    pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.json'
                     # Get point data from file.
                     pointData = eu.getPointData(pointDataPath)
                     # Get frames with points on them.
@@ -266,8 +265,8 @@ class Export:
                     if not saveDir:
                         print(f'\t{prefix} not found in {scanPath}. Skipping...')
                         continue
-                    # Path to PointData.txt file.
-                    pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.txt'
+                    # Path to PointData.json file.
+                    pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.json'
                     # Get point data from file.
                     pointData = eu.getPointData(pointDataPath)
                     # Get frames with points on them.
