@@ -10,7 +10,6 @@ from pathlib import Path
 import cv2
 import numpy as np
 from PyQt6.QtWidgets import QMainWindow
-from natsort import natsorted
 from pyquaternion import Quaternion
 
 from classes import FrameCanvas, Utils
@@ -76,8 +75,8 @@ class Scan:
         self.scanType, self.scanPlane = None, None
         # Display dimensions.
         self.displayDimensions = None
-        # Point data from PointData.txt.
-        self.pointPath, self.pointsPix = None, None
+        # Point data from PointData.json.
+        self.pointPath, self.pointsProstate, self.pointsBladder = None, None, None
         # IPV data from IPV.JSON.
         self.ipvPath, self.ipvData = None, None
         # Bullet data from Bullet.json
@@ -103,7 +102,7 @@ class Scan:
         self.editPath, self.imuOffset, self.imuPosition = su.getEditDataFromFile(self.path)
         _, self.scanType, self.scanPlane, _, _ = self.getScanDetails()
         self.displayDimensions = self.getDisplayDimensions()
-        self.pointPath, self.pointsPix = su.getPointDataFromFile(self.path)
+        self.pointPath, self.pointsProstate, self.pointsBladder = su.getPointDataFromFile(self.path)
         self.ipvPath, self.ipvData = su.getIPVDataFromFile(self.path)
         self.bulletPath, self.bulletData = su.getBulletDataFromFile(self.path)
         self.loaded = True
@@ -132,19 +131,34 @@ class Scan:
         su.drawFrameOnAxis(axis, frame)
         # Draw scan details on axis.
         su.drawScanDataOnAxis(axis, frame, framePosition, count, depths, imuOffset, imuPosition,
-                              self.countFramePoints(), len(self.pointsPix), dd)
+                              self.countFrameProstatePoints() + self.countFrameBladderPoints(),
+                              len(self.pointsProstate) + len(self.pointsBladder), dd)
 
-    def getPointsOnFrame(self, position=None):
+    def getProstatePointsOnFrame(self, position=None):
         """
-        Return a list of points on the frame at 'position'. If position is None, use the current frame.
+        Return a list of prostate points on the frame at 'position'. If position is None, use the current frame.
 
         :param position: Index of frame.
         :return: List of points on frame.
         """
         if position is not None:
-            points = [[p[1], p[2]] for p in self.pointsPix if p[0] == self.frameNames[position]]
+            points = [[p[1], p[2]] for p in self.pointsProstate if p[0] == self.frameNames[position]]
         else:
-            points = [[p[1], p[2]] for p in self.pointsPix if p[0] == self.frameNames[self.currentFrame - 1]]
+            points = [[p[1], p[2]] for p in self.pointsProstate if p[0] == self.frameNames[self.currentFrame - 1]]
+
+        return points
+
+    def getBladderPointsOnFrame(self, position=None):
+        """
+        Return a list of bladder points on the frame at 'position'. If position is None, use the current frame.
+
+        :param position: Index of frame.
+        :return: List of points on frame.
+        """
+        if position is not None:
+            points = [[p[1], p[2]] for p in self.pointsBladder if p[0] == self.frameNames[position]]
+        else:
+            points = [[p[1], p[2]] for p in self.pointsBladder if p[0] == self.frameNames[self.currentFrame - 1]]
 
         return points
 
@@ -221,31 +235,59 @@ class Scan:
         except Exception as e:
             ErrorDialog(None, f'Error opening Windows explorer', e)
 
-    def addOrRemovePoint(self, pointDisplay: list):
+    def addOrRemoveProstatePoint(self, pointDisplay: list):
         """
-        Add or remove a point to/from self.points. Point data is saved in pixel values. If the new point is within
-        a radius of an old point, the old point is removed.
+        Add or remove a point to/from self.pointsProstate. Point data is saved in pixel values. If the new point is
+        within a radius of an old point, the old point is removed.
 
         Args:
             pointDisplay: x/width-, and y/height-coordinates returned by the canvas elements' event.
 
         Returns:
-            Nothing, adds points directly to self.pointsPixels.
+            Nothing, adds points directly to self.pointsProstate.
         """
         pointPixel = su.displayToPixels(pointDisplay, self.frames[self.currentFrame - 1].shape, self.displayDimensions)
 
         pointRemoved = False
 
-        for point in self.pointsPix:
+        for point in self.pointsProstate:
             if self.frameNames[self.currentFrame - 1] == point[0]:
                 # If within radius of another point, remove that point.
                 if su.pointInRadius(point[1:], pointPixel, 5):
-                    self.pointsPix.remove(point)
+                    self.pointsProstate.remove(point)
                     pointRemoved = True
                     break
         # If no point was removed, add the new point.
         if not pointRemoved:
-            self.pointsPix.append([self.frameNames[self.currentFrame - 1], pointPixel[0], pointPixel[1]])
+            self.pointsProstate.append([self.frameNames[self.currentFrame - 1], pointPixel[0], pointPixel[1]])
+        # Save point data to disk.
+        self.__saveToDisk(SAVE_POINT_DATA)
+
+    def addOrRemoveBladderPoint(self, pointDisplay: list):
+        """
+        Add or remove a point to/from self.pointsBladder. Point data is saved in pixel values. If the new point is
+        within a radius of an old point, the old point is removed.
+
+        Args:
+            pointDisplay: x/width-, and y/height-coordinates returned by the canvas elements' event.
+
+        Returns:
+            Nothing, adds points directly to self.pointsBladder.
+        """
+        pointPixel = su.displayToPixels(pointDisplay, self.frames[self.currentFrame - 1].shape, self.displayDimensions)
+
+        pointRemoved = False
+
+        for point in self.pointsBladder:
+            if self.frameNames[self.currentFrame - 1] == point[0]:
+                # If within radius of another point, remove that point.
+                if su.pointInRadius(point[1:], pointPixel, 5):
+                    self.pointsBladder.remove(point)
+                    pointRemoved = True
+                    break
+        # If no point was removed, add the new point.
+        if not pointRemoved:
+            self.pointsBladder.append([self.frameNames[self.currentFrame - 1], pointPixel[0], pointPixel[1]])
         # Save point data to disk.
         self.__saveToDisk(SAVE_POINT_DATA)
 
@@ -264,10 +306,10 @@ class Scan:
                     editingFile.write(f'imuPosition:{self.imuPosition}\n')
 
             if saveType in [SAVE_POINT_DATA, SAVE_ALL]:
+                saveData = {'Prostate': self.pointsProstate,
+                            'Bladder': self.pointsBladder}
                 with open(self.pointPath, 'w') as pointFile:
-                    self.pointsPix = natsorted(self.pointsPix, key=lambda frameNumber: frameNumber[0])
-                    for point in self.pointsPix:
-                        pointFile.write(f'{point[0]},{point[1]},{point[2]}\n')
+                    json.dump(saveData, pointFile, indent=4)
 
             if saveType in [SAVE_BULLET_DATA, SAVE_ALL]:
                 with open(self.bulletPath, 'w') as bulletFile:
@@ -280,11 +322,19 @@ class Scan:
         except Exception as e:
             print(f'\tError saving details to file: {e}')
 
-    def clearFramePoints(self):
+    def clearFrameProstatePoints(self):
         """
         Clear points on the currently displayed frame, then save to disk.
         """
-        self.pointsPix = [p for p in self.pointsPix if not p[0] == self.frameNames[self.currentFrame - 1]]
+        self.pointsProstate = [p for p in self.pointsProstate if not p[0] == self.frameNames[self.currentFrame - 1]]
+
+        self.__saveToDisk(SAVE_POINT_DATA)
+
+    def clearFrameBladderPoints(self):
+        """
+        Clear points on the currently displayed frame, then save to disk.
+        """
+        self.pointsBladder = [p for p in self.pointsBladder if not p[0] == self.frameNames[self.currentFrame - 1]]
 
         self.__saveToDisk(SAVE_POINT_DATA)
 
@@ -292,13 +342,14 @@ class Scan:
         """
         Clear all points in the Scan, then save to disk.
         """
-        self.pointsPix = []
+        self.pointsProstate = []
+        self.pointsBladder = []
 
         self.__saveToDisk(SAVE_POINT_DATA)
 
     def loadSaveData(self, saveName: str):
         """
-        Load the saved PointData.txt, BulletData.JSON, Editing.txt, and IPV.JSON  files from the directory selected.
+        Load the saved PointData.JSON, BulletData.JSON, Editing.txt, and IPV.JSON  files from the directory selected.
         This will overwrite the current files in the recording directory.
 
         Args:
@@ -307,6 +358,7 @@ class Scan:
         Return:
             successFlags (bool): True if the load was successful, else False.
         """
+        print(f'Loading Data: {saveName}')
         successFlags = [True, True, True, True]
         try:
             shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.bulletPath.name), self.bulletPath)
@@ -314,8 +366,6 @@ class Scan:
             ErrorDialog(None, 'Error loading bullet data.', 'Cannot find file.')
             Path(self.bulletPath).unlink(missing_ok=True)
             successFlags[0] = False
-
-        print(f'Loading Data: {saveName}')
 
         try:
             shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.pointPath.name), self.pointPath)
@@ -330,12 +380,6 @@ class Scan:
             ErrorDialog(None, 'Error loading editing data', 'Cannot find file.')
             Path(self.editPath).unlink(missing_ok=True)
             successFlags[2] = False
-        #
-        # try:
-        #     shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.ipv_path.name), self.ipv_path)
-        # except Exception as e:
-        #     print(f'\tError loading ipv data: {e}.')
-        #     successFlags[3] = False
 
         return successFlags
 
@@ -511,7 +555,7 @@ class Scan:
 
         self.__saveToDisk(SAVE_IPV_DATA)
 
-    def copyFramePoints(self, location: str):
+    def copyFrameProstatePoints(self, location: str):
         """
         Copy frame points from previous or next frame on to current frame. Deletes any points on current frame
         then copies points on to frame.
@@ -525,13 +569,13 @@ class Scan:
         if newFrame <= 0 or newFrame > self.frameCount:
             return
         # Points on new frame.
-        newPoints = self.getPointsOnFrame(position=newFrame - 1)
+        newPoints = self.getProstatePointsOnFrame(position=newFrame - 1)
 
         if newPoints:
             # Delete points on current frame.
-            self.clearFramePoints()
+            self.clearFrameProstatePoints()
             for newPoint in newPoints:
-                self.pointsPix.append([self.frameNames[self.currentFrame - 1], newPoint[0], newPoint[1]])
+                self.pointsProstate.append([self.frameNames[self.currentFrame - 1], newPoint[0], newPoint[1]])
             self.__saveToDisk(SAVE_POINT_DATA)
 
     def quaternionsToAxisAngles(self) -> list:
@@ -561,28 +605,28 @@ class Scan:
 
         return axis_angles
 
-    def shrinkExpandPoints(self, amount):
+    def shrinkExpandProstatePoints(self, amount):
         """
         Shrink or expand points around their centre of mass. amount < 0 means shrink, amount > 0 means expand.
 
         Args:
             amount: How much to shrink or expand by.
         """
-        points = self.getPointsOnFrame()
+        points = self.getProstatePointsOnFrame()
 
         if points:
             newPoints = Utils.shrinkExpandPoints(points, amount)
 
-            self.clearFramePoints()
+            self.clearFrameProstatePoints()
 
             for newPoint in newPoints:
-                self.pointsPix.append([self.frameNames[self.currentFrame - 1], newPoint[0], newPoint[1]])
+                self.pointsProstate.append([self.frameNames[self.currentFrame - 1], newPoint[0], newPoint[1]])
 
             self.__saveToDisk(SAVE_POINT_DATA)
 
-    def countFramePoints(self, position=None):
+    def countFrameProstatePoints(self, position=None):
         """
-        Return number of points on a frame. If position is None, return number of points on current frame.
+        Return number of prostate points on a frame. If position is None, return number of points on current frame.
 
         Args:
             position: Index of frame.
@@ -591,25 +635,29 @@ class Scan:
             count: Count of points on frame.
         """
         if position is not None:
-            count = sum(1 for p in self.pointsPix if p[0] == self.frameNames[position])
+            count = sum(1 for p in self.pointsProstate if p[0] == self.frameNames[position])
         else:
-            count = sum(1 for p in self.pointsPix if p[0] == self.frameNames[self.currentFrame - 1])
+            count = sum(1 for p in self.pointsProstate if p[0] == self.frameNames[self.currentFrame - 1])
 
         return count
 
-    # def distance(self):
-    #     """
-    #     Calculate distance between 2 points on a frame. This is for validation tests only.
-    #     """
-    #     point1 = self.pointsPix[0][1:]
-    #     point2 = self.pointsPix[1][1:]
-    #     fd = self.frames[self.currentFrame - 1].shape
-    #     depths = self.depths[self.currentFrame - 1]
-    #     x = [depths[1] / fd[1] * point1[0], depths[1] / fd[1] * point2[0]]
-    #     y = [depths[0] / fd[0] * point1[1], depths[0] / fd[0] * point2[1]]
-    #     distance = np.sqrt((x[0] - x[1]) ** 2 + (y[0] - y[1]) ** 2)
-    #
-    #     print(f'Distance: {distance}.')
+    def countFrameBladderPoints(self, position=None):
+        """
+        Return number of bladder points on a frame. If position is None, return number of points on current frame.
+
+        Args:
+            position: Index of frame.
+
+        Returns:
+            count: Count of points on frame.
+        """
+        if position is not None:
+            count = sum(1 for p in self.pointsBladder if p[0] == self.frameNames[position])
+        else:
+            count = sum(1 for p in self.pointsBladder if p[0] == self.frameNames[self.currentFrame - 1])
+
+        return count
+
     def printBulletDimensions(self):
         """
         Calculate available bullet dimensions and print them to screen.

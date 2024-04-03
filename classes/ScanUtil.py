@@ -280,48 +280,59 @@ def checkEditDataFile(scanPath: str) -> Path:
 
 def getPointDataFromFile(scanPath: str):
     """
-        Helper function to get point data that has already been saved. If there is no file it is created. The
-        frame name and coordinates of a point are stored on each line. The coordinates are stored as x-, and y-values
-        that represent the location of the point in real-world coordinates (mm).
+        Helper function to get point data that has already been saved. If there is no file it is created. The prostate
+        and bladder points are stored in a dictionary format.
 
         Args:
             scanPath: String representation of the scan path.
 
         Returns:
-            Path object to existing or newly created PointData.txt file, list of points placed in current scan.
+            Path object to existing or newly created PointData.json file, dict of prostate points placed in current
+            scan, and dict of bladder points placed in current scan.
         """
     pointPath = checkPointDataFile(scanPath)
 
-    pointData = []
+    f = open(pointPath)
 
-    with open(pointPath, 'r') as pointFile:
-        for line in pointFile.readlines():
-            lineSplit = line.split(',')
-            pointData.append([lineSplit[0], float(lineSplit[1]), float(lineSplit[2])])
+    data = json.load(f)
 
-    return pointPath, pointData
+    f.close()
+
+    prostatePoints = data.get('Prostate')
+
+    if prostatePoints is None:
+        prostatePoints = []
+
+    bladderPoints = data.get('Bladder')
+
+    if bladderPoints is None:
+        bladderPoints = []
+
+    return pointPath, prostatePoints, bladderPoints
 
 
 def checkPointDataFile(scanPath: str):
     """
-        Check if the given directory contains a PointData.txt file, if True return a Path object to it, else create
+        Check if the given directory contains a PointData.json file, if True return a Path object to it, else create
         the file and return a Path object to it.
 
         Args:
             scanPath: Path to a recording directory.
 
         Returns:
-            Path object to existing or newly created PointData.txt file.
+            Path object to existing or newly created PointData.json file.
         """
-    pointPath = Path(scanPath, 'PointData.txt')
+    pointPath = Path(scanPath, 'PointData.json')
     if not pointPath.is_file():
-        with open(pointPath, 'a'):
-            pass
+        print(f'PointData.json not found, creating...')
+        with open(pointPath, 'a') as new_file:
+            initial_json = {'Prostate', 'Bladder'}
+            json.dump(initial_json, new_file, index=4)
 
     return pointPath
 
 
-def drawPointDataOnAxis(axis, points, fd, dd):
+def drawPointDataOnAxis(axis, points, fd, dd, colour):
     """
     Plot given points on the frame. Points are currently stored in pixels (including the IMU offset from the edge
     of the probe). These need to be converted to display coordinates.
@@ -331,6 +342,7 @@ def drawPointDataOnAxis(axis, points, fd, dd):
         points: List of points in pixels.
         fd: Original frame dimensions (before resizing)
         dd: Display dimension - shape of the frame, first and second value swapped.
+        colour: Colour of points (limegreen - prostate, lightblue - bladder)
 
     Returns:
         Nothing returned as data is drawn directly on axis.
@@ -338,7 +350,7 @@ def drawPointDataOnAxis(axis, points, fd, dd):
     for point in points:
         pointDisplay = pixelsToDisplay(point, fd, dd)
 
-        axis.plot(pointDisplay[0], pointDisplay[1], marker=m, color='lime', markersize=15)
+        axis.plot(pointDisplay[0], pointDisplay[1], marker=m, color=colour, markersize=15)
 
 
 def pixelsToDisplay(pointPix: list, fd: list, dd: list):
@@ -370,7 +382,7 @@ def displayToPixels(pointDisplay: list, fd: list, dd: list):
     Returns:
         Point in frame relative pixel coordinates.
     """
-    pointRatio = [pointDisplay[0] / dd[0], (dd[1] - pointDisplay[1]) / dd[1]]
+    pointRatio = [pointDisplay[0] / dd[0], (pointDisplay[1]) / dd[1]]
     pointPix = ratioToCoordinates(pointRatio, [fd[1], fd[0]])
 
     return pointPix

@@ -10,7 +10,7 @@ from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, QPoint, QThreadPool
 from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
-    QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar, QSpinBox
+    QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar, QSpinBox, QRadioButton, QButtonGroup
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 from classes import Export, Utils
@@ -61,11 +61,13 @@ class Main(QMainWindow):
         self.boxes = [self._createBoxes(0), self._createBoxes(1)]
         # Canvases for displaying frames.
         self.canvases = [FrameCanvas(updateDisplay=lambda: self._updateDisplay(0),
+                                     showPointsBox=self.boxes[0].itemAt(0).widget(),
                                      showIPVBox=self.boxes[0].itemAt(1).widget(),
                                      showMaskBox=self.boxes[0].itemAt(2).widget(),
                                      segmentProstateBox=self.toolbars[0].actions()[8].defaultWidget(),
                                      segmentBladderBox=self.toolbars[0].actions()[9].defaultWidget()),
                          FrameCanvas(updateDisplay=lambda: self._updateDisplay(1),
+                                     showPointsBox=self.boxes[1].itemAt(0).widget(),
                                      showIPVBox=self.boxes[1].itemAt(1).widget(),
                                      showMaskBox=self.boxes[1].itemAt(2).widget(),
                                      segmentProstateBox=self.toolbars[1].actions()[8].defaultWidget(),
@@ -216,14 +218,18 @@ class Main(QMainWindow):
         distSpinBox.setToolTip("Number of points in even distribution.")
         toolbar.addWidget(distSpinBox)
 
-        prostateSegmentationBox = QCheckBox("Prostate")
-        prostateSegmentationBox.setToolTip("Segment the prostate.")
-        prostateSegmentationBox.setChecked(True)
-        toolbar.addWidget(prostateSegmentationBox)
+        prostateSegmentationButton = QRadioButton("Prostate")
+        prostateSegmentationButton.setToolTip("Segment the prostate.")
+        prostateSegmentationButton.setChecked(True)
+        toolbar.addWidget(prostateSegmentationButton)
 
-        bladderSegmentationBox = QCheckBox("Bladder")
-        bladderSegmentationBox.setToolTip("Segment the bladder.")
-        toolbar.addWidget(bladderSegmentationBox)
+        bladderSegmentationButton = QRadioButton("Bladder")
+        bladderSegmentationButton.setToolTip("Segment the bladder.")
+        toolbar.addWidget(bladderSegmentationButton)
+
+        segmentationGroup = QButtonGroup()
+        segmentationGroup.addButton(prostateSegmentationButton)
+        segmentationGroup.addButton(bladderSegmentationButton)
 
         toolbar.setDisabled(True)
         toolbar.setMovable(False)
@@ -467,13 +473,13 @@ class Main(QMainWindow):
             self.menuExtras.menuInAction(self.menuExtras.actions()[4]).actions()[2].setEnabled(True)
 
             self._updateTitle(scan)
-            self._updateDisplay(scan)
+            self._updateDisplay(scan, new=True)
         except Exception as e:
             ErrorDialog(self, 'Error loading Scan data', e)
 
-    def _updateDisplay(self, scan: int):
+    def _updateDisplay(self, scan: int, new=False):
         """Update the shown frame and position on plot."""
-        self.canvases[scan].updateAxis()
+        self.canvases[scan].updateAxis(new)
         self.axisAngleProcess[scan].updateIndex(self.scans[scan].currentFrame - 1)
 
     def _shrinkExpandPoints(self, scan: int, amount):
@@ -486,9 +492,14 @@ class Main(QMainWindow):
         self.scans[scan].clearScanPoints()
         self._updateDisplay(scan)
 
-    def _clearFramePoints(self, scan: int):
-        """Clear frame points from scan, then update display."""
-        self.scans[scan].clearFramePoints()
+    def _clearFrameProstatePoints(self, scan: int):
+        """Clear frame prostate points from scan, then update display."""
+        self.scans[scan].clearFrameProstatePoints()
+        self._updateDisplay(scan)
+
+    def _clearFrameBladderPoints(self, scan: int):
+        """Clear frame bladder points from scan, then update display."""
+        self.scans[scan].clearFrameBladderPoints()
         self._updateDisplay(scan)
 
     def _updateIPVCentre(self, scan: int, addOrRemove: str, position: QPoint):
@@ -560,7 +571,8 @@ class Main(QMainWindow):
             if self.scans[i].loaded and self.canvases[i].underMouse():
                 menu = QMenu()
                 menuPoints = menu.addMenu('Points')
-                menuPoints.addAction('Clear Frame Points', lambda: self._clearFramePoints(i))
+                menuPoints.addAction('Clear Frame Prostate Points', lambda: self._clearFrameProstatePoints(i))
+                menuPoints.addAction('Clear Frame Bladder Points', lambda: self._clearFrameBladderPoints(i))
                 menuPoints.addSeparator()
                 menuPoints.addAction('Clear All Points', lambda: self._clearScanPoints(i))
                 menuIPV = menu.addMenu('IPV')

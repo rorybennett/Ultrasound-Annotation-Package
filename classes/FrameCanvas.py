@@ -12,12 +12,17 @@ matplotlib.use('Qt5Agg')
 
 class FrameCanvas(FigureCanvasQTAgg):
 
-    def __init__(self, updateDisplay, showIPVBox, showMaskBox, segmentProstateBox, segmentBladderBox):
+    def __init__(self, updateDisplay, showPointsBox, showIPVBox, showMaskBox, segmentProstateBox, segmentBladderBox):
         """Canvas for drawing frame and related point data."""
         # Related Scan object.
         self.linkedScan: Scan = None
+        # Testing for drag.
+        self.downClick = False
+        self.startDrag = False
         # Method to update display from calling class.
         self.updateDisplay = updateDisplay
+        # Show Points Box on MainWindow.
+        self.showPointsBox = showPointsBox
         # Show IPV Box on MainWindow.
         self.showIPVBox = showIPVBox
         # Show mask Box on MainWindow.
@@ -34,26 +39,36 @@ class FrameCanvas(FigureCanvasQTAgg):
         self.axis.patch.set_facecolor((0.5, 0.5, 0.5, 1))
         # Canvas functionality.
         self.canvas = self.fig.canvas
-        # self.canvas.mpl_connect('button_press_event', lambda x: self._axisPressEvent(x))
-        # self.canvas.mpl_connect('motion_notify_event', lambda x: self._axisMotionEvent(x))
+        self.canvas.mpl_connect('button_press_event', lambda x: self._axisPressEvent(x))
+        self.canvas.mpl_connect('motion_notify_event', lambda x: self._axisMotionEvent(x))
         self.canvas.mpl_connect('button_release_event', lambda x: self._axisReleaseEvent(x))
         self.canvas.mpl_connect('scroll_event', lambda x: self._axisScrollEvent(x))
 
         super(FrameCanvas, self).__init__(self.fig)
 
-    def _axisReleaseEvent(self, event):
-        """Handle left releases on axis 1 and 2. AddRemove if no drag took place"""
+    def _axisPressEvent(self, event):
+        """Handle left down clicks in preparation for drag."""
         if self.linkedScan is not None:
+            self.downClick = True
+
+    def _axisMotionEvent(self, event):
+        """Handle drag if down clicked and motion detected."""
+        if self.linkedScan is not None and self.downClick:
+            self.startDrag = True
+
+    def _axisReleaseEvent(self, event):
+        """Handle left releases on axis 1 and 2. AddRemove if no drag took place."""
+        if self.linkedScan is not None and self.showPointsBox.isChecked and not self.startDrag:
             if event.button == 1:
-                displayPoint = [event.x, event.y]
+                displayPoint = [event.xdata, event.ydata]
                 if self.segmentProstateBox.isChecked():
-                    print('Add prostate point.')
+                    self.linkedScan.addOrRemoveProstatePoint(displayPoint)
                     self.updateDisplay()
-                    return
-                if self.segmentBladderBox.isChecked():
-                    print('Add bladder point.')
+                elif self.segmentBladderBox.isChecked():
+                    self.linkedScan.addOrRemoveBladderPoint(displayPoint)
                     self.updateDisplay()
-                    return
+        self.startDrag = False
+        self.downClick = False
 
     def _axisScrollEvent(self, event):
         """Handle scroll events on axis (canvas displaying image)."""
@@ -65,8 +80,11 @@ class FrameCanvas(FigureCanvasQTAgg):
             self.updateDisplay()
             return
 
-    def updateAxis(self):
+    def updateAxis(self, new):
         """Update axis with frame and points."""
+        if not new:
+            xLimits = self.axis.get_xlim()
+            yLimits = self.axis.get_ylim()
         self.linkedScan.drawFrameOnAxis(self)
 
         # self.background = self.copy_from_bbox(self.axis.bbox)
@@ -74,8 +92,9 @@ class FrameCanvas(FigureCanvasQTAgg):
         fd = self.linkedScan.frames[cfi].shape
         dd = self.linkedScan.displayDimensions
         # Draw points on canvas if box ticked.
-        if self.segmentProstateBox.isChecked():
-            su.drawPointDataOnAxis(self.axis, self.linkedScan.getPointsOnFrame(), fd, dd)
+        if self.showPointsBox.isChecked():
+            su.drawPointDataOnAxis(self.axis, self.linkedScan.getProstatePointsOnFrame(), fd, dd, 'lime')
+            su.drawPointDataOnAxis(self.axis, self.linkedScan.getBladderPointsOnFrame(), fd, dd, 'dodgerblue')
         # Draw IPV data on canvas if box ticked.
         if self.showIPVBox.isChecked():
             su.drawIPVDataOnAxis(self.axis, self.linkedScan.ipvData, self.linkedScan.frameNames[cfi], fd, dd)
@@ -84,6 +103,10 @@ class FrameCanvas(FigureCanvasQTAgg):
             su.drawMaskOnAxis(self.axis, self.linkedScan.getPointsOnFrame(), fd, dd)
         # Draw Bullet data on canvas if box is ticked.
         su.drawBulletDataOnAxis(self.axis, self.linkedScan.frameNames[cfi], self.linkedScan.bulletData, fd, dd)
+
+        if not new:
+            self.axis.set_xlim(xLimits)
+            self.axis.set_ylim(yLimits)
 
         self.draw()
 
