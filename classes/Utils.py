@@ -51,8 +51,8 @@ def resetEditingData(scansPath: str):
                             if Path(scan, 'IPV.json').exists():
                                 os.remove(Path(scan, 'IPV.json'))
 
-                            if Path(scan, 'PointData.txt').exists():
-                                os.remove(Path(scan, 'PointData.txt'))
+                            if Path(scan, 'PointData.json').exists():
+                                os.remove(Path(scan, 'PointData.json'))
 
         except Exception as e:
             print(f'Error resetting editing data: {e}.')

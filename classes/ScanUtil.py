@@ -324,10 +324,10 @@ def checkPointDataFile(scanPath: str):
         """
     pointPath = Path(scanPath, 'PointData.json')
     if not pointPath.is_file():
-        print(f'PointData.json not found, creating...')
+        print(f'\tPointData.json not found, creating...')
         with open(pointPath, 'a') as new_file:
-            initial_json = {'Prostate', 'Bladder'}
-            json.dump(initial_json, new_file, index=4)
+            initial_json = {'Prostate': [], 'Bladder': []}
+            json.dump(initial_json, new_file, indent=4)
 
     return pointPath
 
