@@ -63,13 +63,15 @@ class Main(QMainWindow):
         self.canvases = [FrameCanvas(updateDisplay=lambda: self._updateDisplay(0),
                                      showPointsBox=self.boxes[0].itemAt(0).widget(),
                                      showIPVBox=self.boxes[0].itemAt(1).widget(),
-                                     showMaskBox=self.boxes[0].itemAt(2).widget(),
+                                     showProstateMaskBox=self.boxes[0].itemAt(2).widget(),
+                                     showBladderMaskBox=self.boxes[0].itemAt(3).widget(),
                                      segmentProstateBox=self.toolbars[0].actions()[8].defaultWidget(),
                                      segmentBladderBox=self.toolbars[0].actions()[9].defaultWidget()),
                          FrameCanvas(updateDisplay=lambda: self._updateDisplay(1),
                                      showPointsBox=self.boxes[1].itemAt(0).widget(),
                                      showIPVBox=self.boxes[1].itemAt(1).widget(),
-                                     showMaskBox=self.boxes[1].itemAt(2).widget(),
+                                     showProstateMaskBox=self.boxes[1].itemAt(2).widget(),
+                                     showBladderMaskBox=self.boxes[1].itemAt(3).widget(),
                                      segmentProstateBox=self.toolbars[1].actions()[8].defaultWidget(),
                                      segmentBladderBox=self.toolbars[1].actions()[9].defaultWidget())]
         # Canvas navigation toolbars.
@@ -213,7 +215,7 @@ class Main(QMainWindow):
         distAction.triggered.connect(lambda: self._distributePoints(scan, distSpinBox.value()))
         toolbar.addAction(distAction)
 
-        distSpinBox = QSpinBox(minimum=5, maximum=100, value=20)
+        distSpinBox = QSpinBox(minimum=5, maximum=100, value=50)
         distSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         distSpinBox.setToolTip("Number of points in even distribution.")
         toolbar.addWidget(distSpinBox)
@@ -285,11 +287,17 @@ class Main(QMainWindow):
         ipv.setDisabled(True)
         layout.addWidget(ipv)
 
-        mask = QCheckBox('Show Mask')
-        mask.setChecked(False)
-        mask.stateChanged.connect(lambda: self._updateDisplay(scan))
-        mask.setDisabled(True)
-        layout.addWidget(mask)
+        prostateMask = QCheckBox('Show Prostate Mask')
+        prostateMask.setChecked(False)
+        prostateMask.stateChanged.connect(lambda: self._updateDisplay(scan))
+        prostateMask.setDisabled(True)
+        layout.addWidget(prostateMask)
+
+        bladderMask = QCheckBox('Show Bladder Mask')
+        bladderMask.setChecked(False)
+        bladderMask.stateChanged.connect(lambda: self._updateDisplay(scan))
+        bladderMask.setDisabled(True)
+        layout.addWidget(bladderMask)
 
         return layout
 

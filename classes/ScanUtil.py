@@ -105,7 +105,7 @@ def drawScanDataOnAxis(axis: Axes, frame: np.ndarray, fNo: int, fCount: int, dep
     axis.text(20, dd[1] - 20, f'Points: {framePoints}/{totalPoints}', color='white')
 
 
-def drawMaskOnAxis(axis: Axes, points: list, fd: list, dd: list):
+def drawMaskOnAxis(axis: Axes, points: list, fd: list, dd: list, color):
     """
     Draw a polygon mask using the points given. If there are too few points the mask will not be drawn.
 
@@ -114,11 +114,12 @@ def drawMaskOnAxis(axis: Axes, points: list, fd: list, dd: list):
         points: Points on the currently displayed frame.
         fd: Frame dimensions.
         dd: Display dimensions.
+        color: Colour of mask.
     """
     # Convert points from frame coordinates to canvas coordinates.
     points = [pixelsToDisplay(point, fd, dd) for point in points]
     if len(points) > 1:
-        polygon = Polygon(points, closed=True, alpha=0.5)
+        polygon = Polygon(points, closed=True, alpha=0.5, color=color)
         axis.add_patch(polygon)
 
 
