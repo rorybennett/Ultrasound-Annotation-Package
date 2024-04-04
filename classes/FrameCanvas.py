@@ -1,8 +1,6 @@
 import matplotlib
-import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from matplotlib.patches import Polygon
 
 from classes import Scan
 from classes import ScanUtil as su, Utils
@@ -122,23 +120,12 @@ class FrameCanvas(FigureCanvasQTAgg):
         pointsPix = self.linkedScan.getPointsOnFrame(prostateBladder)
         if len(pointsPix) == 0:
             return
-        # Organise points in a clockwise manner.
-        pointsPix = np.asfarray(Utils.organiseClockwise(pointsPix))
-        # Add extra point on end to complete spline.
-        pointsPix = np.append(pointsPix, [pointsPix[0, :]], axis=0)
-        # Polygon, acting as spline.
-        poly = Polygon(np.column_stack([pointsPix[:, 0], pointsPix[:, 1]]))
-        # Extract points from polygon.
-        xs, ys = poly.xy.T
-        # Evenly space points along spline line.
-        xn, yn = Utils.interpolate(xs, ys, len(xs) if len(xs) > count else count + 1)
-        if xn is None:
-            return
-        # Get all points except the last one, which is a repeat.
-        endPointsPix = np.column_stack([xn, yn])[:-1]
+
         # Clear current points from frame.
         self.linkedScan.clearFramePoints(prostateBladder)
         fd = self.linkedScan.frames[self.linkedScan.currentFrame - 1].shape
+
+        endPointsPix = Utils.distributePoints(pointsPix, count)
         # Save points.
         for pointPix in endPointsPix:
             pointDisplay = su.pixelsToDisplay([pointPix[0], pointPix[1]], fd, self.linkedScan.displayDimensions)

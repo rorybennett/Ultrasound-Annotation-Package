@@ -7,6 +7,7 @@ import numpy as np
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QSpacerItem, QSizePolicy
+from matplotlib.patches import Polygon
 from scipy.interpolate import splprep, splev
 
 from classes.ErrorDialog import ErrorDialog
@@ -178,6 +179,35 @@ def organiseClockwise(points: np.array):
         orderedPoints.append([point[0] + com[0], point[1] + com[1]])
 
     return orderedPoints
+
+
+def distributePoints(pointsPix, count):
+    """
+    Distribute points evenly and in order around a spline generated from the original points.
+
+    Args:
+        pointsPix: Points in pixel coordinates.
+        count: Number of points to be placed throughout spline.
+
+    Return:
+        Return all points, distributed evenly and in order.
+    """
+    # Organise points in a clockwise manner.
+    pointsPix = np.asfarray(organiseClockwise(pointsPix))
+    # Add extra point on end to complete spline.
+    pointsPix = np.append(pointsPix, [pointsPix[0, :]], axis=0)
+    # Polygon, acting as spline.
+    poly = Polygon(np.column_stack([pointsPix[:, 0], pointsPix[:, 1]]))
+    # Extract points from polygon.
+    xs, ys = poly.xy.T
+    # Evenly space points along spline line.
+    xn, yn = interpolate(xs, ys, len(xs) if len(xs) > count else count + 1)
+    if xn is None:
+        return
+    # Get all points except the last one, which is a repeat.
+    endPointsPix = np.column_stack([xn, yn])[:-1]
+
+    return endPointsPix
 
 
 def interpolate(x, y, total_points):
