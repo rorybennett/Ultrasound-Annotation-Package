@@ -631,7 +631,6 @@ class Scan:
 
         return count
 
-
     def printBulletDimensions(self):
         """
         Calculate available bullet dimensions and print them to screen.
