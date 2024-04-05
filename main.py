@@ -61,17 +61,19 @@ class Main(QMainWindow):
         self.boxes = [self._createBoxes(0), self._createBoxes(1)]
         # Canvases for displaying frames.
         self.canvases = [FrameCanvas(updateDisplay=lambda: self._updateDisplay(0),
-                                     showPointsBox=self.boxes[0].itemAt(0).widget(),
-                                     showIPVBox=self.boxes[0].itemAt(1).widget(),
-                                     showProstateMaskBox=self.boxes[0].itemAt(2).widget(),
-                                     showBladderMaskBox=self.boxes[0].itemAt(3).widget(),
+                                     showProstatePointsBox=self.boxes[0].itemAt(0).widget(),
+                                     showBladderPointsBox=self.boxes[0].itemAt(1).widget(),
+                                     showIPVBox=self.boxes[0].itemAt(2).widget(),
+                                     showProstateMaskBox=self.boxes[0].itemAt(3).widget(),
+                                     showBladderMaskBox=self.boxes[0].itemAt(4).widget(),
                                      segmentProstateBox=self.toolbars[0].actions()[8].defaultWidget(),
                                      segmentBladderBox=self.toolbars[0].actions()[9].defaultWidget()),
                          FrameCanvas(updateDisplay=lambda: self._updateDisplay(1),
-                                     showPointsBox=self.boxes[1].itemAt(0).widget(),
-                                     showIPVBox=self.boxes[1].itemAt(1).widget(),
-                                     showProstateMaskBox=self.boxes[1].itemAt(2).widget(),
-                                     showBladderMaskBox=self.boxes[1].itemAt(3).widget(),
+                                     showProstatePointsBox=self.boxes[1].itemAt(0).widget(),
+                                     showBladderPointsBox=self.boxes[1].itemAt(1).widget(),
+                                     showIPVBox=self.boxes[1].itemAt(2).widget(),
+                                     showProstateMaskBox=self.boxes[1].itemAt(3).widget(),
+                                     showBladderMaskBox=self.boxes[1].itemAt(4).widget(),
                                      segmentProstateBox=self.toolbars[1].actions()[8].defaultWidget(),
                                      segmentBladderBox=self.toolbars[1].actions()[9].defaultWidget())]
         # Canvas navigation toolbars.
@@ -275,11 +277,17 @@ class Main(QMainWindow):
         layout = QHBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        points = QCheckBox('Show Points')
-        points.setChecked(True)
-        points.stateChanged.connect(lambda: self._updateDisplay(scan))
-        points.setDisabled(True)
-        layout.addWidget(points)
+        prostatePoints = QCheckBox('Show Prostate\nPoints')
+        prostatePoints.setChecked(True)
+        prostatePoints.stateChanged.connect(lambda: self._updateDisplay(scan))
+        prostatePoints.setDisabled(True)
+        layout.addWidget(prostatePoints)
+
+        bladderPoints = QCheckBox('Show Bladder\nPoints')
+        bladderPoints.setChecked(True)
+        bladderPoints.stateChanged.connect(lambda: self._updateDisplay(scan))
+        bladderPoints.setDisabled(True)
+        layout.addWidget(bladderPoints)
 
         ipv = QCheckBox('Show IPV Data')
         ipv.setChecked(False)
@@ -287,13 +295,13 @@ class Main(QMainWindow):
         ipv.setDisabled(True)
         layout.addWidget(ipv)
 
-        prostateMask = QCheckBox('Show Prostate Mask')
+        prostateMask = QCheckBox('Show Prostate\nMask')
         prostateMask.setChecked(False)
         prostateMask.stateChanged.connect(lambda: self._updateDisplay(scan))
         prostateMask.setDisabled(True)
         layout.addWidget(prostateMask)
 
-        bladderMask = QCheckBox('Show Bladder Mask')
+        bladderMask = QCheckBox('Show Bladder\nMask')
         bladderMask.setChecked(False)
         bladderMask.stateChanged.connect(lambda: self._updateDisplay(scan))
         bladderMask.setDisabled(True)

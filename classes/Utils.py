@@ -183,7 +183,7 @@ def organiseClockwise(points: np.array):
 
 def distributePoints(pointsPix, count):
     """
-    Distribute points evenly and in order around a spline generated from the original points.
+    Distribute points evenly around a spline generated from the original points. Point order is NOT corrected.
 
     Args:
         pointsPix: Points in pixel coordinates.
@@ -192,8 +192,8 @@ def distributePoints(pointsPix, count):
     Return:
         Return all points, distributed evenly and in order.
     """
-    # Organise points in a clockwise manner.
-    pointsPix = np.asfarray(organiseClockwise(pointsPix))
+
+    pointsPix = np.asfarray(pointsPix)
     # Add extra point on end to complete spline.
     pointsPix = np.append(pointsPix, [pointsPix[0, :]], axis=0)
     # Polygon, acting as spline.

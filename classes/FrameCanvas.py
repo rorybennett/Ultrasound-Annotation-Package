@@ -10,7 +10,8 @@ matplotlib.use('Qt5Agg')
 
 class FrameCanvas(FigureCanvasQTAgg):
 
-    def __init__(self, updateDisplay, showPointsBox, showIPVBox, showProstateMaskBox, showBladderMaskBox, segmentProstateBox, segmentBladderBox):
+    def __init__(self, updateDisplay, showProstatePointsBox, showBladderPointsBox, showIPVBox, showProstateMaskBox,
+                 showBladderMaskBox, segmentProstateBox, segmentBladderBox):
         """Canvas for drawing frame and related point data."""
         # Related Scan object.
         self.linkedScan: Scan = None
@@ -20,7 +21,8 @@ class FrameCanvas(FigureCanvasQTAgg):
         # Method to update display from calling class.
         self.updateDisplay = updateDisplay
         # Show Points Box on MainWindow.
-        self.showPointsBox = showPointsBox
+        self.showProstatePointsBox = showProstatePointsBox
+        self.showBladderPointsBox = showBladderPointsBox
         # Show IPV Box on MainWindow.
         self.showIPVBox = showIPVBox
         # Show masks Box on MainWindow.
@@ -57,7 +59,7 @@ class FrameCanvas(FigureCanvasQTAgg):
 
     def _axisReleaseEvent(self, event):
         """Handle left releases on axis 1 and 2. AddRemove if no drag took place."""
-        if self.linkedScan is not None and self.showPointsBox.isChecked and not self.startDrag:
+        if self.linkedScan is not None and self.showProstatePointsBox.isChecked and not self.startDrag:
             if event.button == 1:
                 displayPoint = [event.xdata, event.ydata]
                 if self.segmentProstateBox.isChecked() and displayPoint[0] is not None:
@@ -90,9 +92,11 @@ class FrameCanvas(FigureCanvasQTAgg):
         cfi = self.linkedScan.currentFrame - 1
         fd = self.linkedScan.frames[cfi].shape
         dd = self.linkedScan.displayDimensions
-        # Draw points on canvas if box ticked.
-        if self.showPointsBox.isChecked():
+        # Draw prostate points on canvas if box ticked.
+        if self.showProstatePointsBox.isChecked():
             su.drawPointDataOnAxis(self.axis, self.linkedScan.getPointsOnFrame(Scan.PROSTATE), fd, dd, 'lime')
+        # Draw bladder points on canvas if box ticked.
+        if self.showBladderPointsBox.isChecked():
             su.drawPointDataOnAxis(self.axis, self.linkedScan.getPointsOnFrame(Scan.BLADDER), fd, dd, 'dodgerblue')
         # Draw IPV data on canvas if box ticked.
         if self.showIPVBox.isChecked():
@@ -114,7 +118,7 @@ class FrameCanvas(FigureCanvasQTAgg):
 
     def distributeFramePoints(self, count: int, prostateBladder):
         """
-        Distribute the points on the current frame evenly along a generated spline.
+        Distribute the points on the current frame evenly along a generated spline, point order will not be changed.
 
         Args:
             count: Number of points for distribution.
