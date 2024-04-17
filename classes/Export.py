@@ -147,7 +147,7 @@ class Export:
 
                         cv2.imwrite(f'{imagesPath}/t_P{patient}F{frameNumber}_0000.png', finalFrame)
                         cv2.imwrite(f'{labelsPath}/t_P{patient}F{frameNumber}.png', finalMask)
-                print('Complete.')
+                        print('Complete.')
             except WindowsError as e:
                 print(f'Error creating nnUNet tAUS data for patient {patient}', e)
 
@@ -224,7 +224,7 @@ class Export:
 
                         cv2.imwrite(f'{imagesPath}/s_P{patient}F{frameNumber}_0000.png', finalFrame)
                         cv2.imwrite(f'{labelsPath}/s_P{patient}F{frameNumber}.png', finalMask)
-                print('Complete')
+                        print('Complete')
             except WindowsError as e:
                 print(f'Error creating nnUNet sAUS data for patient {patient}', e)
 

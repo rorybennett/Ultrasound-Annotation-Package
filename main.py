@@ -17,7 +17,6 @@ from classes import Export, Utils
 from classes import Scan
 from classes.ErrorDialog import ErrorDialog
 from classes.FrameCanvas import FrameCanvas
-from classes.IPVInferenceWorker import IPVInferenceWorker
 from classes.InputDialog import InputDialog
 from classes.LoadingDialog import LoadingDialog
 from processes import PlayCine, AxisAnglePlot
@@ -45,8 +44,6 @@ class Main(QMainWindow):
         self.mainLayout = QHBoxLayout(self.mainWidget)
         self.mainWidget.installEventFilter(self)
 
-        # Menu IPV.
-        self.menuIPV = []
         # Menu load data.
         self.menuLoadData = []
         # 2 vertical layouts.
@@ -63,17 +60,15 @@ class Main(QMainWindow):
         self.canvases = [FrameCanvas(updateDisplay=lambda: self._updateDisplay(0),
                                      showProstatePointsBox=self.boxes[0].itemAt(0).widget(),
                                      showBladderPointsBox=self.boxes[0].itemAt(1).widget(),
-                                     showIPVBox=self.boxes[0].itemAt(2).widget(),
-                                     showProstateMaskBox=self.boxes[0].itemAt(3).widget(),
-                                     showBladderMaskBox=self.boxes[0].itemAt(4).widget(),
+                                     showProstateMaskBox=self.boxes[0].itemAt(2).widget(),
+                                     showBladderMaskBox=self.boxes[0].itemAt(3).widget(),
                                      segmentProstateBox=self.toolbars[0].actions()[8].defaultWidget(),
                                      segmentBladderBox=self.toolbars[0].actions()[9].defaultWidget()),
                          FrameCanvas(updateDisplay=lambda: self._updateDisplay(1),
                                      showProstatePointsBox=self.boxes[1].itemAt(0).widget(),
                                      showBladderPointsBox=self.boxes[1].itemAt(1).widget(),
-                                     showIPVBox=self.boxes[1].itemAt(2).widget(),
-                                     showProstateMaskBox=self.boxes[1].itemAt(3).widget(),
-                                     showBladderMaskBox=self.boxes[1].itemAt(4).widget(),
+                                     showProstateMaskBox=self.boxes[1].itemAt(2).widget(),
+                                     showBladderMaskBox=self.boxes[1].itemAt(3).widget(),
                                      segmentProstateBox=self.toolbars[1].actions()[8].defaultWidget(),
                                      segmentBladderBox=self.toolbars[1].actions()[9].defaultWidget())]
         # Canvas navigation toolbars.
@@ -104,7 +99,7 @@ class Main(QMainWindow):
         self._createMainMenu()
 
         # Scan directory Path.
-        self.scansPath = f'{basedir}/Scans'
+        self.scansPath = f'C:/Users/roryb/GDOffline/Research/Scans'
         # Scans.
         self.scans = [Scan.Scan(self), Scan.Scan(self)]
         # Class for exporting data for training.
@@ -131,13 +126,6 @@ class Main(QMainWindow):
         self.menuLoadScans.addSeparator()
         self.menuLoadScans.addAction('Load PUS Patient', lambda: self._selectPUSPatientDialog())
 
-        # Inference menu.
-        menuInference = self.menuBar().addMenu('Inference')
-        menuIPV = menuInference.addMenu('IPV Inference')
-        self.menuIPV.append(menuIPV.addAction('Infer Scan 1', lambda: self._ipvInference(0)))
-        self.menuIPV.append(menuIPV.addAction('Infer Scan 2', lambda: self._ipvInference(1)))
-        self.menuIPV[0].setDisabled(True)
-        self.menuIPV[1].setDisabled(True)
         # Load data menu
         menuLoadData = self.menuBar().addMenu("Load Data")
         self.menuLoadData.append(menuLoadData.addMenu('Load Scan 1 Data'))
@@ -289,12 +277,6 @@ class Main(QMainWindow):
         bladderPoints.setDisabled(True)
         layout.addWidget(bladderPoints)
 
-        ipv = QCheckBox('Show IPV Data')
-        ipv.setChecked(False)
-        ipv.stateChanged.connect(lambda: self._updateDisplay(scan))
-        ipv.setDisabled(True)
-        layout.addWidget(ipv)
-
         prostateMask = QCheckBox('Show Prostate\nMask')
         prostateMask.setChecked(False)
         prostateMask.stateChanged.connect(lambda: self._updateDisplay(scan))
@@ -355,26 +337,6 @@ class Main(QMainWindow):
             dialog.exec()
             [self._refreshScanData(i) for i in [0, 1]]
 
-    def _ipvInference(self, scan: int):
-        """Send current frame for IPV inference, either online or locally."""
-        dlg = InputDialog()
-        ok = dlg.exec()
-        address, modelName = dlg.getInputs()
-
-        if not ok or not address or not modelName:
-            return
-
-        loading = LoadingDialog(loadingMessage='Inferring IPV Points...', basedir=basedir)
-
-        worker = IPVInferenceWorker(self.scans[scan], address, modelName)
-
-        worker.signals.started.connect(lambda: self.setDisabled(True))
-        worker.signals.started.connect(lambda: loading.start())
-        worker.signals.finished.connect(lambda: loading.stop())
-        worker.signals.finished.connect(lambda: self.setDisabled(False))
-        worker.signals.finished.connect(lambda: self._updateDisplay(scan))
-
-        self.threadPool.start(worker)
 
     def _saveData(self, scans: list):
         """Save Scan point data. Check for overwrite"""
@@ -477,7 +439,6 @@ class Main(QMainWindow):
             for i in range(self.boxes[scan].count()):
                 self.boxes[scan].itemAt(i).widget().setEnabled(True)
 
-            self.menuIPV[scan].setEnabled(True)
             self.menuLoadData[scan].setEnabled(True)
             self.menuLoadScans.actions()[1 if scan == 0 else 4].setEnabled(True)
             self.menuSaveData.actions()[0 if scan == 0 else 2].setEnabled(True)
@@ -515,28 +476,8 @@ class Main(QMainWindow):
         self.scans[scan].clearFramePoints(prostateBladder)
         self._updateDisplay(scan)
 
-    def _updateIPVCentre(self, scan: int, addOrRemove: str, position: QPoint):
-        """Add or remove IPV centre then update display."""
-        position = [position.x(), self.scans[scan].displayDimensions[1] - position.y()]
-        self.scans[scan].updateIPVCentre(position, addOrRemove)
-        self._updateDisplay(scan)
 
-    def _updateIPVRadius(self, scan: int):
-        """Dialog for updating IPV centre radius."""
-        radius, ok = QInputDialog.getText(self, 'Update IPV Radius', 'Enter Radius:')
 
-        if ok:
-            try:
-                radius = int(radius)
-                self.scans[scan].updateIPVRadius(radius)
-                self._updateDisplay(scan)
-            except Exception as e:
-                ErrorDialog(self, f'Error converting radius to int', e)
-
-    def _removeIPVData(self, scan: int):
-        """Remove all IPV data of the Scan."""
-        self.scans[scan].removeIPVData()
-        self._updateDisplay(scan)
 
     def _copyFramePoints(self, scan: int, location):
         """Copy points from either previous or next frame."""
@@ -585,18 +526,6 @@ class Main(QMainWindow):
                 menuPoints.addAction('Clear Frame Bladder Points', lambda: self._clearFramePoints(i, Scan.BLADDER))
                 menuPoints.addSeparator()
                 menuPoints.addAction('Clear All Points', lambda: self._clearScanPoints(i))
-                menuIPV = menu.addMenu('IPV')
-                menuIPV.addAction('Add Center',
-                                  lambda: self._updateIPVCentre(i, Scan.ADD_POINT,
-                                                                self.canvases[i].mapFromGlobal(event.globalPos())))
-                menuIPV.addSeparator()
-                menuIPV.addAction('Remove Center', lambda: self._updateIPVCentre(i, Scan.REMOVE_POINT,
-                                                                                 self.canvases[i].mapFromGlobal(
-                                                                                     event.globalPos())))
-                menuIPV.addSeparator()
-                menuIPV.addAction('Edit IPV Centre Radius', lambda: self._updateIPVRadius(i))
-                menuIPV.addSeparator()
-                menuIPV.addAction('Clear IPV Data', lambda: self._removeIPVData(i))
                 menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(i))
                 menu.exec(event.globalPos())
 

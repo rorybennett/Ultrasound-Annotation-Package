@@ -10,7 +10,7 @@ matplotlib.use('Qt5Agg')
 
 class FrameCanvas(FigureCanvasQTAgg):
 
-    def __init__(self, updateDisplay, showProstatePointsBox, showBladderPointsBox, showIPVBox, showProstateMaskBox,
+    def __init__(self, updateDisplay, showProstatePointsBox, showBladderPointsBox, showProstateMaskBox,
                  showBladderMaskBox, segmentProstateBox, segmentBladderBox):
         """Canvas for drawing frame and related point data."""
         # Related Scan object.
@@ -23,8 +23,6 @@ class FrameCanvas(FigureCanvasQTAgg):
         # Show Points Box on MainWindow.
         self.showProstatePointsBox = showProstatePointsBox
         self.showBladderPointsBox = showBladderPointsBox
-        # Show IPV Box on MainWindow.
-        self.showIPVBox = showIPVBox
         # Show masks Box on MainWindow.
         self.showProstateMaskBox = showProstateMaskBox
         self.showBladderMaskBox = showBladderMaskBox
@@ -98,9 +96,6 @@ class FrameCanvas(FigureCanvasQTAgg):
         # Draw bladder points on canvas if box ticked.
         if self.showBladderPointsBox.isChecked():
             su.drawPointDataOnAxis(self.axis, self.linkedScan.getPointsOnFrame(Scan.BLADDER), fd, dd, 'dodgerblue')
-        # Draw IPV data on canvas if box ticked.
-        if self.showIPVBox.isChecked():
-            su.drawIPVDataOnAxis(self.axis, self.linkedScan.ipvData, self.linkedScan.frameNames[cfi], fd, dd)
         # Draw prostate mask on canvas if box ticked.
         if self.showProstateMaskBox.isChecked():
             su.drawMaskOnAxis(self.axis, self.linkedScan.getPointsOnFrame(Scan.PROSTATE), fd, dd, 'lime')
