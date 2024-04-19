@@ -7,7 +7,7 @@ import sys
 
 import qdarktheme
 from PyQt6 import QtGui
-from PyQt6.QtCore import Qt, QPoint, QThreadPool
+from PyQt6.QtCore import Qt, QThreadPool
 from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
     QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar, QSpinBox, QRadioButton, QButtonGroup
@@ -17,8 +17,6 @@ from classes import Export, Utils
 from classes import Scan
 from classes.ErrorDialog import ErrorDialog
 from classes.FrameCanvas import FrameCanvas
-from classes.InputDialog import InputDialog
-from classes.LoadingDialog import LoadingDialog
 from processes import PlayCine, AxisAnglePlot
 
 INFER_LOCAL = 'INFER-LOCAL'
@@ -168,7 +166,7 @@ class Main(QMainWindow):
         menuExtrasPrevious = self.menuExtras.addMenu("Previous")
         menuExtrasPrevious.addAction(f'Scan 1', lambda: self._navigatePatients(0, Scan.PREVIOUS)).setDisabled(True)
         menuExtrasPrevious.addAction(f'Scan 2', lambda: self._navigatePatients(1, Scan.PREVIOUS)).setDisabled(True)
-        menuExtrasPrevious.addAction(f'Patient', lambda: self._navigatePatients(-1, Scan.PREVIOUS)).setDisabled(True)
+        menuExtrasPrevious.addAction(f'Patient', lambda: self._navigatePatients(-1, Scan.NEXT)).setDisabled(True)
 
     def _createToolBars(self, scan):
         """Create left and right toolbars (mirrored)."""
@@ -337,7 +335,6 @@ class Main(QMainWindow):
             dialog.exec()
             [self._refreshScanData(i) for i in [0, 1]]
 
-
     def _saveData(self, scans: list):
         """Save Scan point data. Check for overwrite"""
         for scan in scans:
@@ -391,6 +388,8 @@ class Main(QMainWindow):
                                     f'{int(patient) - 1 if direction == Scan.PREVIOUS else int(patient) + 1}/'
                                     f'{scanType}/{scanPlane}/{scanNumber}')
                     self._loadScan(i, nextScanPath)
+
+
 
     def _selectAUSPatientDialog(self):
         """Load both scans of an AUS patient."""
@@ -476,9 +475,6 @@ class Main(QMainWindow):
         self.scans[scan].clearFramePoints(prostateBladder)
         self._updateDisplay(scan)
 
-
-
-
     def _copyFramePoints(self, scan: int, location):
         """Copy points from either previous or next frame."""
         pb = Scan.PROSTATE if self.toolbars[scan].actions()[8].defaultWidget().isChecked() else Scan.BLADDER
@@ -510,12 +506,6 @@ class Main(QMainWindow):
             elif self.buttons[1].itemAt(3).widget().isChecked() and event.key() == Qt.Key.Key_D:
                 self.toolbars[1].actions()[7].trigger()
             self._updateDisplay(1)
-
-        if self.scans[0].loaded and self.scans[1].loaded:
-            if event.key() == Qt.Key.Key_N:
-                self._navigatePatients(-1, Scan.NEXT)
-            elif event.key() == Qt.Key.Key_P:
-                self._navigatePatients(-1, Scan.PREVIOUS)
 
     def contextMenuEvent(self, event):
         for i in [0, 1]:
