@@ -96,6 +96,8 @@ class PlayCine:
         self.scanType = scanType
         self.scanPlane = scanPlane
 
+        self.startProcess()
+
     def startProcess(self):
         """
         Start the process that will display the frames on a loop.

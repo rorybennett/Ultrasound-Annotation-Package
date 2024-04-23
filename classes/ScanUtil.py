@@ -6,6 +6,7 @@ import stat
 from pathlib import Path
 
 import cv2
+import matplotlib.patches as patches
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
@@ -121,6 +122,26 @@ def drawMaskOnAxis(axis: Axes, points: list, fd: list, dd: list, color):
     if len(points) > 1:
         polygon = Polygon(points, closed=True, alpha=0.5, color=color)
         axis.add_patch(polygon)
+
+
+def drawBoxOnAxis(axis: Axes, points: list, fd: list, dd: list, color):
+    """
+    Draw a bounding box using the points given. Top left and bottom right.
+
+    Args:
+        axis: Axis displaying frame.
+        points: Box end points for current frame
+        fd: Frame dimensions.
+        dd: Display dimensions.
+        color: Colour of box.
+    """
+    # Convert points from frame coordinates to canvas coordinates.
+    if len(points) > 1:
+        points = [points[:2], points[2:]]
+        points = [pixelsToDisplay(point, fd, dd) for point in points]
+        rect = patches.Rectangle(points[0], points[1][0] - points[0][0], points[1][1] - points[0][1], linewidth=1,
+                                 edgecolor=color, facecolor='none')
+        axis.add_patch(rect)
 
 
 def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, fd: list, dd: list):
@@ -309,7 +330,12 @@ def getPointDataFromFile(scanPath: str):
     if bladderPoints is None:
         bladderPoints = []
 
-    return pointPath, prostatePoints, bladderPoints
+    prostateBox = data.get('ProstateBox')
+
+    if prostateBox is None:
+        prostateBox = []
+
+    return pointPath, prostatePoints, bladderPoints, prostateBox, []
 
 
 def checkPointDataFile(scanPath: str):
@@ -596,6 +622,25 @@ def checkIPVDataFile(scanPath: str) -> Path:
             json.dump(initialIPV, ipvFile, indent=4)
 
     return ipvPath
+
+
+def getIndexOfFrameInBoxPoints(boxPoints, frameName):
+    """
+    Get the index of the box points with given frame name.
+
+    Parameters
+    ----------
+    boxPoints: List of frames and box start and end points.
+    frameName: Frame to search for.
+
+    Returns
+    -------
+    Index of frameName if in list, else -1.
+    """
+    for index, row in enumerate(boxPoints):
+        if row[0] == frameName:
+            return index
+    return -1
 
 
 def remove_readonly(func, path, excinfo):

@@ -44,9 +44,14 @@ PREVIOUS = '-PREVIOUS-'
 # Shrink or expand points around centre of mass.
 SHRINK = '-SHRINK-'
 EXPAND = '-EXPAND-'
-# Prostate vs Bladder points.
+# Prostate vs Bladder .
 PROSTATE = '-PROSTATE-'
 BLADDER = '-BLADDER-'
+PROSTATE_BOX = '-PROSTATE-BOX-'
+BLADDER_BOX = '-BLADDER-BOX-'
+# Start or End.
+BOX_START = '-START-'
+BOX_END = '-END-'
 
 
 class Scan:
@@ -79,7 +84,7 @@ class Scan:
         # Display dimensions.
         self.displayDimensions = None
         # Point data from PointData.json.
-        self.pointPath, self.pointsProstate, self.pointsBladder = None, None, None
+        self.pointPath, self.pointsProstate, self.pointsBladder, self.boxProstate, self.boxBladder = None, None, None, None, None
         # IPV data from IPV.JSON.
         self.ipvPath, self.ipvData = None, None
         # Bullet data from Bullet.json
@@ -105,7 +110,8 @@ class Scan:
         self.editPath, self.imuOffset, self.imuPosition = su.getEditDataFromFile(self.path)
         _, self.scanType, self.scanPlane, _, _ = self.getScanDetails()
         self.displayDimensions = self.getDisplayDimensions()
-        self.pointPath, self.pointsProstate, self.pointsBladder = su.getPointDataFromFile(self.path)
+        self.pointPath, self.pointsProstate, self.pointsBladder, self.boxProstate, self.boxBladder = su.getPointDataFromFile(
+            self.path)
         self.ipvPath, self.ipvData = su.getIPVDataFromFile(self.path)
         self.bulletPath, self.bulletData = su.getBulletDataFromFile(self.path)
         self.loaded = True
@@ -137,24 +143,45 @@ class Scan:
                               self.countFramePoints(PROSTATE) + self.countFramePoints(BLADDER),
                               len(self.pointsProstate) + len(self.pointsBladder), dd)
 
+    def getBoxPointsOnFrame(self, prostateBladder, position=None):
+        """
+        Get start and end points for prostate or bladder bounding box on frame.
+
+        Args:
+            :param prostateBladder: Get either prostate or bladder points.
+            :param position: Index of frame.
+            :return: Start and end points of box as list.
+        """
+        points = []
+        frameName = self.frameNames[position if position is not None else self.currentFrame - 1]
+        if prostateBladder == PROSTATE:
+            boxIndex = su.getIndexOfFrameInBoxPoints(self.boxProstate, frameName)
+            if boxIndex > -1:
+                points = self.boxProstate[boxIndex][1:]
+        else:
+            boxIndex = su.getIndexOfFrameInBoxPoints(self.boxBladder, frameName)
+            if boxIndex > -1:
+                points = self.boxBladder[boxIndex][1:]
+        return points
+
     def getPointsOnFrame(self, prostateBladder, position=None):
         """
         Return a list of prostate points on the frame at 'position'. If position is None, use the current frame.
 
-        :param position: Index of frame.
         :param prostateBladder: Get either prostate or bladder points.
+        :param position: Index of frame.
         :return: List of points on frame.
         """
         if prostateBladder == PROSTATE:
             if position is not None:
-                points = [[p[1], p[2]] for p in self.pointsProstate if p[0] == self.frameNames[position]]
+                points = [p[1:] for p in self.pointsProstate if p[0] == self.frameNames[position]]
             else:
-                points = [[p[1], p[2]] for p in self.pointsProstate if p[0] == self.frameNames[self.currentFrame - 1]]
+                points = [p[1:] for p in self.pointsProstate if p[0] == self.frameNames[self.currentFrame - 1]]
         else:
             if position is not None:
-                points = [[p[1], p[2]] for p in self.pointsBladder if p[0] == self.frameNames[position]]
+                points = [p[1:] for p in self.pointsBladder if p[0] == self.frameNames[position]]
             else:
-                points = [[p[1], p[2]] for p in self.pointsBladder if p[0] == self.frameNames[self.currentFrame - 1]]
+                points = [p[1:] for p in self.pointsBladder if p[0] == self.frameNames[self.currentFrame - 1]]
 
         return points
 
@@ -231,6 +258,23 @@ class Scan:
         except Exception as e:
             ErrorDialog(None, f'Error opening Windows explorer', e)
 
+    def updateBoxPoints(self, prostateBladder, startEnd, pointDisplay):
+        """
+
+        """
+        pointPixel = su.displayToPixels(pointDisplay, self.frames[self.currentFrame - 1].shape, self.displayDimensions)
+        if prostateBladder == PROSTATE:
+            frameName = self.frameNames[self.currentFrame - 1]
+            index = su.getIndexOfFrameInBoxPoints(self.boxProstate, frameName)
+            if index > -1:
+                if startEnd == BOX_START:
+                    self.boxProstate[index] = [frameName, pointPixel[0], pointPixel[1], pointPixel[0], pointPixel[1]]
+                else:
+                    self.boxProstate[index][3:] = [pointPixel[0], pointPixel[1]]
+                    self.__saveToDisk(SAVE_POINT_DATA)
+            else:
+                self.boxProstate.append([frameName, pointPixel[0], pointPixel[1], pointPixel[0], pointPixel[1]])
+
     def addOrRemovePoint(self, pointDisplay: list, prostateBladder):
         """
         Add or remove a point to/from self.pointsProstate or self.pointsBladder. Point data is saved in pixel values.
@@ -285,7 +329,8 @@ class Scan:
 
             if saveType in [SAVE_POINT_DATA, SAVE_ALL]:
                 saveData = {'Prostate': self.pointsProstate,
-                            'Bladder': self.pointsBladder}
+                            'Bladder': self.pointsBladder,
+                            'ProstateBox': self.boxProstate}
                 with open(self.pointPath, 'w') as pointFile:
                     json.dump(saveData, pointFile, indent=4)
 
@@ -300,14 +345,31 @@ class Scan:
         except Exception as e:
             print(f'\tError saving details to file: {e}')
 
+    def clearFrameBox(self, prostateBladder):
+        """
+        Clear either prostate bounding box or bladder bounding box frame frame.
+
+        Parameters
+        ----------
+        prostateBladder: PROSTATE or BLADDER.
+        """
+        frameName = self.frameNames[self.currentFrame - 1]
+        if prostateBladder == PROSTATE:
+            self.boxProstate = [p for p in self.boxProstate if not p[0] == frameName]
+        else:
+            self.boxBladder = [p for p in self.boxBladder if not p[0] == frameName]
+
+        self.__saveToDisk(SAVE_POINT_DATA)
+
     def clearFramePoints(self, prostateBladder):
         """
         Clear points on the currently displayed frame, then save to disk.
         """
+        frameName = self.frameNames[self.currentFrame - 1]
         if prostateBladder == PROSTATE:
-            self.pointsProstate = [p for p in self.pointsProstate if not p[0] == self.frameNames[self.currentFrame - 1]]
+            self.pointsProstate = [p for p in self.pointsProstate if not p[0] == frameName]
         else:
-            self.pointsBladder = [p for p in self.pointsBladder if not p[0] == self.frameNames[self.currentFrame - 1]]
+            self.pointsBladder = [p for p in self.pointsBladder if not p[0] == frameName]
 
         self.__saveToDisk(SAVE_POINT_DATA)
 
@@ -602,7 +664,8 @@ class Scan:
 
             for newPoint in newPoints:
                 self.pointsProstate.append([self.frameNames[self.currentFrame - 1], newPoint[0],
-                                            newPoint[1]]) if prostateBladder == PROSTATE else self.pointsBladder.append(
+                                            newPoint[
+                                                1]]) if prostateBladder == PROSTATE else self.pointsBladder.append(
                     [self.frameNames[self.currentFrame - 1], newPoint[0], newPoint[1]])
 
             self.__saveToDisk(SAVE_POINT_DATA)

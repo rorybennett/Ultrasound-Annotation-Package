@@ -1,13 +1,13 @@
 # main.py
 
-"""Main Window for viewing and editing ultrasound scans."""
+"""Main Window for viewing and annotating ultrasound scans."""
 import multiprocessing
 import os
 import sys
 
 import qdarktheme
 from PyQt6 import QtGui
-from PyQt6.QtCore import Qt, QThreadPool
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QHBoxLayout, QWidget, QVBoxLayout, QPushButton, \
     QCheckBox, QMenu, QInputDialog, QStyle, QMessageBox, QToolBar, QSpinBox, QRadioButton, QButtonGroup
@@ -18,9 +18,6 @@ from classes import Scan
 from classes.ErrorDialog import ErrorDialog
 from classes.FrameCanvas import FrameCanvas
 from processes import PlayCine, AxisAnglePlot
-
-INFER_LOCAL = 'INFER-LOCAL'
-INFER_ONLINE = 'INFER-ONLINE'
 
 basedir = os.path.dirname(__file__)
 
@@ -46,67 +43,51 @@ class Main(QMainWindow):
         self.menuLoadData = []
         # 2 vertical layouts.
         self.layouts = [QVBoxLayout(), QVBoxLayout()]
-        # Toolbars.
-        self.toolbars = [self._createToolBars(0), self._createToolBars(1)]
-        # Title rows.
-        self.titles = [Utils.createTitleLayout(), Utils.createTitleLayout()]
+        # Left and Right Toolbars.
+        self.toolbars = [self._createToolBars(i) for i in [0, 1]]
+        # Titles.
+        self.titles = [Utils.createTitleLayout() for _ in [0, 1]]
         # Buttons above canvas.
-        self.buttons = [self._createTopButtons(0), self._createTopButtons(1)]
+        self.buttons = [self._createTopButtons(i) for i in [0, 1]]
         # Boxes below canvas.
-        self.boxes = [self._createBoxes(0), self._createBoxes(1)]
+        self.boxes = [self._createBottomBoxes(i) for i in [0, 1]]
         # Canvases for displaying frames.
-        self.canvases = [FrameCanvas(updateDisplay=lambda: self._updateDisplay(0),
-                                     showProstatePointsBox=self.boxes[0].itemAt(0).widget(),
-                                     showBladderPointsBox=self.boxes[0].itemAt(1).widget(),
-                                     showProstateMaskBox=self.boxes[0].itemAt(2).widget(),
-                                     showBladderMaskBox=self.boxes[0].itemAt(3).widget(),
-                                     segmentProstateBox=self.toolbars[0].actions()[8].defaultWidget(),
-                                     segmentBladderBox=self.toolbars[0].actions()[9].defaultWidget()),
-                         FrameCanvas(updateDisplay=lambda: self._updateDisplay(1),
-                                     showProstatePointsBox=self.boxes[1].itemAt(0).widget(),
-                                     showBladderPointsBox=self.boxes[1].itemAt(1).widget(),
-                                     showProstateMaskBox=self.boxes[1].itemAt(2).widget(),
-                                     showBladderMaskBox=self.boxes[1].itemAt(3).widget(),
-                                     segmentProstateBox=self.toolbars[1].actions()[8].defaultWidget(),
-                                     segmentBladderBox=self.toolbars[1].actions()[9].defaultWidget())]
+        self.canvases = [FrameCanvas(updateDisplay=lambda x=i: self._updateDisplay(x),
+                                     showProstatePointsBox=self.boxes[i].itemAt(0).widget(),
+                                     showBladderPointsBox=self.boxes[i].itemAt(1).widget(),
+                                     showProstateMaskBox=self.boxes[i].itemAt(2).widget(),
+                                     showBladderMaskBox=self.boxes[i].itemAt(3).widget(),
+                                     showProstateBoxBox=self.boxes[i].itemAt(4).widget(),
+                                     segmentProstateBox=self.toolbars[i].actions()[0].defaultWidget(),
+                                     segmentBladderBox=self.toolbars[i].actions()[1].defaultWidget(),
+                                     prostateBoundingBox=self.toolbars[i].actions()[2].defaultWidget()) for i in [0, 1]]
         # Canvas navigation toolbars.
-        self.navBars = [NavigationToolbar(self.canvases[0], self),
-                        NavigationToolbar(self.canvases[1], self)]
+        self.navBars = [NavigationToolbar(self.canvases[i], self) for i in [0, 1]]
 
-        # Left side.
-        self.layouts[0].setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        self.layouts[0].addLayout(self.titles[0])
-        self.layouts[0].addLayout(self.buttons[0])
-        self.layouts[0].addWidget(self.canvases[0])
-        self.layouts[0].addWidget(self.navBars[0])
-        self.layouts[0].addLayout(self.boxes[0])
-        self.layouts[0].addItem(Utils.spacer)
-        # Right side.
-        self.layouts[1].setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        self.layouts[1].addLayout(self.titles[1])
-        self.layouts[1].addLayout(self.buttons[1])
-        self.layouts[1].addWidget(self.canvases[1])
-        self.layouts[1].addWidget(self.navBars[1])
-        self.layouts[1].addLayout(self.boxes[1])
-        self.layouts[1].addItem(Utils.spacer)
+        # Left and Right side.
+        for i in [0, 1]:
+            self.layouts[i].setAlignment(Qt.AlignmentFlag.AlignHCenter)
+            self.layouts[i].addLayout(self.titles[i])
+            self.layouts[i].addLayout(self.buttons[i])
+            self.layouts[i].addWidget(self.canvases[i])
+            self.layouts[i].addWidget(self.navBars[i])
+            self.layouts[i].addLayout(self.boxes[i])
+            self.layouts[i].addItem(Utils.spacer)
         # Add left and right to mainLayout.
         self.mainLayout.addLayout(self.layouts[0])
         self.mainLayout.addLayout(self.layouts[1])
         self.setCentralWidget(self.mainWidget)
-
+        # Main menu.
         self._createMainMenu()
 
         # Scan directory Path.
         self.scansPath = f'C:/Users/roryb/GDOffline/Research/Scans'
         # Scans.
-        self.scans = [Scan.Scan(self), Scan.Scan(self)]
+        self.scans = [Scan.Scan(self) for _ in [0, 1]]
         # Class for exporting data for training.
         self.export = Export.Export(self.scansPath)
-        # Thread pool.
-        self.threadPool = QThreadPool()
         # Processes.
-        self.axisAngleProcess = [AxisAnglePlot.AxisAnglePlot(),
-                                 AxisAnglePlot.AxisAnglePlot()]
+        self.axisAngleProcess = [AxisAnglePlot.AxisAnglePlot() for _ in [0, 1]]
 
         self.showMaximized()
 
@@ -123,16 +104,13 @@ class Main(QMainWindow):
         self.menuLoadScans.addAction('Load AUS Patient', lambda: self._selectAUSPatientDialog())
         self.menuLoadScans.addSeparator()
         self.menuLoadScans.addAction('Load PUS Patient', lambda: self._selectPUSPatientDialog())
-
         # Load data menu
         menuLoadData = self.menuBar().addMenu("Load Data")
         self.menuLoadData.append(menuLoadData.addMenu('Load Scan 1 Data'))
         menuLoadData.addSeparator()
         self.menuLoadData.append(menuLoadData.addMenu('Load Scan 2 Data'))
-        self.menuLoadData[0].setDisabled(True)
-        self.menuLoadData[1].setDisabled(True)
-        self.menuLoadData[0].aboutToShow.connect(lambda: self._populateLoadScanData(0))
-        self.menuLoadData[1].aboutToShow.connect(lambda: self._populateLoadScanData(1))
+        [self.menuLoadData[i].setDisabled(True) for i in [0, 1]]
+        [self.menuLoadData[i].aboutToShow.connect(lambda x=i: self._populateLoadScanData(x)) for i in [0, 1]]
         # Save data menu.
         self.menuSaveData = self.menuBar().addMenu("Save Data")
         self.menuSaveData.addAction('Save Scan 1 Data', lambda: self._saveData([0])).setDisabled(True)
@@ -166,60 +144,66 @@ class Main(QMainWindow):
         menuExtrasPrevious = self.menuExtras.addMenu("Previous")
         menuExtrasPrevious.addAction(f'Scan 1', lambda: self._navigatePatients(0, Scan.PREVIOUS)).setDisabled(True)
         menuExtrasPrevious.addAction(f'Scan 2', lambda: self._navigatePatients(1, Scan.PREVIOUS)).setDisabled(True)
-        menuExtrasPrevious.addAction(f'Patient', lambda: self._navigatePatients(-1, Scan.NEXT)).setDisabled(True)
+        menuExtrasPrevious.addAction(f'Patient', lambda: self._navigatePatients(-1, Scan.PREVIOUS)).setDisabled(True)
 
     def _createToolBars(self, scan):
         """Create left and right toolbars (mirrored)."""
         toolbar = QToolBar(f'ToolBar {scan}')
         self.addToolBar(Qt.ToolBarArea.LeftToolBarArea if scan == 0 else Qt.ToolBarArea.RightToolBarArea, toolbar)
 
-        copyPreviousAction = QAction(QIcon(f"{basedir}/res/copy_previous.png"), "Copy previous frame points.", self)
-        copyPreviousAction.triggered.connect(lambda: self._copyFramePoints(scan, Scan.PREVIOUS))
-        toolbar.addAction(copyPreviousAction)
+        prostatePoints = QRadioButton("Prostate\nPoints")
+        prostatePoints.setToolTip("Segment the prostate.")
+        prostatePoints.setChecked(True)
+        toolbar.addWidget(prostatePoints)
 
-        copyNextAction = QAction(QIcon(f"{basedir}/res/copy_next.png"), "Copy points from next frame.", self)
-        copyNextAction.triggered.connect(lambda: self._copyFramePoints(scan, Scan.NEXT))
-        toolbar.addAction(copyNextAction)
+        bladderPoints = QRadioButton("Bladder\nPoints")
+        bladderPoints.setToolTip("Segment the bladder.")
+        toolbar.addWidget(bladderPoints)
 
-        shrinkAction = QAction(QIcon(f"{basedir}/res/shrink.png"), "Shrink points around CoM.", self)
-        shrinkAction.triggered.connect(lambda: self._shrinkExpandPoints(scan, -shrinkSpinBox.value()))
-        toolbar.addAction(shrinkAction)
+        prostateBox = QRadioButton("Prostate\nBox")
+        prostateBox.setToolTip("Create prostate bounding box.")
+        prostateBox.clicked.connect(lambda: self.boxes[scan].itemAt(4).widget().setChecked(prostateBox.isChecked()))
+        toolbar.addWidget(prostateBox)
+
+        radioGroup = QButtonGroup()
+        radioGroup.addButton(prostatePoints)
+        radioGroup.addButton(bladderPoints)
+        radioGroup.addButton(prostateBox)
+
+        copyPrevious = QAction(QIcon(f"{basedir}/res/copy_previous.png"), "Copy previous frame points.", self)
+        copyPrevious.triggered.connect(lambda: self._copyFramePoints(scan, Scan.PREVIOUS))
+        toolbar.addAction(copyPrevious)
+
+        copyNext = QAction(QIcon(f"{basedir}/res/copy_next.png"), "Copy points from next frame.", self)
+        copyNext.triggered.connect(lambda: self._copyFramePoints(scan, Scan.NEXT))
+        toolbar.addAction(copyNext)
+
+        shrinkPoints = QAction(QIcon(f"{basedir}/res/shrink.png"), "Shrink points around CoM.", self)
+        shrinkPoints.triggered.connect(lambda: self._shrinkExpandPoints(scan, -shrinkSpinBox.value()))
+        toolbar.addAction(shrinkPoints)
 
         shrinkSpinBox = QSpinBox(minimum=1, maximum=50, value=5)
         shrinkSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         shrinkSpinBox.setToolTip("Shrink Scale (minimum 1).")
         toolbar.addWidget(shrinkSpinBox)
 
-        expandAction = QAction(QIcon(f"{basedir}/res/expand.png"), "Expand points around CoM.", self)
-        expandAction.triggered.connect(lambda: self._shrinkExpandPoints(scan, expandSpinBox.value()))
-        toolbar.addAction(expandAction)
+        expandPoints = QAction(QIcon(f"{basedir}/res/expand.png"), "Expand points around CoM.", self)
+        expandPoints.triggered.connect(lambda: self._shrinkExpandPoints(scan, expandSpinBox.value()))
+        toolbar.addAction(expandPoints)
 
         expandSpinBox = QSpinBox(minimum=1, maximum=50, value=5)
         expandSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         expandSpinBox.setToolTip("Expand Scale (minimum 1).")
         toolbar.addWidget(expandSpinBox)
 
-        distAction = QAction(QIcon(f'{basedir}/res/distribute.png'), 'Distribute points along spline.', self)
-        distAction.triggered.connect(lambda: self._distributePoints(scan, distSpinBox.value()))
-        toolbar.addAction(distAction)
+        distribute = QAction(QIcon(f'{basedir}/res/distribute.png'), 'Distribute points along spline.', self)
+        distribute.triggered.connect(lambda: self._distributePoints(scan, distributeSpinBox.value()))
+        toolbar.addAction(distribute)
 
-        distSpinBox = QSpinBox(minimum=5, maximum=100, value=50)
-        distSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        distSpinBox.setToolTip("Number of points in even distribution.")
-        toolbar.addWidget(distSpinBox)
-
-        prostateSegmentationButton = QRadioButton("Prostate")
-        prostateSegmentationButton.setToolTip("Segment the prostate.")
-        prostateSegmentationButton.setChecked(True)
-        toolbar.addWidget(prostateSegmentationButton)
-
-        bladderSegmentationButton = QRadioButton("Bladder")
-        bladderSegmentationButton.setToolTip("Segment the bladder.")
-        toolbar.addWidget(bladderSegmentationButton)
-
-        segmentationGroup = QButtonGroup()
-        segmentationGroup.addButton(prostateSegmentationButton)
-        segmentationGroup.addButton(bladderSegmentationButton)
+        distributeSpinBox = QSpinBox(minimum=5, maximum=100, value=50)
+        distributeSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        distributeSpinBox.setToolTip("Number of points in even distribution.")
+        toolbar.addWidget(distributeSpinBox)
 
         toolbar.setDisabled(True)
         toolbar.setMovable(False)
@@ -258,7 +242,7 @@ class Main(QMainWindow):
 
         return layout
 
-    def _createBoxes(self, scan: int):
+    def _createBottomBoxes(self, scan: int):
         """Create checkboxes below canvas."""
         layout = QHBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -287,12 +271,26 @@ class Main(QMainWindow):
         bladderMask.setDisabled(True)
         layout.addWidget(bladderMask)
 
+        prostateBox = QCheckBox('Show Prostate\nBox')
+        prostateBox.setChecked(False)
+        prostateBox.stateChanged.connect(lambda: self._updateDisplay(scan))
+        prostateBox.setDisabled(True)
+        layout.addWidget(prostateBox)
+
         return layout
+
+    def _getSegmentationSelection(self, scan: int):
+        """Return which button in the segmentation radio group is checked."""
+        if self.toolbars[scan].actions()[0].defaultWidget().isChecked():
+            return Scan.PROSTATE
+        elif self.toolbars[scan].actions()[1].defaultWidget().isChecked():
+            return Scan.BLADDER
+        else:
+            return Scan.PROSTATE_BOX
 
     def _distributePoints(self, scan: int, count: int):
         """Distribute points along a generated spline."""
-        pb = Scan.PROSTATE if self.toolbars[scan].actions()[8].defaultWidget().isChecked() else Scan.BLADDER
-        self.canvases[scan].distributeFramePoints(count, pb)
+        self.canvases[scan].distributeFramePoints(count, self._getSegmentationSelection(scan))
         self._updateDisplay(scan)
 
     def _onAxisAngleClicked(self, scan):
@@ -319,8 +317,7 @@ class Main(QMainWindow):
     def _onCineClicked(self, scan: int):
         """Play a cine of the scan in a separate window."""
         patient, scanType, scanPlane, _, _ = self.scans[scan].getScanDetails()
-        cine = PlayCine.PlayCine(self.scans[scan].frames, patient, scanType, scanPlane)
-        cine.startProcess()
+        PlayCine.PlayCine(self.scans[scan].frames, patient, scanType, scanPlane)
 
     def _resetEditingData(self):
         """Reset all editing data after confirmation."""
@@ -388,8 +385,6 @@ class Main(QMainWindow):
                                     f'{int(patient) - 1 if direction == Scan.PREVIOUS else int(patient) + 1}/'
                                     f'{scanType}/{scanPlane}/{scanNumber}')
                     self._loadScan(i, nextScanPath)
-
-
 
     def _selectAUSPatientDialog(self):
         """Load both scans of an AUS patient."""
@@ -461,7 +456,7 @@ class Main(QMainWindow):
 
     def _shrinkExpandPoints(self, scan: int, amount):
         """Expand or shrink points around centre of mass."""
-        pb = Scan.PROSTATE if self.toolbars[scan].actions()[8].defaultWidget().isChecked() else Scan.BLADDER
+        pb = Scan.PROSTATE if self.toolbars[scan].actions()[0].defaultWidget().isChecked() else Scan.BLADDER
         self.scans[scan].shrinkExpandPoints(amount, pb)
         self._updateDisplay(scan)
 
@@ -470,14 +465,20 @@ class Main(QMainWindow):
         self.scans[scan].clearScanPoints()
         self._updateDisplay(scan)
 
+    def _clearFrameBox(self, scan: int, prostateBladder):
+        """Clear frame prostate or bladder box, then update display."""
+        self.scans[scan].clearFrameBox(prostateBladder)
+        self._updateDisplay(scan)
+
     def _clearFramePoints(self, scan: int, prostateBladder):
-        """Clear frame prostate points from scan, then update display."""
+        """Clear frame prostate or bladder points from scan, then update display."""
         self.scans[scan].clearFramePoints(prostateBladder)
         self._updateDisplay(scan)
 
     def _copyFramePoints(self, scan: int, location):
         """Copy points from either previous or next frame."""
-        pb = Scan.PROSTATE if self.toolbars[scan].actions()[8].defaultWidget().isChecked() else Scan.BLADDER
+        pb = Scan.PROSTATE if self.toolbars[scan].actions()[
+            0].defaultWidget().isChecked() else Scan.BLADDER
         self.scans[scan].copyFramePoints(location, pb)
         self._updateDisplay(scan)
 
@@ -495,7 +496,7 @@ class Main(QMainWindow):
             elif event.key() == Qt.Key.Key_S:
                 self.scans[0].navigate(Scan.NAVIGATION['s'])
             elif self.buttons[0].itemAt(3).widget().isChecked() and event.key() == Qt.Key.Key_D:
-                self.toolbars[0].actions()[7].trigger()
+                self.toolbars[0].actions()[10].trigger()
             self._updateDisplay(0)
 
         elif self.scans[1].loaded and self.canvases[1].underMouse():
@@ -504,7 +505,7 @@ class Main(QMainWindow):
             elif event.key() == Qt.Key.Key_S:
                 self.scans[1].navigate(Scan.NAVIGATION['s'])
             elif self.buttons[1].itemAt(3).widget().isChecked() and event.key() == Qt.Key.Key_D:
-                self.toolbars[1].actions()[7].trigger()
+                self.toolbars[1].actions()[10].trigger()
             self._updateDisplay(1)
 
     def contextMenuEvent(self, event):
@@ -512,8 +513,14 @@ class Main(QMainWindow):
             if self.scans[i].loaded and self.canvases[i].underMouse():
                 menu = QMenu()
                 menuPoints = menu.addMenu('Points')
-                menuPoints.addAction('Clear Frame Prostate Points', lambda: self._clearFramePoints(i, Scan.PROSTATE))
-                menuPoints.addAction('Clear Frame Bladder Points', lambda: self._clearFramePoints(i, Scan.BLADDER))
+                menuPoints.addAction('Clear Frame Prostate Points',
+                                     lambda: self._clearFramePoints(i, Scan.PROSTATE))
+                menuPoints.addAction('Clear Frame Prostate Box',
+                                     lambda: self._clearFrameBox(i, Scan.PROSTATE))
+                menuPoints.addAction('Clear Frame Bladder Points',
+                                     lambda: self._clearFramePoints(i, Scan.BLADDER))
+                menuPoints.addAction('Clear Frame Bladder Box',
+                                     lambda: self._clearFrameBox(i, Scan.BLADDER))
                 menuPoints.addSeparator()
                 menuPoints.addAction('Clear All Points', lambda: self._clearScanPoints(i))
                 menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(i))
