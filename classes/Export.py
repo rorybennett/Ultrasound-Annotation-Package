@@ -15,6 +15,9 @@ from classes.ExportDialog import ExportDialog
 
 
 class Export:
+    """
+    Class for exporting Save Data and training data in the correct format.
+    """
     def __init__(self, scansPath: str):
         self.scansPath = scansPath
         self.totalPatients = eu.getTotalPatients(self.scansPath)
