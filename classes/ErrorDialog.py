@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QLabel
 
 class ErrorDialog(QDialog):
     """
-    Custom dialog to show and error message with the error below the message.
+    Custom dialog to show an error message with the error below the message.
     """
 
     def __init__(self, parent=None, message=None, error=None):
