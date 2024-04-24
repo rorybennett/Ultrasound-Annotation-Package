@@ -397,6 +397,15 @@ class Scan:
 
         self.__saveToDisk(SAVE_POINT_DATA)
 
+    def clearScanBoxes(self):
+        """
+        Clear all boxes in the Scan, then save to disk.
+        """
+        self.boxProstate = []
+        self.boxBladder = []
+        
+        self.__saveToDisk(SAVE_POINT_DATA)
+
     def clearScanPoints(self):
         """
         Clear all points in the Scan, then save to disk.

@@ -128,7 +128,7 @@ class FrameCanvas(FigureCanvasQTAgg):
         if self.showProstateBox.isChecked():
             su.drawBoxOnAxis(self.axis, self.linkedScan.getBoxPointsOnFrame(Scan.PROSTATE), fd, dd, 'lime')
         # Draw bladder box on canvas if box ticked.
-        if self.showProstateBox.isChecked():
+        if self.showBladderBox.isChecked():
             su.drawBoxOnAxis(self.axis, self.linkedScan.getBoxPointsOnFrame(Scan.BLADDER), fd, dd, 'dodgerblue')
         # Draw Bullet data on canvas if box is ticked.
         su.drawBulletDataOnAxis(self.axis, self.linkedScan.frameNames[cfi], self.linkedScan.bulletData, fd, dd)

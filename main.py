@@ -476,6 +476,11 @@ class Main(QMainWindow):
         self.scans[scan].clearScanPoints()
         self._updateDisplay(scan)
 
+    def _clearScanBoxes(self, scan: int):
+        """Clear all boxes in a Scan, then update display."""
+        self.scans[scan].clearScanBoxes()
+        self._updateDisplay(scan)
+
     def _clearFrameBox(self, scan: int, prostateBladder):
         """Clear frame prostate or bladder box, then update display."""
         self.scans[scan].clearFrameBox(prostateBladder)
@@ -535,6 +540,7 @@ class Main(QMainWindow):
                                      lambda: self._clearFrameBox(i, Scan.BLADDER))
                 menuPoints.addSeparator()
                 menuPoints.addAction('Clear All Points', lambda: self._clearScanPoints(i))
+                menuPoints.addAction('Clear All Boxes', lambda: self._clearScanBoxes(i))
                 menu.addAction('Refresh Scan Data', lambda: self._refreshScanData(i))
                 menu.exec(event.globalPos())
 
