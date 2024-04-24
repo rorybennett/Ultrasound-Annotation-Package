@@ -272,8 +272,8 @@ class Scan:
         pointDisplay: Point coordinates in display coordinates.
         """
         pointPixel = su.displayToPixels(pointDisplay, self.frames[self.currentFrame - 1].shape, self.displayDimensions)
+        frameName = self.frameNames[self.currentFrame - 1]
         if prostateBladder == PROSTATE:
-            frameName = self.frameNames[self.currentFrame - 1]
             index = su.getIndexOfFrameInBoxPoints(self.boxProstate, frameName)
             if index > -1:
                 if startDrawEnd == BOX_START:
@@ -285,6 +285,18 @@ class Scan:
                     self.__saveToDisk(SAVE_POINT_DATA)
             else:
                 self.boxProstate.append([frameName, pointPixel[0], pointPixel[1], pointPixel[0], pointPixel[1]])
+        else:
+            index = su.getIndexOfFrameInBoxPoints(self.boxBladder, frameName)
+            if index > -1:
+                if startDrawEnd == BOX_START:
+                    self.boxBladder[index] = [frameName, pointPixel[0], pointPixel[1], pointPixel[0], pointPixel[1]]
+                elif startDrawEnd == BOX_DRAW:
+                    self.boxBladder[index][3:] = [pointPixel[0], pointPixel[1]]
+                else:
+                    self.boxBladder[index][1:] = su.getBoundingBoxStartAndEnd(self.boxBladder[index][1:])
+                    self.__saveToDisk(SAVE_POINT_DATA)
+            else:
+                self.boxBladder.append([frameName, pointPixel[0], pointPixel[1], pointPixel[0], pointPixel[1]])
 
     def addOrRemovePoint(self, pointDisplay: list, prostateBladder):
         """
@@ -341,7 +353,8 @@ class Scan:
             if saveType in [SAVE_POINT_DATA, SAVE_ALL]:
                 saveData = {'Prostate': self.pointsProstate,
                             'Bladder': self.pointsBladder,
-                            'ProstateBox': self.boxProstate}
+                            'ProstateBox': self.boxProstate,
+                            'BladderBox': self.boxBladder}
                 with open(self.pointPath, 'w') as pointFile:
                     json.dump(saveData, pointFile, indent=4)
 

@@ -53,14 +53,16 @@ class Main(QMainWindow):
         self.boxes = [self._createBottomBoxes(i) for i in [0, 1]]
         # Canvases for displaying frames.
         self.canvases = [FrameCanvas(updateDisplay=lambda x=i: self._updateDisplay(x),
-                                     showProstatePointsBox=self.boxes[i].itemAt(0).widget(),
-                                     showBladderPointsBox=self.boxes[i].itemAt(1).widget(),
-                                     showProstateMaskBox=self.boxes[i].itemAt(2).widget(),
-                                     showBladderMaskBox=self.boxes[i].itemAt(3).widget(),
-                                     showProstateBoxBox=self.boxes[i].itemAt(4).widget(),
-                                     segmentProstateBox=self.toolbars[i].actions()[0].defaultWidget(),
-                                     segmentBladderBox=self.toolbars[i].actions()[1].defaultWidget(),
-                                     prostateBoundingBox=self.toolbars[i].actions()[2].defaultWidget()) for i in [0, 1]]
+                                     showProstatePointsCB=self.boxes[i].itemAt(0).widget(),
+                                     showBladderPointsCB=self.boxes[i].itemAt(1).widget(),
+                                     showProstateMaskCB=self.boxes[i].itemAt(2).widget(),
+                                     showBladderMaskCB=self.boxes[i].itemAt(3).widget(),
+                                     showProstateBoxCB=self.boxes[i].itemAt(4).widget(),
+                                     showBladderBoxCB=self.boxes[i].itemAt(5).widget(),
+                                     prostatePointsCB=self.toolbars[i].actions()[0].defaultWidget(),
+                                     bladderPointsCB=self.toolbars[i].actions()[1].defaultWidget(),
+                                     prostateBoxCB=self.toolbars[i].actions()[2].defaultWidget(),
+                                     bladderBoxCB=self.toolbars[i].actions()[3].defaultWidget()) for i in [0, 1]]
         # Canvas navigation toolbars.
         self.navBars = [NavigationToolbar(self.canvases[i], self) for i in [0, 1]]
 
@@ -149,6 +151,7 @@ class Main(QMainWindow):
     def _createToolBars(self, scan):
         """Create left and right toolbars (mirrored)."""
         toolbar = QToolBar(f'ToolBar {scan}')
+        toolbar.setStyleSheet("QToolBar{padding:4px;}");
         self.addToolBar(Qt.ToolBarArea.LeftToolBarArea if scan == 0 else Qt.ToolBarArea.RightToolBarArea, toolbar)
 
         prostatePoints = QRadioButton("Prostate\nPoints")
@@ -165,10 +168,16 @@ class Main(QMainWindow):
         prostateBox.clicked.connect(lambda: self.boxes[scan].itemAt(4).widget().setChecked(prostateBox.isChecked()))
         toolbar.addWidget(prostateBox)
 
+        bladderBox = QRadioButton("Bladder\nBox")
+        bladderBox.setToolTip("Create bladder bounding box.")
+        bladderBox.clicked.connect(lambda: self.boxes[scan].itemAt(5).widget().setChecked(bladderBox.isChecked()))
+        toolbar.addWidget(bladderBox)
+
         radioGroup = QButtonGroup()
         radioGroup.addButton(prostatePoints)
         radioGroup.addButton(bladderPoints)
         radioGroup.addButton(prostateBox)
+        radioGroup.addButton(bladderBox)
 
         copyPrevious = QAction(QIcon(f"{basedir}/res/copy_previous.png"), "Copy previous frame points.", self)
         copyPrevious.triggered.connect(lambda: self._copyFramePoints(scan, Scan.PREVIOUS))
@@ -277,20 +286,20 @@ class Main(QMainWindow):
         prostateBox.setDisabled(True)
         layout.addWidget(prostateBox)
 
-        return layout
+        bladderBox = QCheckBox('Show Bladder\nBox')
+        bladderBox.setChecked(False)
+        bladderBox.stateChanged.connect(lambda: self._updateDisplay(scan))
+        bladderBox.setDisabled(True)
+        layout.addWidget(bladderBox)
 
-    def _getSegmentationSelection(self, scan: int):
-        """Return which button in the segmentation radio group is checked."""
-        if self.toolbars[scan].actions()[0].defaultWidget().isChecked():
-            return Scan.PROSTATE
-        elif self.toolbars[scan].actions()[1].defaultWidget().isChecked():
-            return Scan.BLADDER
-        else:
-            return Scan.PROSTATE_BOX
+        return layout
 
     def _distributePoints(self, scan: int, count: int):
         """Distribute points along a generated spline."""
-        self.canvases[scan].distributeFramePoints(count, self._getSegmentationSelection(scan))
+        if self.toolbars[scan].actions()[0].defaultWidget().isChecked():
+            self.canvases[scan].distributeFramePoints(count, Scan.PROSTATE)
+        elif self.toolbars[scan].actions()[1].defaultWidget().isChecked():
+            self.canvases[scan].distributeFramePoints(count, Scan.BLADDER)
         self._updateDisplay(scan)
 
     def _onAxisAngleClicked(self, scan):
@@ -456,8 +465,10 @@ class Main(QMainWindow):
 
     def _shrinkExpandPoints(self, scan: int, amount):
         """Expand or shrink points around centre of mass."""
-        pb = Scan.PROSTATE if self.toolbars[scan].actions()[0].defaultWidget().isChecked() else Scan.BLADDER
-        self.scans[scan].shrinkExpandPoints(amount, pb)
+        if self.toolbars[scan].actions()[0].defaultWidget().isChecked():
+            self.scans[scan].shrinkExpandPoints(amount, Scan.PROSTATE)
+        elif self.toolbars[scan].actions()[1].defaultWidget().isChecked():
+            self.scans[scan].shrinkExpandPoints(amount, Scan.BLADDER)
         self._updateDisplay(scan)
 
     def _clearScanPoints(self, scan: int):
@@ -477,9 +488,10 @@ class Main(QMainWindow):
 
     def _copyFramePoints(self, scan: int, location):
         """Copy points from either previous or next frame."""
-        pb = Scan.PROSTATE if self.toolbars[scan].actions()[
-            0].defaultWidget().isChecked() else Scan.BLADDER
-        self.scans[scan].copyFramePoints(location, pb)
+        if self.toolbars[scan].actions()[0].defaultWidget().isChecked():
+            self.scans[scan].copyFramePoints(location, Scan.PROSTATE)
+        elif self.toolbars[scan].actions()[1].defaultWidget().isChecked():
+            self.scans[scan].copyFramePoints(location, Scan.BLADDER)
         self._updateDisplay(scan)
 
     def _refreshScanData(self, scan: int):

@@ -370,7 +370,12 @@ def getPointDataFromFile(scanPath: str):
     if prostateBox is None:
         prostateBox = []
 
-    return pointPath, prostatePoints, bladderPoints, prostateBox, []
+    bladderBox = data.get('BladderBox')
+
+    if bladderBox is None:
+        bladderBox = []
+
+    return pointPath, prostatePoints, bladderPoints, prostateBox, bladderBox
 
 
 def checkPointDataFile(scanPath: str):
