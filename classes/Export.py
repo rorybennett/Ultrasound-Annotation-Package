@@ -18,6 +18,7 @@ class Export:
     """
     Class for exporting Save Data and training data in the correct format.
     """
+
     def __init__(self, scansPath: str):
         self.scansPath = scansPath
         self.totalPatients = eu.getTotalPatients(self.scansPath)
@@ -45,6 +46,13 @@ class Export:
             self._exportnnUNettAUSData(mainWindow)
         else:
             self._exportnnUNetsAUSData(mainWindow)
+
+    def exportYOLOAUSData(self, scanType, mainWindow: QWidget):
+        """Export AUS transverse or sagittal frames for YOLO bounding box inference."""
+        if scanType == Scan.PLANE_TRANSVERSE:
+            self._exportYOLOtAUSData(mainWindow)
+        else:
+            self._exportYOLOsAUSData(mainWindow)
 
     def exportAllSaveData(self):
         """Export all save data from all patients - For backup."""
@@ -75,6 +83,14 @@ class Export:
                         print(f'{typeSrc} - does not exist, skipping...')
         print(f'\tExporting completed.')
         return
+
+    def _exportYOLOtAUSData(self, mainWindow: QWidget):
+        """Export AUS Transverse frames for YOLO inference."""
+        print('Export YOLO Transverse...')
+
+    def _exportYOLOsAUSData(self, mainWindow: QWidget):
+        """Export AUS Sagittal frames for YOLO inference."""
+        print('Export YOLO Sagittal...')
 
     def _exportnnUNettAUSData(self, mainWindow: QWidget):
         """Export AUS Transverse frames for nn-Unet inference."""
