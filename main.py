@@ -512,7 +512,7 @@ class Main(QMainWindow):
         for i in [0, 1]:
             if self.scans[i].loaded and self.canvases[i].underMouse():
                 menu = QMenu()
-                menuPoints = menu.addMenu('Points')
+                menuPoints = menu.addMenu('Clear')
                 menuPoints.addAction('Clear Frame Prostate Points',
                                      lambda: self._clearFramePoints(i, Scan.PROSTATE))
                 menuPoints.addAction('Clear Frame Prostate Box',

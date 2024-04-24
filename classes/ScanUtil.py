@@ -139,9 +139,44 @@ def drawBoxOnAxis(axis: Axes, points: list, fd: list, dd: list, color):
     if len(points) > 1:
         points = [points[:2], points[2:]]
         points = [pixelsToDisplay(point, fd, dd) for point in points]
+        axis.text(points[0][0], points[0][1], 'A', color=color)
+        axis.text(points[1][0], points[1][1], 'B', color=color)
         rect = patches.Rectangle(points[0], points[1][0] - points[0][0], points[1][1] - points[0][1], linewidth=1,
                                  edgecolor=color, facecolor='none')
         axis.add_patch(rect)
+
+
+def getBoundingBoxStartAndEnd(points):
+    """
+    Find the start and end of the bounding box, assuming top left is start and bottom right is end. This does not work
+    as intended, it just forces a left to right, top to bottom bounding box to be drawn.
+    Parameters
+    ----------
+    points: Current start and end points of the bounding box.
+
+    Returns
+    -------
+    Start and end points of the bounding box.
+    """
+    # Convert 2 points into 4 corners of rectangle.
+    pointsArray = np.array([[points[0], points[1]],
+                            [points[0], points[3]],
+                            [points[2], points[3]],
+                            [points[2], points[1]]])
+
+    # Find start point (top left: min_x then min_y).
+    x_min = np.where(pointsArray[:, 0] == pointsArray[:, 0].min())[0]
+    y_min = np.where(pointsArray[x_min, 1] == pointsArray[x_min, 1].min())[0]
+    top_left = (pointsArray[x_min[y_min[0]]])
+
+    # Find end point (bottom right: max_x then max_y).
+    x_max = np.where(pointsArray[:, 0] == pointsArray[:, 0].max())[0]
+    y_max = np.where(pointsArray[x_max, 1] == pointsArray[x_max, 1].max())[0]
+    bottom_right = pointsArray[x_max[y_max[0]]]
+
+    results = [int(top_left[0]), int(top_left[1]), int(bottom_right[0]), int(bottom_right[1])]
+
+    return results
 
 
 def drawIPVDataOnAxis(axis: Axes, ipv: dict, name: str, fd: list, dd: list):

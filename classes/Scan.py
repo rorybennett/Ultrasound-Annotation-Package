@@ -51,6 +51,7 @@ PROSTATE_BOX = '-PROSTATE-BOX-'
 BLADDER_BOX = '-BLADDER-BOX-'
 # Start or End.
 BOX_START = '-START-'
+BOX_DRAW = '-DRAW-'
 BOX_END = '-END-'
 
 
@@ -258,19 +259,29 @@ class Scan:
         except Exception as e:
             ErrorDialog(None, f'Error opening Windows explorer', e)
 
-    def updateBoxPoints(self, prostateBladder, startEnd, pointDisplay):
+    def updateBoxPoints(self, prostateBladder, startDrawEnd, pointDisplay):
         """
+        Update bounding box points for PROSTATE or BLADDER. On a down click the BOX_START point is altered, on release
+        the BOX_END point is altered. On BOX_END alteration the points are organised such that the top left point is
+        first and the bottom right point is second.
 
+        Parameters
+        ----------
+        prostateBladder: PROSTATE or BLADDER bounding box points.
+        startDrawEnd: Start point, draw point, or end point of the bounding box.
+        pointDisplay: Point coordinates in display coordinates.
         """
         pointPixel = su.displayToPixels(pointDisplay, self.frames[self.currentFrame - 1].shape, self.displayDimensions)
         if prostateBladder == PROSTATE:
             frameName = self.frameNames[self.currentFrame - 1]
             index = su.getIndexOfFrameInBoxPoints(self.boxProstate, frameName)
             if index > -1:
-                if startEnd == BOX_START:
+                if startDrawEnd == BOX_START:
                     self.boxProstate[index] = [frameName, pointPixel[0], pointPixel[1], pointPixel[0], pointPixel[1]]
-                else:
+                elif startDrawEnd == BOX_DRAW:
                     self.boxProstate[index][3:] = [pointPixel[0], pointPixel[1]]
+                else:
+                    self.boxProstate[index][1:] = su.getBoundingBoxStartAndEnd(self.boxProstate[index][1:])
                     self.__saveToDisk(SAVE_POINT_DATA)
             else:
                 self.boxProstate.append([frameName, pointPixel[0], pointPixel[1], pointPixel[0], pointPixel[1]])
@@ -529,68 +540,6 @@ class Scan:
             ErrorDialog(None, f'Error finding axis angle centre', e)
 
         return indexAtPercentage
-
-    def updateIPVCentre(self, pointDisplay: list, addOrRemove: str):
-        """
-        Add or remove the IPV centre circle. This circle is used to reduce inference time by limiting the total patch
-        window to within the circle.
-
-        Args:
-            pointDisplay: Centre of the circle.
-            addOrRemove: Either add or remove the currently placed circle.
-        """
-        if addOrRemove == ADD_POINT:
-            pointPixel = su.displayToPixels(pointDisplay, self.frames[self.currentFrame - 1].shape,
-                                            self.displayDimensions)
-            self.ipvData['centre'] = [self.frameNames[self.currentFrame - 1], pointPixel[0], pointPixel[1]]
-        else:
-            self.ipvData['centre'] = ['', 0, 0]
-            self.ipvData['radius'] = 0
-
-        self.__saveToDisk(SAVE_IPV_DATA)
-
-    def updateIPVInferredPoints(self, inferredPoints: list, frameName: str):
-        """
-        Update inferred points of IPV data.
-
-        Args:
-            inferredPoints: Either 4 points (transverse) or  2 points (sagittal).
-            frameName: Frame name that the points are inferred on.
-        """
-        points = []
-        pass
-        if self.scanPlane == PLANE_TRANSVERSE:
-            for i in range(0, 7, 2):
-                points.append([inferredPoints[i], inferredPoints[i + 1]])
-        else:
-            for i in range(0, 3, 2):
-                points.append([inferredPoints[i], inferredPoints[i + 1]])
-        self.ipvData['inferred_points'] = [frameName, points]
-
-        self.__saveToDisk(SAVE_IPV_DATA)
-
-    def updateIPVRadius(self, radius: int):
-        """
-        Update the IPV radius for the region of interest.
-
-        Args:
-            radius: Size of radius (in pixels).
-        """
-        self.ipvData['radius'] = radius
-
-        self.__saveToDisk(SAVE_IPV_DATA)
-
-    def removeIPVData(self):
-        """
-        Remove all saved IPV data, including centre frame, radius, and any inferred points.
-        """
-        self.ipvData = {
-            'centre': ['', 0, 0],
-            'radius': 100,
-            'inferred_points': ['', []]
-        }
-
-        self.__saveToDisk(SAVE_IPV_DATA)
 
     def copyFramePoints(self, location: str, prostateBladder):
         """

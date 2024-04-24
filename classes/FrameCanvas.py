@@ -45,13 +45,13 @@ class FrameCanvas(FigureCanvasQTAgg):
         self.canvas.mpl_connect('motion_notify_event', lambda x: self._axisMotionEvent(x))
         self.canvas.mpl_connect('button_release_event', lambda x: self._axisReleaseEvent(x))
         self.canvas.mpl_connect('scroll_event', lambda x: self._axisScrollEvent(x))
+        self.canvas.mpl_connect('figure_leave_event', lambda x: self._axisReleaseEvent(x))
 
         super(FrameCanvas, self).__init__(self.fig)
 
-
     def _axisPressEvent(self, event):
         """Handle left down clicks in preparation for drag."""
-        if self.linkedScan is not None:
+        if self.linkedScan is not None and event.button == 1:
             self.downClick = True
             if self.prostateBoundingBox.isChecked():
                 self.linkedScan.updateBoxPoints(Scan.PROSTATE, Scan.BOX_START, [event.xdata, event.ydata])
@@ -60,24 +60,25 @@ class FrameCanvas(FigureCanvasQTAgg):
         """Handle drag if down clicked and motion detected."""
         if self.linkedScan is not None and self.downClick:
             self.startDrag = True
-            if self.prostateBoundingBox.isChecked():
-                self.linkedScan.updateBoxPoints(Scan.PROSTATE, Scan.BOX_END, [event.xdata, event.ydata])
+            displayPoint = [event.xdata, event.ydata]
+            if self.prostateBoundingBox.isChecked() and displayPoint[0] is not None:
+                self.linkedScan.updateBoxPoints(Scan.PROSTATE, Scan.BOX_DRAW, [event.xdata, event.ydata])
                 self.updateDisplay()
 
     def _axisReleaseEvent(self, event):
-        """Handle left releases on axis 1 and 2. AddRemove if no drag took place."""
-        if self.linkedScan is not None and not self.startDrag:
-            if event.button == 1:
-                displayPoint = [event.xdata, event.ydata]
-                if not self.startDrag:
+        """Handle left releases on axis 1 and 2. AddRemove point if no drag took place."""
+        displayPoint = [event.xdata, event.ydata]
+        if self.linkedScan is not None and displayPoint[0] is not None and self.downClick:
+            if not self.startDrag:
+                if event.button == 1:
                     if self.segmentProstateBox.isChecked() and displayPoint[0] is not None:
                         self.linkedScan.addOrRemovePoint(displayPoint, Scan.PROSTATE)
                     elif self.segmentBladderBox.isChecked() and displayPoint[0] is not None:
                         self.linkedScan.addOrRemovePoint(displayPoint, Scan.BLADDER)
-
-                if self.prostateBoundingBox.isChecked() and displayPoint[0] is not None:
+            elif self.prostateBoundingBox.isChecked():
+                if event.button == 1:
                     self.linkedScan.updateBoxPoints(Scan.PROSTATE, Scan.BOX_END, [event.xdata, event.ydata])
-                self.updateDisplay()
+            self.updateDisplay()
 
         self.startDrag = False
         self.downClick = False
