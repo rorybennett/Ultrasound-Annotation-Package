@@ -40,7 +40,6 @@ class Export:
         else:
             self._exportIPVAUSSagittalData(mainWindow)
 
-
     def exportYOLOAUSData(self, scanType, mainWindow: QWidget):
         """Export AUS transverse or sagittal frames for YOLO bounding box inference."""
         if scanType == Scan.PLANE_TRANSVERSE:
@@ -132,9 +131,8 @@ class Export:
                     framesWithPoints = list(dict.fromkeys(framesWithPoints))
                     # Loop through frames with points on them, gather points for mask creation.
                     for frameNumber in framesWithPoints:
-                        #todo will need to fix this, when a segmentation is not present it doesnt work.
                         pMask = None
-                        if frameNumber in prostateFrameNumbers:
+                        if prostateFrameNumbers is not None and frameNumber in prostateFrameNumbers:
                             polygon = [(i[1], i[2]) for i in prostatePoints if i[0] == frameNumber]
                             polygon = [(i[0], i[1]) for i in Utils.distributePoints(polygon, len(polygon))]
                             frameShape = prostateFramesWithPoints[prostateFrameNumbers.index(frameNumber)].shape
@@ -142,16 +140,17 @@ class Export:
                             ImageDraw.Draw(img).polygon(polygon, fill=1)
                             pMask = np.array(img)
                         bMask = None
-                        if frameNumber in bladderFrameNumbers:
+                        if bladderFrameNumbers is not None and frameNumber in bladderFrameNumbers:
                             polygon = [(i[1], i[2]) for i in bladderPoints if i[0] == frameNumber]
                             polygon = [(i[0], i[1]) for i in Utils.distributePoints(polygon, len(polygon))]
                             frameShape = bladderFramesWithPoints[bladderFrameNumbers.index(frameNumber)].shape
                             img = Image.new('L', (frameShape[1], frameShape[0]))
                             ImageDraw.Draw(img).polygon(polygon, fill=2)
                             bMask = np.array(img)
+
                         # Combine masks and make overlaps only equal to prostate (prostate takes precedence).
-                        finalMask = cv2.bitwise_or(pMask if pMask is not None else np.zeros(bMask.shape),
-                                                   bMask if bMask is not None else np.zeros(pMask.shape))
+                        finalMask = cv2.bitwise_or(pMask if pMask is not None else np.zeros_like(bMask),
+                                                   bMask if bMask is not None else np.zeros_like(pMask))
                         finalMask[finalMask > 2] = 1
 
                         if pMask is not None:
