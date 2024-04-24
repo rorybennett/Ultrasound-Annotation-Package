@@ -221,7 +221,8 @@ def interpolate(x, y, total_points):
 
         return xi, yi
     except Exception as e:
-        ErrorDialog(None, 'Error interpolating points (too few, must be > 2).', e)
+        ErrorDialog(None, 'Error interpolating points (too few, must be > 2).',
+                    f'{type(e).__name__} at line {e.__traceback__.tb_lineno} of {__file__}.')
         return None, None
 
 

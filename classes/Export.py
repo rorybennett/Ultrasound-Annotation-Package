@@ -31,7 +31,8 @@ class Export:
         try:
             subprocess.Popen(f'explorer "{path}"')
         except Exception as e:
-            ErrorDialog(None, f'Error opening Windows explorer', e)
+            ErrorDialog(None, f'Error opening Windows explorer.',
+                        f'{type(e).__name__} at line {e.__traceback__.tb_lineno} of {__file__}.')
 
     def exportIPVAUSData(self, scanType, mainWindow: QWidget):
         """Export AUS transverse or sagittal frames for ipv inference."""
@@ -99,7 +100,7 @@ class Export:
         # Create training data from each patient.
         for patient in self.patients:
             try:
-                print(f'\t\tCreating {scanType} AUS nnUNet data for patient {patient}...', end=' ')
+                print(f'\t\tPatient {patient}...', end=' ')
                 scanPath = f'{self.scansPath}/{patient}/AUS/{scanType}'
                 scanDirs = Path(scanPath).iterdir()
                 for scan in scanDirs:
@@ -117,9 +118,9 @@ class Export:
                     # Get point data from file.
                     prostatePoints, bladderPoints = eu.getPointData(pointDataPath)
                     if prostatePoints is None:
-                        print(f'No frames with prostate points.', end=' ')
+                        print(f'No frames with prostate points...', end=' ')
                     if bladderPoints is None:
-                        print(f'No frames with bladder points.', end=' ')
+                        print(f'No frames with bladder points...', end=' ')
                     # Get frames with prostate points and bladder points.
                     prostateFramesWithPoints, prostateFrameNumbers = eu.getFramesWithPoints(scanPath, prostatePoints)
                     # Get frames with prostate points and bladder points.
@@ -128,6 +129,7 @@ class Export:
                     framesWithPoints = []
                     framesWithPoints += prostateFrameNumbers if prostateFrameNumbers is not None else []
                     framesWithPoints += bladderFrameNumbers if bladderFrameNumbers is not None else []
+                    # Remove duplicates.
                     framesWithPoints = list(dict.fromkeys(framesWithPoints))
                     # Loop through frames with points on them, gather points for mask creation.
                     for frameNumber in framesWithPoints:
@@ -162,7 +164,8 @@ class Export:
                         cv2.imwrite(f'{labelsPath}/t_P{patient}F{frameNumber}.png', finalMask)
                         print('Complete.')
             except WindowsError as e:
-                print(f'Error creating nnUNet {scanType} AUS data for patient {patient}', e)
+                print(f'Error creating nnUNet {scanType} AUS data for patient {patient}.',
+                      f'{type(e).__name__} at line {e.__traceback__.tb_lineno} of {__file__}.')
 
     def _exportIPVAUSSagittalData(self, mainWindow: QWidget):
         """Export AUS sagittal frames for ipv inference."""
@@ -229,7 +232,8 @@ class Export:
                                 f'{saveName} ({bottom[0]}, {bottom[1]}) '
                                 f'({top[0]}, {top[1]})\n')
             except WindowsError as e:
-                print(f'\tError creating IPV sagittal data for patient {patient}: ', e)
+                print(f'\tError creating IPV sagittal data for patient {patient}.',
+                      f'{type(e).__name__} at line {e.__traceback__.tb_lineno} of {__file__}.')
         print(f'\tAUS sagittal exporting completed.')
 
     def _exportIPVAUSTransverseData(self, mainWindow: QWidget):
@@ -303,5 +307,6 @@ class Export:
                                 f'({top[0]}, {top[1]}) '
                                 f'({left[0]}, {left[1]})\n')
             except WindowsError as e:
-                print(f'\tError creating IPV transverse data for patient {patient}: ', e)
+                print(f'\tError creating IPV transverse data for patient {patient}.',
+                      f'{type(e).__name__} at line {e.__traceback__.tb_lineno} of {__file__}.')
         print(f'\tAUS transverse exporting completed.')

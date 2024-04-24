@@ -29,7 +29,8 @@ def creatennUAUSTrainingDirs(scanPlane: str):
         labelsPath.mkdir(parents=True, exist_ok=False)
         return imagesPath, labelsPath
     except FileExistsError as e:
-        ErrorDialog(None, 'Error creating nnUNet export directories', e)
+        ErrorDialog(None, 'Error creating nnUNet export directories.',
+                    f'{type(e).__name__} at line {e.__traceback__.tb_lineno} of {__file__}.')
         return False
 
 
@@ -52,7 +53,8 @@ def createIPVTrainingDirs(scanPlane: str):
         else:
             Path(f'{dataPath}/sagittal').mkdir(exist_ok=False)
     except FileExistsError as e:
-        ErrorDialog(None, 'Error creating IPV export directories', e)
+        ErrorDialog(None, 'Error creating IPV export directories.',
+                    f'{type(e).__name__} at line {e.__traceback__.tb_lineno} of {__file__}.')
         return False
     return dataPath
 
@@ -197,7 +199,8 @@ def createSaveDataExportDir():
         path = f'../Export/Save Data Exports/{int(time.time())}_save_data_export'
         Path(f'{path}').mkdir(parents=True, exist_ok=False)
     except Exception as e:
-        ErrorDialog(None, f'Error creating Save Data Export Directory', e)
+        ErrorDialog(None, f'Error creating Save Data Export Directory.',
+                    f'{type(e).__name__} at line {e.__traceback__.tb_lineno} of {__file__}.')
         return False
     return path
 

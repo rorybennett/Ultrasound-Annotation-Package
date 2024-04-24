@@ -257,7 +257,8 @@ class Scan:
         try:
             subprocess.Popen(f'explorer "{path}"')
         except Exception as e:
-            ErrorDialog(None, f'Error opening Windows explorer', e)
+            ErrorDialog(None, f'Error opening Windows explorer.',
+                        f'{type(e).__name__} at line {e.__traceback__.tb_lineno} of {__file__}.')
 
     def updateBoxPoints(self, prostateBladder, startDrawEnd, pointDisplay):
         """
@@ -403,7 +404,7 @@ class Scan:
         """
         self.boxProstate = []
         self.boxBladder = []
-        
+
         self.__saveToDisk(SAVE_POINT_DATA)
 
     def clearScanPoints(self):
@@ -559,7 +560,8 @@ class Scan:
 
             indexAtPercentage = indexStart + indexFromStart
         except Exception as e:
-            ErrorDialog(None, f'Error finding axis angle centre', e)
+            ErrorDialog(None, f'Error finding axis angle centre.',
+                        f'{type(e).__name__} at line {e.__traceback__.tb_lineno} of {__file__}.')
 
         return indexAtPercentage
 
