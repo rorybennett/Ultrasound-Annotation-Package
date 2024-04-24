@@ -31,8 +31,7 @@ class Export:
         try:
             subprocess.Popen(f'explorer "{path}"')
         except Exception as e:
-            ErrorDialog(None, f'Error opening Windows explorer.',
-                        f'{type(e).__name__} at line {e.__traceback__.tb_lineno} of {__file__}.')
+            ErrorDialog(None, f'Error opening Windows explorer.', e)
 
     def exportIPVAUSData(self, scanType, mainWindow: QWidget):
         """Export AUS transverse or sagittal frames for ipv inference."""
@@ -164,8 +163,7 @@ class Export:
                         cv2.imwrite(f'{labelsPath}/t_P{patient}F{frameNumber}.png', finalMask)
                         print('Complete.')
             except WindowsError as e:
-                print(f'Error creating nnUNet {scanType} AUS data for patient {patient}.',
-                      f'{type(e).__name__} at line {e.__traceback__.tb_lineno} of {__file__}.')
+                print(f'Error creating nnUNet {scanType} AUS data for patient {patient}.', e)
 
     def _exportIPVAUSSagittalData(self, mainWindow: QWidget):
         """Export AUS sagittal frames for ipv inference."""
@@ -232,8 +230,7 @@ class Export:
                                 f'{saveName} ({bottom[0]}, {bottom[1]}) '
                                 f'({top[0]}, {top[1]})\n')
             except WindowsError as e:
-                print(f'\tError creating IPV sagittal data for patient {patient}.',
-                      f'{type(e).__name__} at line {e.__traceback__.tb_lineno} of {__file__}.')
+                print(f'\tError creating IPV sagittal data for patient {patient}.', e)
         print(f'\tAUS sagittal exporting completed.')
 
     def _exportIPVAUSTransverseData(self, mainWindow: QWidget):
@@ -307,6 +304,5 @@ class Export:
                                 f'({top[0]}, {top[1]}) '
                                 f'({left[0]}, {left[1]})\n')
             except WindowsError as e:
-                print(f'\tError creating IPV transverse data for patient {patient}.',
-                      f'{type(e).__name__} at line {e.__traceback__.tb_lineno} of {__file__}.')
+                print(f'\tError creating IPV transverse data for patient {patient}.', e)
         print(f'\tAUS transverse exporting completed.')

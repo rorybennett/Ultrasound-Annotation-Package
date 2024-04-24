@@ -119,5 +119,5 @@ def process(frames: np.ndarray, dimensions: list, patient: str, scanType: str, s
 
         sys.exit(App.exec())
     except Exception as e:
-        ErrorDialog(None, f'Error playing cine.',
-                    f'{type(e).__name__} at line {e.__traceback__.tb_lineno} of {__file__}.')
+        ErrorDialog(None, f'Error playing cine.', e)
+

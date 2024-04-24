@@ -459,8 +459,7 @@ class Main(QMainWindow):
             self._updateTitle(scan)
             self._updateDisplay(scan, new=True)
         except Exception as e:
-            ErrorDialog(self, 'Error loading Scan data.',
-                      f'{type(e).__name__} at line {e.__traceback__.tb_lineno} of {__file__}.')
+            ErrorDialog(self, 'Error loading Scan data.', e)
 
     def _updateDisplay(self, scan: int, new=False):
         """Update the shown frame and position on plot."""
