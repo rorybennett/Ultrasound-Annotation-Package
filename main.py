@@ -330,7 +330,7 @@ class Main(QMainWindow):
 
     def _resetEditingData(self):
         """Reset all editing data after confirmation."""
-        confirm = QMessageBox.question(self, 'Reset Editing Data', 'Are you sure you wan to reset all editing data?',
+        confirm = QMessageBox.question(self, 'Reset Editing Data', 'Are you sure you want to reset all editing data?',
                                        buttons=QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
 
         if confirm == QMessageBox.StandardButton.Ok:
