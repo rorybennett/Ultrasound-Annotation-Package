@@ -154,7 +154,7 @@ class Main(QMainWindow):
     def _createToolBars(self, scan):
         """Create left and right toolbars (mirrored)."""
         toolbar = QToolBar(f'ToolBar {scan}')
-        toolbar.setStyleSheet("QToolBar{padding:4px;}");
+        toolbar.setStyleSheet("QToolBar{padding:4px;}")
         self.addToolBar(Qt.ToolBarArea.LeftToolBarArea if scan == 0 else Qt.ToolBarArea.RightToolBarArea, toolbar)
 
         prostatePoints = QRadioButton("Prostate\nPoints")
@@ -212,7 +212,7 @@ class Main(QMainWindow):
         distribute.triggered.connect(lambda: self._distributePoints(scan, distributeSpinBox.value()))
         toolbar.addAction(distribute)
 
-        distributeSpinBox = QSpinBox(minimum=5, maximum=100, value=50)
+        distributeSpinBox = QSpinBox(minimum=5, maximum=150, value=75)
         distributeSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         distributeSpinBox.setToolTip("Number of points in even distribution.")
         toolbar.addWidget(distributeSpinBox)

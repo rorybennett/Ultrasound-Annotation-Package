@@ -431,21 +431,21 @@ class Scan:
         try:
             shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.bulletPath.name), self.bulletPath)
         except Exception as e:
-            ErrorDialog(None, 'Error loading bullet data.', 'Cannot find file.')
+            ErrorDialog(None, 'Error loading bullet data.', e)
             Path(self.bulletPath).unlink(missing_ok=True)
             successFlags[0] = False
 
         try:
             shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.pointPath.name), self.pointPath)
         except Exception as e:
-            ErrorDialog(None, 'Error loading point data', 'Cannot find file.')
+            ErrorDialog(None, 'Error loading point data', e)
             Path(self.pointPath).unlink(missing_ok=True)
             successFlags[1] = False
 
         try:
             shutil.copy(Path(self.path, 'Save Data/' + saveName + '/' + self.editPath.name), self.editPath)
         except Exception as e:
-            ErrorDialog(None, 'Error loading editing data', 'Cannot find file.')
+            ErrorDialog(None, 'Error loading editing data', e)
             Path(self.editPath).unlink(missing_ok=True)
             successFlags[2] = False
 
