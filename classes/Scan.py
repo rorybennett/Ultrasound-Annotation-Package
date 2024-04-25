@@ -458,7 +458,12 @@ class Scan:
         Returns:
             folders (list): List of sub folders as strings.
         """
-        folders = [vd.stem for vd in Path(f'{self.path}/Save Data').iterdir() if vd.is_dir()]
+        # Check if Save Data directory exists, if not create it.
+        saveDataPath = Path(f'{self.path}/Save Data')
+
+        saveDataPath.mkdir(parents=True, exist_ok=True)
+
+        folders = [vd.stem for vd in saveDataPath.iterdir() if vd.is_dir()]
 
         return folders
 

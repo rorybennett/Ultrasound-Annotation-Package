@@ -120,7 +120,7 @@ def drawMaskOnAxis(axis: Axes, points: list, fd: list, dd: list, color):
     # Convert points from frame coordinates to canvas coordinates.
     points = [pixelsToDisplay(point, fd, dd) for point in points]
     if len(points) > 1:
-        polygon = Polygon(points, closed=True, alpha=0.5, color=color)
+        polygon = Polygon(points, closed=True, alpha=0.2, color=color)
         axis.add_patch(polygon)
 
 
