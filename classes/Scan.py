@@ -127,7 +127,6 @@ class Scan:
         axis = canvas.axis
         cfi = self.currentFrame - 1
         frame = self.frames[cfi].copy()
-        framePosition = self.currentFrame
         count = self.frameCount
         depths = self.depths[cfi]
         imuOffset = self.imuOffset
@@ -140,9 +139,11 @@ class Scan:
         # Prepare axis and draw frame.
         su.drawFrameOnAxis(axis, frame)
         # Draw scan details on axis.
-        su.drawScanDataOnAxis(axis, frame, framePosition, count, depths, imuOffset, imuPosition,
-                              self.countFramePoints(PROSTATE) + self.countFramePoints(BLADDER),
-                              len(self.pointsProstate) + len(self.pointsBladder), dd)
+        su.drawScanDataOnAxis(axis, frameNumber=cfi + 1, frameCount=count, depths=depths, imuOff=imuOffset,
+                              imuPos=imuPosition, dd=dd, frameProstatePoints=self.countFramePoints(PROSTATE),
+                              frameBladderPoints=self.countFramePoints(BLADDER),
+                              totalProstatePoints=len(self.pointsProstate), totalProstateBoxes=len(self.boxProstate),
+                              totalBladderPoints=len(self.pointsBladder), totalBladderBoxes=len(self.boxBladder))
 
     def getBoxPointsOnFrame(self, prostateBladder, position=None):
         """
@@ -458,12 +459,7 @@ class Scan:
         Returns:
             folders (list): List of sub folders as strings.
         """
-        # Check if Save Data directory exists, if not create it.
-        saveDataPath = Path(f'{self.path}/Save Data')
-
-        saveDataPath.mkdir(parents=True, exist_ok=True)
-
-        folders = [vd.stem for vd in saveDataPath.iterdir() if vd.is_dir()]
+        folders = [vd.stem for vd in Path(f'{self.path}/Save Data').iterdir() if vd.is_dir()]
 
         return folders
 
@@ -490,7 +486,7 @@ class Scan:
             saveDataPath: Path to SaveData directory.
         """
         # Create Save Data directory if not present.
-        saveDataPath = su.checkSaveDataDirectory(self.path)
+        su.checkSaveDataDirectory(self.path)
 
     def saveUserData(self, username: str, scan: int):
         """

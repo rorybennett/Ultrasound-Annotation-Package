@@ -33,6 +33,55 @@ def creatennUAUSTrainingDirs(scanPlane: str):
         return False
 
 
+def getYOLOBoxes(points, frameShape):
+    """
+    Convert points (top_left, bottom_right) of a rectangle into normalised [centre_x, centre_y, width, height].
+
+    Parameters
+    ----------
+    points: Top left and bottom right points of rectangle.
+    frameShape: Shape of frame, used for normalising.
+
+    Returns
+    -------
+    centre_x, centre_y, width, height
+    """
+    a = points[:2]
+    b = points[2:]
+
+    centre = [((a[0] + b[0]) / 2) / frameShape[1], ((a[1] + b[1]) / 2) / frameShape[0]]
+    c = (b[0] - a[0]) / frameShape[1]
+    d = (b[1] - a[1]) / frameShape[0]
+
+    return [centre[0], centre[1], c, d]
+
+
+def createYOLOTrainingDirs(scanType: str, exportName: str):
+    """
+    Create training directories using YOLO training structure.
+
+    Parameters
+    ----------
+    scanType: Plane of Scan, Transverse or Sagittal
+    exportName: Main directory name, can be blank.
+
+    Returns
+    -------
+    Paths to images and labels directories.
+    """
+    # Create new, empty directories.
+    try:
+        parentPath = Path(f"Export/YOLO/{int(time.time())}_{exportName if exportName else '-'}_{scanType}")
+        imagesPath = Path(parentPath, 'images')
+        imagesPath.mkdir(parents=True, exist_ok=False)
+        labelsPath = Path(parentPath, 'labels')
+        labelsPath.mkdir(parents=True, exist_ok=False)
+        return imagesPath, labelsPath
+    except Exception as e:
+        ErrorDialog(None, 'Error creating YOLO export directories.', e)
+        return False
+
+
 def createIPVTrainingDirs(scanPlane: str):
     """
     Create directories using IPV training structure.
@@ -85,33 +134,38 @@ def getSaveDirName(scanPath: str, prefix: str):
     Returns:
         Either String Path to save directory with given prefix, or False.
     """
-    savePath = f'{scanPath}/Save Data'
-    saveDirs = os.listdir(savePath)
+    try:
+        savePath = f'{scanPath}/Save Data'
+        saveDirs = os.listdir(savePath)
 
-    for saveDir in saveDirs:
-        pre = ''.join(saveDir.split('_')[:-1])
+        for saveDir in saveDirs:
+            pre = ''.join(saveDir.split('_')[:-1])
 
-        if pre == prefix:
-            return saveDir
+            if pre == prefix:
+                return saveDir
+    except WindowsError:
+        return False
 
-    return False
 
-
-def getPointData(filePath: str):
+def getPointAndBoxData(filePath: str):
     """
-    Extract frame name and point data from given filePath (str). The point data is not always sorted in order as
-    that was only added later, so it is sorted by frame name here.
+    Get point and box data from given file path.  The data is not always sorted in order as that was only added later,
+    so it is sorted by frame name here.
 
-    Args:
-        filePath: Path to file, as a string, including file type.
+    Parameters
+    ----------
+    filePath: Path to PointData.json file.
 
-    Returns:
-        prostatePoints: list of file names and associated point data, sorted by file name for grouping reasons.
+    Returns
+    -------
+    Prostate and bladder points and boxes.
     """
     with open(filePath, newline='\n') as pointFile:
         data = json.load(pointFile)
         prostatePoints = data.get('Prostate')
         bladderPoints = data.get('Bladder')
+        prostateBoxes = data.get('ProstateBox')
+        bladderBoxes = data.get('BladderBox')
 
     if prostatePoints is not None:
         prostatePoints.sort(key=lambda row: ([row[0]]))
@@ -119,7 +173,13 @@ def getPointData(filePath: str):
     if bladderPoints is not None:
         bladderPoints.sort(key=lambda row: ([row[0]]))
 
-    return prostatePoints, bladderPoints
+    if prostateBoxes is not None:
+        prostateBoxes.sort(key=lambda row: ([row[0]]))
+
+    if bladderBoxes is not None:
+        bladderBoxes.sort(key=lambda row: ([row[0]]))
+
+    return prostatePoints, bladderPoints, prostateBoxes, bladderBoxes
 
 
 def getDepths(scanPath: str, frameNumber: int):
@@ -157,9 +217,9 @@ def getIMUData(saveDir):
     return imuOffset, imuPosition
 
 
-def getFramesWithPoints(scanPath, pointData):
+def getFramesWithPointsOrBoxes(scanPath, pointData):
     """
-    Return frames in specified recording path that contain points on them. Frames are returned as grayscale images.
+    Return frames in specified recording path that contain points or boxes on them. Frames are returned as grayscale images.
 
     Args:
         scanPath: Path (str) to scan (directory in scan type).

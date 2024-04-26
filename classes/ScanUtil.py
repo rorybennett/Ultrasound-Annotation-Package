@@ -72,25 +72,31 @@ def drawFrameOnAxis(axis: Axes, frame: np.ndarray):
     axis.set_ylim(frame.shape[0], -0.5)
 
 
-def drawScanDataOnAxis(axis: Axes, frame: np.ndarray, fNo: int, fCount: int, depths: list, imuOff: float, imuPos: float,
-                       framePoints: int, totalPoints: int, dd: list):
+def drawScanDataOnAxis(axis: Axes, frameNumber: int, frameCount: int, depths: list, imuOff: float, imuPos: float,
+                       frameProstatePoints: int, frameBladderPoints: int, totalProstatePoints: int,
+                       totalBladderPoints: int, totalProstateBoxes: int, totalBladderBoxes: int, dd: list):
     """
-    Function for plotting extra details about the scan on the frame.
+    Plot extra details about the Scan on the frame.
 
-    Args:
-        axis: Axis displaying frame.
-        frame: Frame currently displayed.
-        fNo: Current frame number.
-        fCount: Total number of frames in scan.
-        depths: Height and Width of scan in mm.
-        imuOff: Offset of the imu from the end of the probe.
-        imuPos: IMU position as a percent of frame width.
-        framePoints: Total point on current frame.
-        totalPoints: Total points on all frames in Scan.
-        dd: Display dimensions - shape of the frame, first and second value swapped.
+    Parameters
+    ----------
+    axis: Axis displaying frame.
+    frameNumber: Current frame number.
+    frameCount: Total number of frames in scan.
+    depths: Height and Width of scan in mm.
+    imuOff: Offset of the imu from the end of the probe.
+    imuPos: IMU position as a percent of frame width.
+    frameProstatePoints: Total prostate points on current frame.
+    frameBladderPoints: Total bladder points on current frame.
+    totalProstatePoints: Total prostate points on all frames in Scan.
+    totalBladderPoints: Total bladder points on all frames in Scan.
+    totalProstateBoxes: Total prostate bounding boxes in Scan.
+    totalBladderBoxes: Total bladder bounding boxes in Scan.
+    dd: Display dimensions - shape of the frame, first and second value swapped.
 
-    Returns:
-        Nothing returned as data is drawn directly on axis.
+    Returns
+    -------
+    None
     """
     # Scan width and depth in mm.
     axis.text(dd[0] - 120, 30, f'<- {int(depths[1])}mm ->', color='white')
@@ -99,11 +105,14 @@ def drawScanDataOnAxis(axis: Axes, frame: np.ndarray, fNo: int, fCount: int, dep
     axis.text(20, 40, f'IMU Offset: {imuOff:.1f}mm', color='lightblue')
     axis.text(20, 60, f'IMU Position: {imuPos:.1f}%', color='lightblue')
     # Current frame number over total frames.
-    axis.text(dd[0] - 150, dd[1] - 20, f'Frame {fNo} of {fCount}', color='white')
+    axis.text(dd[0] - 150, dd[1] - 20, f'Frame {frameNumber} of {frameCount}', color='white')
     # Location of IMU in relation to width, a percentage of width.
     axis.plot([imuPos / 100 * dd[0], imuPos / 100 * dd[0]], [0, 10], color='white', linewidth=2)
-    # Total points' indicator.
-    axis.text(20, dd[1] - 20, f'Points: {framePoints}/{totalPoints}', color='white')
+    # Points' indicator.
+    axis.text(20, dd[1] - 80, f'Prostate Points: {frameProstatePoints}/{totalProstatePoints}', color='white')
+    axis.text(20, dd[1] - 60, f'Bladder Points: {frameBladderPoints}/{totalBladderPoints}', color='white')
+    axis.text(20, dd[1] - 40, f'Prostate Boxes: {totalProstateBoxes}', color='white')
+    axis.text(20, dd[1] - 20, f'Bladder Boxes: {totalBladderBoxes}', color='white')
 
 
 def drawMaskOnAxis(axis: Axes, points: list, fd: list, dd: list, color):

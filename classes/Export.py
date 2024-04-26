@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import QInputDialog, QWidget
 from classes import ExportUtil as eu, Utils
 from classes import Scan
 from classes.ErrorDialog import ErrorDialog
-from classes.ExportDialog import ExportDialog
+from classes.ExportDialogs import ExportDialogs
 
 
 class Export:
@@ -38,14 +38,7 @@ class Export:
         if scanType == Scan.PLANE_TRANSVERSE:
             self._exportIPVAUSTransverseData(mainWindow)
         else:
-            self._exportIPVAUSSagittalData(mainWindow)
-
-    def exportYOLOAUSData(self, scanType, mainWindow: QWidget):
-        """Export AUS transverse or sagittal frames for YOLO bounding box inference."""
-        if scanType == Scan.PLANE_TRANSVERSE:
-            self._exportYOLOtAUSData(mainWindow)
-        else:
-            self._exportYOLOsAUSData(mainWindow)
+            self._exportIPVAUSSagittalData()
 
     def exportAllSaveData(self):
         """Export all save data from all patients - For backup."""
@@ -77,13 +70,81 @@ class Export:
         print(f'\tExporting completed.')
         return
 
-    def _exportYOLOtAUSData(self, mainWindow: QWidget):
-        """Export AUS Transverse frames for YOLO inference."""
-        print('Export YOLO Transverse...')
+    def exportYOLOAUSData(self, scanType, mainWindow: QWidget):
+        """Export AUS frames for YOLO inference."""
+        print(f'\tExporting {scanType} AUS frames for YOLO inference:', end=' ')
+        # Get Save prefix.
+        dlg = ExportDialogs().YOLODialog()
+        if not dlg:
+            print(f'\tCreate {scanType} YOLO Data Cancelled.')
+            return
+        prefix, prostate, bladder, exportName = dlg
+        # Create export directory.
+        imagesPath, labelsPath = eu.createYOLOTrainingDirs(scanType, exportName)
+        print(imagesPath)
+        for patient in self.patients:
+            try:
+                print(f'\t\tPatient {patient}...', end=' ')
+                scanPath = f'{self.scansPath}/{patient}/AUS/{scanType}'
+                scanDirs = Path(scanPath).iterdir()
+                for scan in scanDirs:
+                    # Some files are .avi, they can be skipped.
+                    if scan.is_file():
+                        continue
+                    # Get save directory with given prefix.
+                    scanPath = scan.as_posix()
+                    saveDir = eu.getSaveDirName(scanPath, prefix)
+                    if not saveDir:
+                        print(f'{prefix} not found in {scanPath}. Skipping...', end='')
+                        continue
+                    # Path to PointData.json file.
+                    pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.json'
+                    # Get box data from file.
+                    _, _, prostateBoxes, bladderBoxes = eu.getPointAndBoxData(pointDataPath)
+                    if prostateBoxes is None:
+                        print(f'No frames with prostate boxes...', end=' ')
+                    if bladderBoxes is None:
+                        print(f'No frames with bladder boxes...', end=' ')
+                    # Get frames with prostate boxes and bladder boxes.
+                    pFrames, pFrameNumbers = eu.getFramesWithPointsOrBoxes(scanPath, prostateBoxes)
+                    bFrames, bFrameNumbers = eu.getFramesWithPointsOrBoxes(scanPath, bladderBoxes)
+                    # Combine frame lists into one.
+                    framesWithBoxes = []
+                    framesWithBoxes += pFrameNumbers if pFrameNumbers is not None else []
+                    framesWithBoxes += bFrameNumbers if bFrameNumbers is not None else []
+                    # Remove duplicates.
+                    framesWithBoxes = list(dict.fromkeys(framesWithBoxes))
+                    # Loop through frames with points on them, gather points for mask creation.
+                    for frameNumber in framesWithBoxes:
+                        pBox = [0]
+                        if prostate and pFrameNumbers is not None and frameNumber in pFrameNumbers:
+                            points = [i[1:] for i in prostateBoxes if i[0] == frameNumber][0]
+                            pBox += eu.getYOLOBoxes(points, pFrames[pFrameNumbers.index(frameNumber)].shape)
 
-    def _exportYOLOsAUSData(self, mainWindow: QWidget):
-        """Export AUS Sagittal frames for YOLO inference."""
-        print('Export YOLO Sagittal...')
+                        bBox = [1]
+                        if bladder and bFrameNumbers is not None and frameNumber in bFrameNumbers:
+                            points = [i[1:] for i in bladderBoxes if i[0] == frameNumber][0]
+                            bBox += eu.getYOLOBoxes(points, bFrames[bFrameNumbers.index(frameNumber)].shape)
+
+                        labels = [pBox, bBox]
+
+                        # Save image and box data to image and label directory.
+                        if len(pBox) > 1 or len(bBox) > 1:
+                            if len(pBox) > 1:
+                                finalFrame = pFrames[pFrameNumbers.index(frameNumber)]
+                            else:
+                                finalFrame = bFrames[bFrameNumbers.index(frameNumber)]
+
+                            cv2.imwrite(f'{imagesPath}/P{patient}F{frameNumber}.png', finalFrame)
+                            with open(f'{labelsPath}/P{patient}F{frameNumber}.txt', 'w') as labelFile:
+                                for label in labels:
+                                    if len(label) > 1:
+                                        labelFile.write(f"{label[0]} {label[1]} {label[2]} {label[3]} {label[4]}\n")
+
+                print('Complete.')
+
+            except Exception as e:
+                print(f'Error creating YOLO {scanType} AUS data for patient {patient}.', e)
 
     def exportnnUNetAUSData(self, scanType, mainWindow: QWidget):
         """Export AUS frames for nn-Unet inference, either sagittal or transverse."""
@@ -115,7 +176,7 @@ class Export:
                     # Path to PointData.json file.
                     pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.json'
                     # Get point data from file.
-                    prostatePoints, bladderPoints = eu.getPointData(pointDataPath)
+                    prostatePoints, bladderPoints, _, _ = eu.getPointAndBoxData(pointDataPath)
                     if prostatePoints is None:
                         print(f'No frames with prostate points...', end=' ')
                     if bladderPoints is None:
@@ -165,11 +226,11 @@ class Export:
             except WindowsError as e:
                 print(f'Error creating nnUNet {scanType} AUS data for patient {patient}.', e)
 
-    def _exportIPVAUSSagittalData(self, mainWindow: QWidget):
+    def _exportIPVAUSSagittalData(self):
         """Export AUS sagittal frames for ipv inference."""
         print(f'\tExporting Sagittal frames for IPV inference...')
         # Get Export Settings.
-        dlg = ExportDialog('IPV', 'Sagittal').executeDialog()
+        dlg = ExportDialogs().IPVDialog()
         if not dlg:
             print('\tCreate Sagittal IPV Data Cancelled.')
             return
@@ -237,7 +298,7 @@ class Export:
         """Export AUS transverse frames for ipv inference."""
         print(f'\tExporting Transverse frames for IPV inference...')
         # Get Export Settings.
-        dlg = ExportDialog('IPV', 'Sagittal').executeDialog()
+        dlg = ExportDialogs('IPV', 'Sagittal').executeDialog()
         if not dlg:
             print('\tCreate Sagittal IPV Data Cancelled.')
             return
