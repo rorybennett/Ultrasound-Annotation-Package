@@ -101,6 +101,7 @@ class Scan:
             path: Path to Scan directory as a String.
             startingFrame: Starting frame position.
         """
+        print(f'Loading {path}...')
         self.frames = su.loadFrames(path)
         self.path = path
         self.frameShape = self.frames[0].shape
@@ -116,6 +117,7 @@ class Scan:
         self.ipvPath, self.ipvData = su.getIPVDataFromFile(self.path)
         self.bulletPath, self.bulletData = su.getBulletDataFromFile(self.path)
         self.loaded = True
+        print(f'{path} loaded.')
 
     def drawFrameOnAxis(self, canvas: FrameCanvas):
         """

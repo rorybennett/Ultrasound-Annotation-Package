@@ -10,19 +10,21 @@ from classes import Scan
 from classes.ErrorDialog import ErrorDialog
 
 
-def creatennUAUSTrainingDirs(scanPlane: str):
+def creatennUAUSTrainingDirs(scanPlane: str, saveName: str, exportName: str):
     """
     Create directories using nn-UNet training structure.
 
     Args:
         scanPlane: Plane of scan.
+        saveName: Save name used in SaveData.
+        exportName: Name to be included in folder.
 
     Returns:
         String to main directory if successful, else False.
     """
     # Create new, empty directories.
     try:
-        dataPath = f'Export/nnUNet/{int(time.time())}_{scanPlane[0].lower()}AUSProstate'
+        dataPath = f"Export/nnUNet/{saveName}/{int(time.time())}_{scanPlane[0].lower()}AUS{exportName if exportName else '-'}"
         imagesPath = Path(f'{dataPath}/imagesTr')
         imagesPath.mkdir(parents=True, exist_ok=False)
         labelsPath = Path(f'{dataPath}/labelsTr')
@@ -56,13 +58,14 @@ def getYOLOBoxes(points, frameShape):
     return [centre[0], centre[1], c, d]
 
 
-def createYOLOTrainingDirs(scanType: str, exportName: str):
+def createYOLOTrainingDirs(scanType: str, saveName: str, exportName: str):
     """
     Create training directories using YOLO training structure.
 
     Parameters
     ----------
     scanType: Plane of Scan, Transverse or Sagittal
+    saveName: Name used in SaveData.
     exportName: Main directory name, can be blank.
 
     Returns
@@ -71,7 +74,7 @@ def createYOLOTrainingDirs(scanType: str, exportName: str):
     """
     # Create new, empty directories.
     try:
-        parentPath = Path(f"Export/YOLO/{int(time.time())}_{exportName if exportName else '-'}_{scanType}")
+        parentPath = Path(f"Export/YOLO/{saveName}/{int(time.time())}_{exportName if exportName else '-'}_{scanType}")
         imagesPath = Path(parentPath, 'images')
         imagesPath.mkdir(parents=True, exist_ok=False)
         labelsPath = Path(parentPath, 'labels')

@@ -70,22 +70,22 @@ class Export:
         print(f'\tExporting completed.')
         return
 
-    def exportYOLOAUSData(self, scanType, mainWindow: QWidget):
+    def exportYOLOAUSData(self, scanPlane):
         """Export AUS frames for YOLO inference."""
-        print(f'\tExporting {scanType} AUS frames for YOLO inference:', end=' ')
+        print(f'\tExporting {scanPlane} AUS frames for YOLO inference:', end=' ')
         # Get Save prefix.
-        dlg = ExportDialogs().YOLODialog()
+        dlg = ExportDialogs().YOLODialog(scanPlane)
         if not dlg:
-            print(f'\tCreate {scanType} YOLO Data Cancelled.')
+            print(f'\tCreate {scanPlane} YOLO Data Cancelled.')
             return
         prefix, prostate, bladder, exportName = dlg
         # Create export directory.
-        imagesPath, labelsPath = eu.createYOLOTrainingDirs(scanType, exportName)
+        imagesPath, labelsPath = eu.createYOLOTrainingDirs(scanPlane, prefix, exportName)
         print(imagesPath)
         for patient in self.patients:
             try:
                 print(f'\t\tPatient {patient}...', end=' ')
-                scanPath = f'{self.scansPath}/{patient}/AUS/{scanType}'
+                scanPath = f'{self.scansPath}/{patient}/AUS/{scanPlane}'
                 scanDirs = Path(scanPath).iterdir()
                 for scan in scanDirs:
                     # Some files are .avi, they can be skipped.
@@ -95,7 +95,7 @@ class Export:
                     scanPath = scan.as_posix()
                     saveDir = eu.getSaveDirName(scanPath, prefix)
                     if not saveDir:
-                        print(f'{prefix} not found in {scanPath}. Skipping...', end='')
+                        print(f"{prefix} not found in {'/'.join(scanPath.split('/')[-4:])}, skipping.", end=' ')
                         continue
                     # Path to PointData.json file.
                     pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.json'
@@ -126,14 +126,15 @@ class Export:
                             points = [i[1:] for i in bladderBoxes if i[0] == frameNumber][0]
                             bBox += eu.getYOLOBoxes(points, bFrames[bFrameNumbers.index(frameNumber)].shape)
 
-                        labels = [pBox, bBox]
-
                         # Save image and box data to image and label directory.
                         if len(pBox) > 1 or len(bBox) > 1:
                             if len(pBox) > 1:
                                 finalFrame = pFrames[pFrameNumbers.index(frameNumber)]
                             else:
+                                bBox[0] = 0
                                 finalFrame = bFrames[bFrameNumbers.index(frameNumber)]
+
+                            labels = [pBox, bBox]
 
                             cv2.imwrite(f'{imagesPath}/P{patient}F{frameNumber}.png', finalFrame)
                             with open(f'{labelsPath}/P{patient}F{frameNumber}.txt', 'w') as labelFile:
@@ -141,27 +142,27 @@ class Export:
                                     if len(label) > 1:
                                         labelFile.write(f"{label[0]} {label[1]} {label[2]} {label[3]} {label[4]}\n")
 
-                print('Complete.')
-
+                print(f'Patient {patient} Complete.')
             except Exception as e:
-                print(f'Error creating YOLO {scanType} AUS data for patient {patient}.', e)
+                print(f'Error creating YOLO {scanPlane} AUS data for patient {patient}.', e)
 
-    def exportnnUNetAUSData(self, scanType, mainWindow: QWidget):
+    def exportnnUNetAUSData(self, scanPlane):
         """Export AUS frames for nn-Unet inference, either sagittal or transverse."""
-        print(f'\tExporting {scanType} AUS frames for nn-UNet inference:', end=' ')
+        print(f'\tExporting {scanPlane} AUS frames for nn-UNet inference:', end=' ')
         # Get Save prefix.
-        prefix, ok = QInputDialog.getText(mainWindow, f'Select Save Prefix for {scanType} AUS Export', 'Enter Prefix:')
-        if not ok:
-            print(f'Create {scanType}  nnUNet Data Cancelled.')
+        dlg = ExportDialogs().nnUNetDialog(scanPlane)
+        if not dlg:
+            print(f'\tCreate {scanPlane} nnUNet Data Cancelled.')
             return
+        prefix, prostate, bladder, exportName = dlg
         # Create directories for AUS training data.
-        imagesPath, labelsPath = eu.creatennUAUSTrainingDirs(scanType)
+        imagesPath, labelsPath = eu.creatennUAUSTrainingDirs(scanPlane, prefix, exportName)
         print(imagesPath)
         # Create training data from each patient.
         for patient in self.patients:
             try:
                 print(f'\t\tPatient {patient}...', end=' ')
-                scanPath = f'{self.scansPath}/{patient}/AUS/{scanType}'
+                scanPath = f'{self.scansPath}/{patient}/AUS/{scanPlane}'
                 scanDirs = Path(scanPath).iterdir()
                 for scan in scanDirs:
                     # Some files are .avi, they can be skipped.
@@ -171,7 +172,7 @@ class Export:
                     scanPath = scan.as_posix()
                     saveDir = eu.getSaveDirName(scanPath, prefix)
                     if not saveDir:
-                        print(f'{prefix} not found in {scanPath}. Skipping...', end=' ')
+                        print(f'\t{prefix} not found in {scanPath}. Skipping...', end=' ')
                         continue
                     # Path to PointData.json file.
                     pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.json'
@@ -182,32 +183,32 @@ class Export:
                     if bladderPoints is None:
                         print(f'No frames with bladder points...', end=' ')
                     # Get frames with prostate points and bladder points.
-                    prostateFramesWithPoints, prostateFrameNumbers = eu.getFramesWithPoints(scanPath, prostatePoints)
+                    pFrames, pFrameNumbers = eu.getFramesWithPointsOrBoxes(scanPath, prostatePoints)
                     # Get frames with prostate points and bladder points.
-                    bladderFramesWithPoints, bladderFrameNumbers = eu.getFramesWithPoints(scanPath, bladderPoints)
+                    bFrames, bFrameNumbers = eu.getFramesWithPointsOrBoxes(scanPath, bladderPoints)
                     # Combine frame lists into one.
                     framesWithPoints = []
-                    framesWithPoints += prostateFrameNumbers if prostateFrameNumbers is not None else []
-                    framesWithPoints += bladderFrameNumbers if bladderFrameNumbers is not None else []
+                    framesWithPoints += pFrameNumbers if pFrameNumbers is not None else []
+                    framesWithPoints += bFrameNumbers if bFrameNumbers is not None else []
                     # Remove duplicates.
                     framesWithPoints = list(dict.fromkeys(framesWithPoints))
                     # Loop through frames with points on them, gather points for mask creation.
                     for frameNumber in framesWithPoints:
                         pMask = None
-                        if prostateFrameNumbers is not None and frameNumber in prostateFrameNumbers:
+                        if prostate and pFrameNumbers is not None and frameNumber in pFrameNumbers:
                             polygon = [(i[1], i[2]) for i in prostatePoints if i[0] == frameNumber]
                             polygon = [(i[0], i[1]) for i in Utils.distributePoints(polygon, len(polygon))]
-                            frameShape = prostateFramesWithPoints[prostateFrameNumbers.index(frameNumber)].shape
+                            frameShape = pFrames[pFrameNumbers.index(frameNumber)].shape
                             img = Image.new('L', (frameShape[1], frameShape[0]))
                             ImageDraw.Draw(img).polygon(polygon, fill=1)
                             pMask = np.array(img)
                         bMask = None
-                        if bladderFrameNumbers is not None and frameNumber in bladderFrameNumbers:
+                        if bladder and bFrameNumbers is not None and frameNumber in bFrameNumbers:
                             polygon = [(i[1], i[2]) for i in bladderPoints if i[0] == frameNumber]
                             polygon = [(i[0], i[1]) for i in Utils.distributePoints(polygon, len(polygon))]
-                            frameShape = bladderFramesWithPoints[bladderFrameNumbers.index(frameNumber)].shape
+                            frameShape = bFrames[bFrameNumbers.index(frameNumber)].shape
                             img = Image.new('L', (frameShape[1], frameShape[0]))
-                            ImageDraw.Draw(img).polygon(polygon, fill=2)
+                            ImageDraw.Draw(img).polygon(polygon, fill=2 if pMask else 1)
                             bMask = np.array(img)
 
                         # Combine masks and make overlaps only equal to prostate (prostate takes precedence).
@@ -216,15 +217,15 @@ class Export:
                         finalMask[finalMask > 2] = 1
 
                         if pMask is not None:
-                            finalFrame = prostateFramesWithPoints[prostateFrameNumbers.index(frameNumber)]
+                            finalFrame = pFrames[pFrameNumbers.index(frameNumber)]
                         else:
-                            finalFrame = bladderFramesWithPoints[bladderFrameNumbers.index(frameNumber)]
+                            finalFrame = bFrames[bFrameNumbers.index(frameNumber)]
 
                         cv2.imwrite(f'{imagesPath}/t_P{patient}F{frameNumber}_0000.png', finalFrame)
                         cv2.imwrite(f'{labelsPath}/t_P{patient}F{frameNumber}.png', finalMask)
-                        print('Complete.')
+                    print('Complete.')
             except WindowsError as e:
-                print(f'Error creating nnUNet {scanType} AUS data for patient {patient}.', e)
+                print(f'Error creating nnUNet {scanPlane} AUS data for patient {patient}.', e)
 
     def _exportIPVAUSSagittalData(self):
         """Export AUS sagittal frames for ipv inference."""

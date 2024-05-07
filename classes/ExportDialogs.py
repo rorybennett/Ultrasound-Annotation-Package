@@ -6,22 +6,22 @@ class ExportDialogs(QDialog):
     Custom dialog for exporting frames.
     """
 
-    def YOLODialog(self, parent=None):
+    def YOLODialog(self, scanPlane):
         """
         Dialog for YOLO exports. Can choose Save Data Prefix, include prostate boxes and/or bladder boxes, and export
         save folder name.
 
         Parameters
         ----------
-        parent: Main window, if available.
+        scanPlane: Sagittal or Transverse.
 
         Returns
         -------
         Save prefix, include prostate boxes, include bladder boxes, export name.
         """
-        super().__init__(parent)
+        super().__init__()
 
-        self.setWindowTitle('YOLO Export Settings')
+        self.setWindowTitle(f'{scanPlane} YOLO Export Settings')
 
         QBtn = QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
 
@@ -55,22 +55,22 @@ class ExportDialogs(QDialog):
         else:
             return False
 
-    def nnUNetDialog(self, parent=None):
+    def nnUNetDialog(self, scanPlane):
         """
         Dialog for nnUNet exports. Can choose Save Data Prefix, include prostate points and/or bladder points, and
         export save folder name.
 
         Parameters
         ----------
-        parent: Main window, if available.
+        scanPlane: Transverse or Sagittal.
 
         Returns
         -------
         Save prefix, include prostate points, include bladder points, export name.
         """
-        super().__init__(parent)
+        super().__init__()
 
-        self.setWindowTitle('nnUNet Export Settings')
+        self.setWindowTitle(f'{scanPlane} nnUNet Export Settings')
 
         QBtn = QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
 

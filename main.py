@@ -126,11 +126,11 @@ class Main(QMainWindow):
         menuExportIPV.addAction('Transverse', lambda: self.export.exportIPVAUSData(Scan.PLANE_TRANSVERSE, self))
         menuExportIPV.addAction('Sagittal', lambda: self.export.exportIPVAUSData(Scan.PLANE_SAGITTAL, self))
         menuExportnnU = self.menuExport.addMenu('nnUNet')
-        menuExportnnU.addAction('Transverse', lambda: self.export.exportnnUNetAUSData(Scan.PLANE_TRANSVERSE, self))
-        menuExportnnU.addAction('Sagittal', lambda: self.export.exportnnUNetAUSData(Scan.PLANE_SAGITTAL, self))
+        menuExportnnU.addAction('Transverse', lambda: self.export.exportnnUNetAUSData(Scan.PLANE_TRANSVERSE))
+        menuExportnnU.addAction('Sagittal', lambda: self.export.exportnnUNetAUSData(Scan.PLANE_SAGITTAL))
         menuExportYOLO = self.menuExport.addMenu('YOLO')
-        menuExportYOLO.addAction('Transverse', lambda: self.export.exportYOLOAUSData(Scan.PLANE_TRANSVERSE, self))
-        menuExportYOLO.addAction('Sagittal', lambda: self.export.exportYOLOAUSData(Scan.PLANE_SAGITTAL, self))
+        menuExportYOLO.addAction('Transverse', lambda: self.export.exportYOLOAUSData(Scan.PLANE_TRANSVERSE))
+        menuExportYOLO.addAction('Sagittal', lambda: self.export.exportYOLOAUSData(Scan.PLANE_SAGITTAL))
         self.menuExport.addAction('Save Data', lambda: self.export.exportAllSaveData())
         self.menuExport.addSeparator()
         self.menuExport.addAction('Open Export Directory', lambda: self.export.openExportDirectory(basedir))
@@ -346,8 +346,10 @@ class Main(QMainWindow):
 
     def _saveData(self, scans: list):
         """Save Scan point data. Check for overwrite"""
+        saveName = None
         for scan in scans:
-            saveName, ok = QInputDialog.getText(self, f'Save Scan {scan + 1} Data', 'Enter User Name:')
+            saveName, ok = QInputDialog.getText(self, f'Save Scan {scan + 1} Data', 'Enter User Name:',
+                                                text=saveName if saveName else '')
 
             if ok:
                 if not saveName:
@@ -564,8 +566,3 @@ if __name__ == "__main__":
     mainWindow = Main()
 
     sys.exit(editingApp.exec())
-
-# To create an executable:
-# pyinstaller main.py
-# Add res to main .spec - a=[..., datas=[('res', 'res')],...]
-# pyinstaller main.spec

@@ -1,3 +1,4 @@
+import math
 import os
 from operator import itemgetter
 from pathlib import Path
@@ -192,7 +193,12 @@ def distributePoints(pointsPix, count):
     Return:
         Return all points, distributed evenly and in order.
     """
+    # Sort points using wandering salesperson.
+    print(pointsPix)
 
+    pointsPix = sortPoints(pointsPix)
+
+    print(pointsPix)
     pointsPix = np.asfarray(pointsPix)
     # Add extra point on end to complete spline.
     pointsPix = np.append(pointsPix, [pointsPix[0, :]], axis=0)
@@ -208,6 +214,41 @@ def distributePoints(pointsPix, count):
     endPointsPix = np.column_stack([xn, yn])[:-1]
 
     return endPointsPix
+
+
+def sortPoints(points):
+    """
+    Sort points using wandering salesperson technique. Start with a random point, then next point is the nearest
+    point by straight line distance.
+
+    Parameters
+    ----------
+    points: List of points (x, y) to be sorted.
+
+    Returns
+    -------
+    Ordered list of points.
+    """
+    # All points except the starting point.
+    temp_points = points[1:]
+    # Points in the correct order.
+    ordered_points = [points[0]]
+    while len(ordered_points) < len(points):
+        # Distance from current point to all other points.
+        distances = [math.dist(ordered_points[-1], j) for j in temp_points]
+        # Distances sorted from lowest (nearest) to highest (furthest).
+        sorted_distances = sorted(distances)
+
+        if len(sorted_distances) > 0:
+            smallest_distance = sorted_distances[0]
+            # Index of smallest distance in un-sorted list.
+            min_distance_index = distances.index(smallest_distance)
+
+            ordered_points.append(list(temp_points[min_distance_index]))
+            # Remove point that was just classified as nearest.
+            temp_points = [x for x in temp_points if x != ordered_points[-1]]
+
+    return ordered_points
 
 
 def interpolate(x, y, total_points):
