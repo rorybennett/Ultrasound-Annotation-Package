@@ -1,3 +1,5 @@
+import math
+
 import matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
@@ -18,6 +20,7 @@ class FrameCanvas(FigureCanvasQTAgg):
         # Testing for drag.
         self.downClick = False
         self.startDrag = False
+        self.downClickXY = []
         # Method to update display from calling class.
         self.updateDisplay = updateDisplay
         # Show Points/Masks/Boxes on MainWindow.
@@ -53,40 +56,41 @@ class FrameCanvas(FigureCanvasQTAgg):
         """Handle left down clicks in preparation for drag."""
         if self.linkedScan is not None and event.button == 1:
             self.downClick = True
-            displayPoint = [event.xdata, event.ydata]
+            dp = [event.xdata, event.ydata]
+            self.downClickXY = dp
             if self.prostateBoundingBox.isChecked():
-                self.linkedScan.updateBoxPoints(Scan.PROSTATE, Scan.BOX_START, displayPoint)
+                self.linkedScan.updateBoxPoints(Scan.PROSTATE, Scan.BOX_START, dp)
             elif self.bladderBoundingBox.isChecked():
-                self.linkedScan.updateBoxPoints(Scan.BLADDER, Scan.BOX_START, displayPoint)
+                self.linkedScan.updateBoxPoints(Scan.BLADDER, Scan.BOX_START, dp)
 
     def _axisMotionEvent(self, event):
         """Handle drag if down clicked and motion detected."""
-        displayPoint = [event.xdata, event.ydata]
-        if self.linkedScan is not None and self.downClick and displayPoint[0] is not None:
+        dp = [event.xdata, event.ydata]
+        if self.linkedScan is not None and self.downClick and dp[0] is not None and math.dist(dp, self.downClickXY) > 5:
             self.startDrag = True
 
             if self.prostateBoundingBox.isChecked():
-                self.linkedScan.updateBoxPoints(Scan.PROSTATE, Scan.BOX_DRAW, displayPoint)
+                self.linkedScan.updateBoxPoints(Scan.PROSTATE, Scan.BOX_DRAW, dp)
             elif self.bladderBoundingBox.isChecked():
-                self.linkedScan.updateBoxPoints(Scan.BLADDER, Scan.BOX_DRAW, displayPoint)
+                self.linkedScan.updateBoxPoints(Scan.BLADDER, Scan.BOX_DRAW, dp)
             self.updateDisplay()
 
     def _axisReleaseEvent(self, event):
         """Handle left releases on axis 1 and 2."""
-        displayPoint = [event.xdata, event.ydata]
-        if self.linkedScan is not None and displayPoint[0] is not None and self.downClick:
+        dp = [event.xdata, event.ydata]
+        if self.linkedScan is not None and dp[0] is not None and self.downClick:
             if not self.startDrag:
                 if event.button == 1:
-                    if self.prostatePoints.isChecked() and displayPoint[0] is not None:
-                        self.linkedScan.addOrRemovePoint(displayPoint, Scan.PROSTATE)
-                    elif self.bladderPoints.isChecked() and displayPoint[0] is not None:
-                        self.linkedScan.addOrRemovePoint(displayPoint, Scan.BLADDER)
+                    if self.prostatePoints.isChecked() and dp[0] is not None:
+                        self.linkedScan.addOrRemovePoint(dp, Scan.PROSTATE)
+                    elif self.bladderPoints.isChecked() and dp[0] is not None:
+                        self.linkedScan.addOrRemovePoint(dp, Scan.BLADDER)
             elif self.prostateBoundingBox.isChecked():
                 if event.button == 1:
-                    self.linkedScan.updateBoxPoints(Scan.PROSTATE, Scan.BOX_END, displayPoint)
+                    self.linkedScan.updateBoxPoints(Scan.PROSTATE, Scan.BOX_END, dp)
             elif self.bladderBoundingBox.isChecked():
                 if event.button == 1:
-                    self.linkedScan.updateBoxPoints(Scan.BLADDER, Scan.BOX_END, displayPoint)
+                    self.linkedScan.updateBoxPoints(Scan.BLADDER, Scan.BOX_END, dp)
             self.updateDisplay()
 
         self.startDrag = False
