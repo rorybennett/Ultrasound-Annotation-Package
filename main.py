@@ -517,6 +517,8 @@ class Main(QMainWindow):
                 self.scans[0].navigate(Scan.NAVIGATION['w'])
             elif event.key() == Qt.Key.Key_S:
                 self.scans[0].navigate(Scan.NAVIGATION['s'])
+            elif event.key() == Qt.Key.Key_N:
+                self._navigatePatients(-1, Scan.NEXT)
             elif self.buttons[0].itemAt(3).widget().isChecked() and event.key() == Qt.Key.Key_D:
                 self.toolbars[0].actions()[10].trigger()
             self._updateDisplay(0)
@@ -526,6 +528,8 @@ class Main(QMainWindow):
                 self.scans[1].navigate(Scan.NAVIGATION['w'])
             elif event.key() == Qt.Key.Key_S:
                 self.scans[1].navigate(Scan.NAVIGATION['s'])
+            elif event.key() == Qt.Key.Key_N:
+                self._navigatePatients(-1, Scan.NEXT)
             elif self.buttons[1].itemAt(3).widget().isChecked() and event.key() == Qt.Key.Key_D:
                 self.toolbars[1].actions()[10].trigger()
             self._updateDisplay(1)

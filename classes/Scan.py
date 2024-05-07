@@ -318,7 +318,7 @@ class Scan:
             for point in self.pointsProstate:
                 if self.frameNames[self.currentFrame - 1] == point[0]:
                     # If within radius of another point, remove that point.
-                    if su.pointInRadius(point[1:], pointPixel, 5):
+                    if su.pointInRadius(point[1:], pointPixel, 10):
                         self.pointsProstate.remove(point)
                         pointRemoved = True
                         break
