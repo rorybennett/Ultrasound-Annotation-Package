@@ -6,7 +6,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw
-from PyQt6.QtWidgets import QInputDialog, QWidget
+from PyQt6.QtWidgets import QWidget
 
 from classes import ExportUtil as eu, Utils
 from classes import Scan
@@ -146,9 +146,10 @@ class Export:
             except Exception as e:
                 print(f'Error creating YOLO {scanPlane} AUS data for patient {patient}.', e)
 
-    def exportnnUNetAUSData(self, scanPlane):
+    def exportnnUNetAUSData(self, scanPlane: str):
         """Export AUS frames for nn-Unet inference, either sagittal or transverse."""
         print(f'\tExporting {scanPlane} AUS frames for nn-UNet inference:', end=' ')
+        sp = scanPlane[0].lower()
         # Get Save prefix.
         dlg = ExportDialogs().nnUNetDialog(scanPlane)
         if not dlg:
@@ -196,7 +197,7 @@ class Export:
                     for frameNumber in framesWithPoints:
                         pMask = None
                         if prostate and pFrameNumbers is not None and frameNumber in pFrameNumbers:
-                            polygon = [(i[1], i[2]) for i in prostatePoints if i[0] == frameNumber]
+                            polygon = [[i[1], i[2]] for i in prostatePoints if i[0] == frameNumber]
                             polygon = [(i[0], i[1]) for i in Utils.distributePoints(polygon, len(polygon))]
                             frameShape = pFrames[pFrameNumbers.index(frameNumber)].shape
                             img = Image.new('L', (frameShape[1], frameShape[0]))
@@ -204,11 +205,11 @@ class Export:
                             pMask = np.array(img)
                         bMask = None
                         if bladder and bFrameNumbers is not None and frameNumber in bFrameNumbers:
-                            polygon = [(i[1], i[2]) for i in bladderPoints if i[0] == frameNumber]
+                            polygon = [[i[1], i[2]] for i in prostatePoints if i[0] == frameNumber]
                             polygon = [(i[0], i[1]) for i in Utils.distributePoints(polygon, len(polygon))]
                             frameShape = bFrames[bFrameNumbers.index(frameNumber)].shape
                             img = Image.new('L', (frameShape[1], frameShape[0]))
-                            ImageDraw.Draw(img).polygon(polygon, fill=2 if pMask else 1)
+                            ImageDraw.Draw(img).polygon(polygon, fill=2 if pMask is not None else 1)
                             bMask = np.array(img)
 
                         # Combine masks and make overlaps only equal to prostate (prostate takes precedence).
@@ -221,8 +222,8 @@ class Export:
                         else:
                             finalFrame = bFrames[bFrameNumbers.index(frameNumber)]
 
-                        cv2.imwrite(f'{imagesPath}/t_P{patient}F{frameNumber}_0000.png', finalFrame)
-                        cv2.imwrite(f'{labelsPath}/t_P{patient}F{frameNumber}.png', finalMask)
+                        cv2.imwrite(f'{imagesPath}/{sp}_P{patient}F{frameNumber}_0000.png', finalFrame)
+                        cv2.imwrite(f'{labelsPath}/{sp}_P{patient}F{frameNumber}.png', finalMask)
                     print('Complete.')
             except WindowsError as e:
                 print(f'Error creating nnUNet {scanPlane} AUS data for patient {patient}.', e)

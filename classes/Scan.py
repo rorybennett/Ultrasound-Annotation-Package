@@ -301,7 +301,7 @@ class Scan:
             else:
                 self.boxBladder.append([frameName, pointPixel[0], pointPixel[1], pointPixel[0], pointPixel[1]])
 
-    def addOrRemovePoint(self, pointDisplay: list, prostateBladder):
+    def addOrRemovePoint(self, pointDisplay: list, prostateBladder, deleteRadius=10):
         """
         Add or remove a point to/from self.pointsProstate or self.pointsBladder. Point data is saved in pixel values.
         If the new point is within a radius of an old point, the old point is removed.
@@ -309,6 +309,7 @@ class Scan:
         Args:
             pointDisplay: x/width-, and y/height-coordinates returned by the canvas elements' event.
             prostateBladder: Add or remove points to either prostate points or bladder points.
+            deleteRadius: Points within this radius will be deleted.
         """
         pointPixel = su.displayToPixels(pointDisplay, self.frames[self.currentFrame - 1].shape, self.displayDimensions)
 
@@ -318,7 +319,7 @@ class Scan:
             for point in self.pointsProstate:
                 if self.frameNames[self.currentFrame - 1] == point[0]:
                     # If within radius of another point, remove that point.
-                    if su.pointInRadius(point[1:], pointPixel, 10):
+                    if su.pointInRadius(point[1:], pointPixel, deleteRadius):
                         self.pointsProstate.remove(point)
                         pointRemoved = True
                         break

@@ -164,4 +164,4 @@ class FrameCanvas(FigureCanvasQTAgg):
         # Save points.
         for pointPix in endPointsPix:
             pointDisplay = su.pixelsToDisplay([pointPix[0], pointPix[1]], fd, self.linkedScan.displayDimensions)
-            self.linkedScan.addOrRemovePoint(pointDisplay, prostateBladder)
+            self.linkedScan.addOrRemovePoint(pointDisplay, prostateBladder, 0)
