@@ -35,6 +35,14 @@ def creatennUAUSTrainingDirs(scanPlane: str, saveName: str, exportName: str):
         return False
 
 
+def getYOLOMasks(labels, mask):
+    for l in reversed(labels):
+        if len(l) > 1:
+            mask[l[2]:l[4], l[1]:l[3]] = l[0] + 1
+
+    return mask
+
+
 def getYOLOBoxes(points, frameShape):
     """
     Convert points (top_left, bottom_right) of a rectangle into normalised [centre_x, centre_y, width, height].
