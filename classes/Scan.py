@@ -225,13 +225,19 @@ class Scan:
         :return: displayDimensions : Size of the canvas that will be used to display the frame.
         """
         if self.window:
-            windowDimensions = [self.window.centralWidget().size().width(), self.window.centralWidget().size().height]
+            windowDimensions = [self.window.centralWidget().size().width(), self.window.centralWidget().size().height()]
 
             width = windowDimensions[0] * 0.48  # Width of frame is 48% of total screen width.
 
             ratio = width / self.frames[0].shape[1]
 
             height = self.frames[0].shape[0] * ratio  # Maintain aspect ratio of frame.
+
+            # # If image is too high, then height must be used as the limiting dimension.
+            if height > windowDimensions[1] * 0.8:
+                height = windowDimensions[1] * 0.8
+                ratio = height / self.frames[0].shape[0]
+                width = self.frames[0].shape[1] * ratio
 
             displayDimensions = [int(width), int(height)]
 
@@ -535,7 +541,7 @@ class Scan:
                     for row in prostateData:
                         framesWithPoints.append(row[0])
                 framesWithPoints = sorted(set(framesWithPoints))
-                if self.scanPlane == PLANE_TRANSVERSE:
+                if self.scanPlane == PLANE_TRANSVERSE or len(framesWithPoints) == 1:
                     frame = framesWithPoints[0]
                 else:
                     frame = framesWithPoints[2]
