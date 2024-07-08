@@ -71,8 +71,8 @@ class Main(QMainWindow):
             self.layouts[i].setAlignment(Qt.AlignmentFlag.AlignHCenter)
             self.layouts[i].addLayout(self.titles[i])
             self.layouts[i].addLayout(self.buttons[i])
-            self.layouts[i].addWidget(self.canvases[i])
-            self.layouts[i].addWidget(self.navBars[i])
+            self.layouts[i].addWidget(self.canvases[i], alignment=Qt.AlignmentFlag.AlignHCenter)
+            self.layouts[i].addWidget(self.navBars[i], alignment=Qt.AlignmentFlag.AlignHCenter)
             self.layouts[i].addLayout(self.boxes[i])
             self.layouts[i].addItem(Utils.spacer)
         # Add left and right to mainLayout.
