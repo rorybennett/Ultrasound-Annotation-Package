@@ -398,8 +398,16 @@ class Main(QMainWindow):
             for i in range(2):
                 if self.scans[i].loaded:
                     patient, scanType, scanPlane, scanNumber, _ = self.scans[i].getScanDetails()
+
+                    if patient.startswith('A'):
+                        num = int(patient.split('A')[-1])
+                        newPatient = f'A{num - 1 if direction == Scan.PREVIOUS else num + 1}'
+                    else:
+                        newPatient = f'{int(patient) - 1 if direction == Scan.PREVIOUS else int(patient) + 1}'
+
+                    print(f'Patient: {patient}')
                     nextScanPath = (f'{self.scansPath}/'
-                                    f'{int(patient) - 1 if direction == Scan.PREVIOUS else int(patient) + 1}/'
+                                    f'{newPatient}/'
                                     f'{scanType}/{scanPlane}/{scanNumber}')
                     self._loadScan(i, nextScanPath)
 
@@ -522,6 +530,8 @@ class Main(QMainWindow):
                 self.scans[0].navigate(Scan.NAVIGATION['s'])
             elif event.key() == Qt.Key.Key_N:
                 self._navigatePatients(-1, Scan.NEXT)
+            elif event.key() == Qt.Key.Key_P:
+                self._navigatePatients(-1, Scan.PREVIOUS)
             elif self.buttons[0].itemAt(3).widget().isChecked() and event.key() == Qt.Key.Key_D:
                 self.toolbars[0].actions()[10].trigger()
             self._updateDisplay(0)
@@ -533,6 +543,8 @@ class Main(QMainWindow):
                 self.scans[1].navigate(Scan.NAVIGATION['s'])
             elif event.key() == Qt.Key.Key_N:
                 self._navigatePatients(-1, Scan.NEXT)
+            elif event.key() == Qt.Key.Key_P:
+                self._navigatePatients(-1, Scan.PREVIOUS)
             elif self.buttons[1].itemAt(3).widget().isChecked() and event.key() == Qt.Key.Key_D:
                 self.toolbars[1].actions()[10].trigger()
             self._updateDisplay(1)
