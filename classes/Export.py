@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw
 from PyQt6.QtWidgets import QWidget
+from natsort import natsort
 
 from classes import ExportUtil as eu, Utils
 from classes import Scan
@@ -22,7 +23,7 @@ class Export:
     def __init__(self, scansPath: str):
         self.scansPath = scansPath
         self.totalPatients = eu.getTotalPatients(self.scansPath)
-        self.patients = [f'{x}' for x in range(1, self.totalPatients + 1)]
+        self.patients = natsort.natsorted(os.listdir(self.scansPath))
 
     @staticmethod
     def openExportDirectory(basedir):

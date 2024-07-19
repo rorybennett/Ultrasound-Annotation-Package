@@ -155,6 +155,35 @@ def drawBoxOnAxis(axis: Axes, points: list, fd: list, dd: list, color):
         axis.add_patch(rect)
 
 
+def flipFrames(framePath, direction):
+    """
+    Flip the frames in the given directory either the Left-Right direction or the Top-Down direction.
+
+    Parameters
+    ----------
+    framePath: Path to frames.
+    direction: Direction (LR or UD).
+
+    Returns
+    -------
+    True if frames flipped, else False.
+    """
+    try:
+        files = natsorted(os.listdir(framePath))
+
+        for f in files:
+            if f.__contains__('.png'):
+                # Read frame.
+                img = cv2.imread(f'{framePath}/{f}', cv2.IMREAD_UNCHANGED)
+                # Flip frame.
+                imgFlipped = np.flip(img, axis=0 if direction == 'UD' else 1)
+                # Save frame.
+                cv2.imwrite(f'{framePath}/{f}', imgFlipped)
+        return True
+    except Exception:
+        return False
+
+
 def getBoundingBoxStartAndEnd(points):
     """
     Find the start and end of the bounding box, assuming top left is start and bottom right is end. This does not work

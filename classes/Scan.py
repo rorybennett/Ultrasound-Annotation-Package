@@ -307,6 +307,19 @@ class Scan:
             else:
                 self.boxBladder.append([frameName, pointPixel[0], pointPixel[1], pointPixel[0], pointPixel[1]])
 
+    def flipLR(self):
+        """
+        Flip the images in the Scan in the Left-Right dimension. This is for the IPV Scans as some of them have the
+        prostate on the left while the patient data always has it on the right.
+
+        Returns
+        -------
+        True if frames flipped without error, else False.
+        """
+        # Flip images.
+        if not su.flipFrames(self.path, 'LR'):
+            return False
+
     def addOrRemovePoint(self, pointDisplay: list, prostateBladder, deleteRadius=10):
         """
         Add or remove a point to/from self.pointsProstate or self.pointsBladder. Point data is saved in pixel values.

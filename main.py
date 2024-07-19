@@ -153,6 +153,10 @@ class Main(QMainWindow):
         menuExtrasPrevious.addAction(f'Scan 1', lambda: self._navigatePatients(0, Scan.PREVIOUS)).setDisabled(True)
         menuExtrasPrevious.addAction(f'Scan 2', lambda: self._navigatePatients(1, Scan.PREVIOUS)).setDisabled(True)
         menuExtrasPrevious.addAction(f'Patient', lambda: self._navigatePatients(-1, Scan.PREVIOUS)).setDisabled(True)
+        self.menuExtras.addSeparator()
+        menuExtrasFlipLR = self.menuExtras.addMenu("Flip LR")
+        menuExtrasFlipLR.addAction(f'Scan 1', lambda: self._flipScanLR(0)).setDisabled(True)
+        menuExtrasFlipLR.addAction(f'Scan 2', lambda: self._flipScanLR(1)).setDisabled(True)
 
     def _createToolBars(self, scan):
         """Create left and right toolbars (mirrored)."""
@@ -320,6 +324,12 @@ class Main(QMainWindow):
             self.scans[scan].navigate(self.scans[scan].frameAtTS1Centre())
         self._updateDisplay(scan)
 
+    def _flipScanLR(self, scan: int):
+        """Flip the Scan LR (for IPV Scans)"""
+        self.scans[scan].flipLR()
+
+        self._loadScan(scan, self.scans[scan].path)
+
     def _updateTitle(self, scan: int):
         """Update title information."""
         patient, scanType, scanPlane, scanNumber, scanFrames = self.scans[scan].getScanDetails()
@@ -468,11 +478,12 @@ class Main(QMainWindow):
             self.menuExtras.menuInAction(self.menuExtras.actions()[3]).actions()[2].setEnabled(True)
             self.menuExtras.menuInAction(self.menuExtras.actions()[4]).actions()[scan].setEnabled(True)
             self.menuExtras.menuInAction(self.menuExtras.actions()[4]).actions()[2].setEnabled(True)
+            self.menuExtras.menuInAction(self.menuExtras.actions()[6]).actions()[scan].setEnabled(True)
 
             self._updateTitle(scan)
             self._updateDisplay(scan, new=True)
         except Exception as e:
-            ErrorDialog(self, 'Error loading Scan data.', e)
+            ErrorDialog(self, 'Error loading Scan data.', e, __file__)
 
     def _updateDisplay(self, scan: int, new=False):
         """Update the shown frame and position on plot."""
