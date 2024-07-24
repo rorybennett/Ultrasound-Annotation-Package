@@ -155,6 +155,69 @@ def drawBoxOnAxis(axis: Axes, points: list, fd: list, dd: list, color):
         axis.add_patch(rect)
 
 
+def flipSaveData(savePath, widthHeight, direction):
+    """
+    Flip the points and boxes in the PointData.json file of the Save Data directories.
+
+    Parameters
+    ----------
+    savePath: Path to Save Data directory.
+    widthHeight: Width of frame for LR, or height of frame for UD.
+    direction: Direction (LR or UD).
+    """
+    for saveDir in os.listdir(savePath):
+        with open(f'{savePath}/{saveDir}/PointData.json', 'r') as file:
+            pointData = json.load(file)
+
+        pointData['Prostate'] = flipPoints(widthHeight, pointData['Prostate'], 'LR')
+        pointData['Bladder'] = flipPoints(widthHeight, pointData['Bladder'], 'LR')
+        pointData['ProstateBox'] = flipBoxes(widthHeight, pointData['ProstateBox'], 'LR')
+        pointData['BladderBox'] = flipBoxes(widthHeight, pointData['BladderBox'], 'LR')
+
+        with open(f'{savePath}/{saveDir}/PointData.json', 'w') as newFile:
+            json.dump(pointData, newFile, indent=4)
+
+
+
+
+def flipPoints(widthHeight, points, direction):
+    """
+    Flip the points in the direction given.
+
+    Parameters
+    ----------
+    widthHeight: Width of frame for LR, or height of frame for UD.
+    points: Points to flip, with frame number.
+    direction: Direction (LR or UD).
+
+    Returns
+    -------
+    Flipped points.
+    """
+    for i, point in enumerate(points):
+        points[i] = [point[0], widthHeight - point[1], point[2]]
+    return points
+
+
+def flipBoxes(widthHeight, boxes, direction):
+    """
+    Flip the boxes in the direction given.
+
+    Parameters
+    ----------
+    widthHeight: Width of frame for LR, or height of frame for UD.
+    boxes: boxes to flip, with frame number.
+    direction: Direction (LR or UD).
+
+    Returns
+    -------
+    Flipped boxes.
+    """
+    for i, box in enumerate(boxes):
+        boxes[i] = [box[0], widthHeight - box[3], box[2], widthHeight - box[1], box[4]]
+    return boxes
+
+
 def flipFrames(framePath, direction):
     """
     Flip the frames in the given directory either the Left-Right direction or the Top-Down direction.

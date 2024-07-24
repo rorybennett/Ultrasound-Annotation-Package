@@ -2,12 +2,14 @@
 
 """Scan class with variables and methods for working with a single scan."""
 import json
+import os
 import shutil
 import subprocess
 import time
 from pathlib import Path
 
 import cv2
+import natsort
 import numpy as np
 from PyQt6.QtWidgets import QMainWindow
 from pyquaternion import Quaternion
@@ -319,6 +321,16 @@ class Scan:
         # Flip images.
         if not su.flipFrames(self.path, 'LR'):
             return False
+        # Flip Point and Box data.
+        width = self.frameShape[1]
+        self.pointsProstate = su.flipPoints(width, self.pointsProstate, 'LR')
+        self.pointsBladder = su.flipPoints(width, self.pointsBladder, 'LR')
+        self.boxProstate = su.flipBoxes(width, self.boxProstate, 'LR')
+        self.boxBladder = su.flipBoxes(width, self.boxBladder, 'LR')
+        self.__saveToDisk(SAVE_ALL)
+        # Flip save data.
+        su.flipSaveData(f'{self.path}/Save Data', width, 'LR')
+
 
     def addOrRemovePoint(self, pointDisplay: list, prostateBladder, deleteRadius=10):
         """
