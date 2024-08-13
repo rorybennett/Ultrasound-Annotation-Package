@@ -189,6 +189,16 @@ class Main(QMainWindow):
         radioGroup.addButton(prostateBox)
         radioGroup.addButton(bladderBox)
 
+        generateProstateBox = QPushButton("Generate\nProstate\nBox")
+        generateProstateBox.setToolTip("Generate prostate bounding box using prostate points.")
+        generateProstateBox.clicked.connect(lambda: self._generateBox(scan, Scan.PROSTATE_BOX))
+        toolbar.addWidget(generateProstateBox)
+
+        generateBladderBox = QPushButton("Generate\nBladder\nBox")
+        generateBladderBox.setToolTip("Generate bladder bounding box using bladder points.")
+        generateBladderBox.clicked.connect(lambda: self._generateBox(scan, Scan.BLADDER_BOX))
+        toolbar.addWidget(generateBladderBox)
+
         copyPrevious = QAction(QIcon(f"{basedir}/res/copy_previous.png"), "Copy previous frame points.", self)
         copyPrevious.triggered.connect(lambda: self._copyFramePoints(scan, Scan.PREVIOUS))
         toolbar.addAction(copyPrevious)
@@ -303,6 +313,11 @@ class Main(QMainWindow):
         layout.addWidget(bladderBox)
 
         return layout
+
+    def _generateBox(self, scan: int, prostateBladder: str):
+        """Use the points on the frame to generate a bounding box."""
+        self.scans[scan].generateBox(prostateBladder)
+        self._updateDisplay(scan)
 
     def _distributePoints(self, scan: int, count: int):
         """Distribute points along a generated spline."""

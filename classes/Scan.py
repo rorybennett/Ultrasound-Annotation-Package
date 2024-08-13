@@ -2,14 +2,12 @@
 
 """Scan class with variables and methods for working with a single scan."""
 import json
-import os
 import shutil
 import subprocess
 import time
 from pathlib import Path
 
 import cv2
-import natsort
 import numpy as np
 from PyQt6.QtWidgets import QMainWindow
 from pyquaternion import Quaternion
@@ -309,6 +307,39 @@ class Scan:
             else:
                 self.boxBladder.append([frameName, pointPixel[0], pointPixel[1], pointPixel[0], pointPixel[1]])
 
+    def generateBox(self, prostateBladder):
+        """
+        Generate either a prostate or bladder bounding box using the points available on the current frame. The
+        boundaries of the frame are made 2 pixels wider than the rounded limits of the edges determined
+        using the points on the current frame.
+
+        Parameters
+        ----------
+        prostateBladder: Prostate or Bladder box.
+        """
+        points = self.getPointsOnFrame(PROSTATE if prostateBladder == PROSTATE_BOX else BLADDER,
+                                       self.currentFrame - 1)
+
+        if len(points) > 4:
+            l = max([min(points, key=lambda coord: coord[0])[0] - 5, 1])
+            t = max([min(points, key=lambda coord: coord[1])[1] - 5, 1])
+            r = min([max(points, key=lambda coord: coord[0])[0] + 5, self.frameShape[1] - 2])
+            b = min([max(points, key=lambda coord: coord[1])[1] + 5, self.frameShape[0] - 2])
+            frameName = self.frameNames[self.currentFrame - 1]
+            index = su.getIndexOfFrameInBoxPoints(
+                self.boxProstate if prostateBladder == PROSTATE_BOX else self.boxBladder, frameName)
+            if prostateBladder == PROSTATE_BOX:
+                if index > -1:
+                    self.boxProstate[index] = [frameName, l, t, r, b]
+                else:
+                    self.boxProstate.append([frameName, l, t, r, b])
+            else:
+                if index > -1:
+                    self.boxBladder[index] = [frameName, l, t, r, b]
+                else:
+                    self.boxBladder.append([frameName, l, t, r, b])
+            self.__saveToDisk(SAVE_POINT_DATA)
+
     def flipLR(self):
         """
         Flip the images in the Scan in the Left-Right dimension. This is for the IPV Scans as some of them have the
@@ -330,7 +361,6 @@ class Scan:
         self.__saveToDisk(SAVE_ALL)
         # Flip save data.
         su.flipSaveData(f'{self.path}/Save Data', width, 'LR')
-
 
     def addOrRemovePoint(self, pointDisplay: list, prostateBladder, deleteRadius=10):
         """
