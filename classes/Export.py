@@ -148,7 +148,7 @@ class Export:
                 print(f'Error creating YOLO {scanPlane} AUS data for patient {patient}.', e)
 
     def exportYOLOfornnUNetAUS(self, scanPlane: str):
-        """Export YOLO masks for use in nnUNet inference"""
+        """Export YOLO masks for use in nnUNet inference, does not include nnUNet label mask."""
         print(f'\tExporting {scanPlane} AUS frames for nn-UNet + YOLO inference:', end=' ')
         sp = scanPlane[0].lower()
         # Get Save prefix.
