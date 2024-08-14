@@ -560,8 +560,8 @@ class Main(QMainWindow):
                 self._navigatePatients(-1, Scan.PREVIOUS)
             elif event.key() == Qt.Key.Key_F:
                 self._flipScanLR(0)
-            elif self.buttons[0].itemAt(3).widget().isChecked() and event.key() == Qt.Key.Key_D:
-                self.toolbars[0].actions()[10].trigger()
+            elif event.key() == Qt.Key.Key_D:
+                self.toolbars[0].actions()[12].trigger()
             self._updateDisplay(0)
 
         elif self.scans[1].loaded and self.canvases[1].underMouse():
@@ -575,8 +575,8 @@ class Main(QMainWindow):
                 self._navigatePatients(-1, Scan.PREVIOUS)
             elif event.key() == Qt.Key.Key_F:
                 self._flipScanLR(1)
-            elif self.buttons[1].itemAt(3).widget().isChecked() and event.key() == Qt.Key.Key_D:
-                self.toolbars[1].actions()[10].trigger()
+            elif event.key() == Qt.Key.Key_D:
+                self.toolbars[1].actions()[12].trigger()
             self._updateDisplay(1)
 
     def contextMenuEvent(self, event):
