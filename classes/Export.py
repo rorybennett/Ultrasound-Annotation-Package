@@ -71,6 +71,29 @@ class Export:
         print(f'\tExporting completed.')
         return
 
+    def exportIMUData(self):
+        """Export IMU data.txt file of prospective patients."""
+        print(f'\tExporting IMU data from data.txt file...')
+        scanTypes = ['AUS', 'PUS']
+        scanPlanes = ['Transverse', 'Sagittal']
+        savePath = eu.createIMUExportDir()
+        if not savePath:
+            return
+        # Loop through prospective patients.
+        for patient in self.patients[:19]:
+            for scanType in scanTypes:
+                for scanPlane in scanPlanes:
+                    src = f'C:/Users/roryb/GDOffline/Research/Scans/{patient}/{scanType}/{scanPlane}/1/data.txt'
+                    try:
+                        dst = f'{savePath}/{patient}/{scanType}/{scanPlane}/1'
+                        if not os.path.exists(dst):
+                            Path(dst).mkdir(parents=True, exist_ok=False)
+                        shutil.copyfile(src, f'{dst}/data.txt')
+                    except FileNotFoundError as e:
+                        print(f'{src} error: {e}')
+        print(f'\tExporting completed.')
+        return
+
     def exportYOLOAUSData(self, scanPlane):
         """Export AUS frames for YOLO inference."""
         print(f'\tExporting {scanPlane} AUS frames for YOLO inference:', end=' ')
@@ -161,6 +184,7 @@ class Export:
         imagesPath, labelsPath = eu.creatennUAUSTrainingDirs(scanPlane, prefix, exportName)
         print(imagesPath)
         # Create training data from each patient.
+
         for patient in self.patients:
             try:
                 print(f'\t\tPatient {patient}...', end=' ')
@@ -283,7 +307,7 @@ class Export:
                             pMask = np.array(img)
                         bMask = None
                         if bladder and bFrameNumbers is not None and frameNumber in bFrameNumbers:
-                            polygon = [[i[1], i[2]] for i in prostatePoints if i[0] == frameNumber]
+                            polygon = [[i[1], i[2]] for i in bladderPoints if i[0] == frameNumber]
                             polygon = [(i[0], i[1]) for i in Utils.distributePoints(polygon, len(polygon))]
                             frameShape = bFrames[bFrameNumbers.index(frameNumber)].shape
                             img = Image.new('L', (frameShape[1], frameShape[0]))

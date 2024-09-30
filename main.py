@@ -135,6 +135,7 @@ class Main(QMainWindow):
         menuExportnnUNetYOLO.addAction('Transverse', lambda: self.export.exportYOLOfornnUNetAUS(Scan.PLANE_TRANSVERSE))
         menuExportnnUNetYOLO.addAction('Sagittal', lambda: self.export.exportYOLOfornnUNetAUS(Scan.PLANE_SAGITTAL))
         self.menuExport.addAction('Save Data', lambda: self.export.exportAllSaveData())
+        self.menuExport.addAction('IMU Data', lambda: self.export.exportIMUData())
         self.menuExport.addSeparator()
         self.menuExport.addAction('Open Export Directory', lambda: self.export.openExportDirectory(basedir))
         # Reset data menu.

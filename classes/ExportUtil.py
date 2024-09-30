@@ -38,7 +38,8 @@ def creatennUAUSTrainingDirs(scanPlane: str, saveName: str, exportName: str):
 def getYOLOMasks(labels, mask):
     for l in reversed(labels):
         if len(l) > 1:
-            mask[l[2]:l[4], l[1]:l[3]] = l[0] + 1
+            print(l)
+            mask[l[2]:l[4] + 1, l[1]:l[3] + 1] = l[0] + 1
 
     return mask
 
@@ -255,6 +256,24 @@ def getFramesWithPointsOrBoxes(scanPath, pointData):
         frameNumbers.append(row.split('.')[0])
 
     return frames, frameNumbers
+
+
+def createIMUExportDir():
+    """
+    Create a directory where all IMU data.txt files can be exported to for each patient.
+
+    Returns
+    -------
+        path: Path (str) to newly created directory, else False if there was a problem.
+    """
+    try:
+        path = (f'C:/Users/roryb/GDOffline/Research/Coding/Python/Ultrasound Annotation Package/'
+                f'Export/IMU Data Exports/{int(time.time())}_imu_data_export')
+        Path(f'{path}').mkdir(parents=True, exist_ok=False)
+    except Exception as e:
+        ErrorDialog(None, f'Error creating IMU Data Export Directory.', e)
+        return False
+    return path
 
 
 def createSaveDataExportDir():
