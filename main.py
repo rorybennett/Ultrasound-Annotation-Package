@@ -431,7 +431,6 @@ class Main(QMainWindow):
                     else:
                         newPatient = f'{int(patient) - 1 if direction == Scan.PREVIOUS else int(patient) + 1}'
 
-                    print(f'Patient: {patient}')
                     nextScanPath = (f'{self.scansPath}/'
                                     f'{newPatient}/'
                                     f'{scanType}/{scanPlane}/{scanNumber}')

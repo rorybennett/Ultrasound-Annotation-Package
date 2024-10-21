@@ -1,14 +1,9 @@
-/pyqt_practice_files/
-/Scans/
-/IPV/Inference/
-/IPV/Models/
 /Export/
-!/classes/Testing.py
+/build/
 
-!/dist/
-!/MainWindow.spec
-!/build/
+/dist/
+/MainWindow.spec
 
 
-!/main.spec
-!/venv/
+/main.spec
+/.venv/
