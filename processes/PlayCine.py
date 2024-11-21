@@ -1,5 +1,7 @@
 # PlayCine.py
-"""Play a Cine of the given Scan."""
+"""
+Play a Cine of the given Scan in a separate process. The Cine loops through the frames.
+"""
 import multiprocessing
 import sys
 import time
