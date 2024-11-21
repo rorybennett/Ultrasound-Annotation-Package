@@ -1,9 +1,13 @@
+"""
+Error Dialog that is used throughout the application. Largely used for debugging, but also used for alerts.
+"""
+
 from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QLabel
 
 
 class ErrorDialog(QDialog):
     """
-    Custom dialog to show an error message with the error below the message.
+    Custom dialog to show an error message with the exact error below the message.
     """
 
     def __init__(self, parent=None, message=None, e=None, f_name=None):
