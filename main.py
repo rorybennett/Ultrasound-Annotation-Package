@@ -1,6 +1,12 @@
 # main.py
 
-"""Main Window for viewing and annotating ultrasound scans."""
+"""
+Main Window for viewing and annotating ultrasound scans.
+
+AUS and PUS scans can be viewed and annotated, with both sagittal and transverse planes viewed side-by-side.
+
+Annotations can be saved, reloaded, and exported for specific machine learning models.
+"""
 import multiprocessing
 import os
 import sys
