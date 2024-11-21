@@ -1,3 +1,7 @@
+"""
+Utils used by the Scan class.
+"""
+
 import csv
 import json
 import math
@@ -16,7 +20,7 @@ from natsort import natsorted
 from numpy.lib.stride_tricks import sliding_window_view
 from pyquaternion import Quaternion
 
-# Rotates the '+' marker by 45 degrees.
+# Rotates the '+' marker by 45 degrees. Could probably use 'x' instead.
 m = MarkerStyle('+')
 m._transform.rotate_deg(45)
 
@@ -176,8 +180,6 @@ def flipSaveData(savePath, widthHeight, direction):
 
         with open(f'{savePath}/{saveDir}/PointData.json', 'w') as newFile:
             json.dump(pointData, newFile, indent=4)
-
-
 
 
 def flipPoints(widthHeight, points, direction):
