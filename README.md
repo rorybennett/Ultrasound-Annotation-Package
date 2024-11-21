@@ -5,7 +5,7 @@ was developed as part of me PhD project. Why not just use an already available a
 Good question! Unfortunately there is a poor excuse of an answer: I was concerned about 
 patient data privacy. The university made such a stink about data privacy that I thought it
 best that no one else "saw" my patient data. This was a mistake, I should have just used
-3D-Slicer o something similar. This application was not an entire waste of time, much was learnt on 
+3D-Slicer or something similar. This application was not an entire waste of time, much was learnt on 
 the way, and overall it functions fairly well. Some key learnings that took place:
 1. Dealing with memory leaks, e.g.: Scrolling through frames resulted in a memory leak, but all that
 was needed was to clear the axis before plotting the next frame. Crazy.
