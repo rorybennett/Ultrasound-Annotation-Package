@@ -1,3 +1,6 @@
+"""
+Add extra files to IPV folders to enable usage by this application.
+"""
 import os
 import shutil
 

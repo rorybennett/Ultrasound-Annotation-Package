@@ -1,3 +1,6 @@
+"""
+I think this was for converting from mm to pixel coordinates. All SaveData files would have been changed.
+"""
 import json
 from pathlib import Path
 

@@ -1,3 +1,6 @@
+"""
+Convert PointData.txt to PointData.json.
+"""
 import json
 import os
 from pathlib import Path

@@ -1,3 +1,6 @@
+"""
+Repair bullet data, at some point there must have been a problem.
+"""
 import json
 from pathlib import Path
 
