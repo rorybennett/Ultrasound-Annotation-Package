@@ -1,3 +1,15 @@
+"""
+Class for all exports:
+    1. Exporting data in IPV format. This may be out of date.
+    2. All SaveData (for backup purposes).
+    3. IMU Data.
+    4. Exporting data in YOLO format.
+    5. Exporting data in YOLO format for use with nn-UNet.
+
+This worked at one point, but not all of it may function 100% at the moment. Currently, only AUS export is possible.
+
+Export are based on data in the Save Data directory, and not what is currently loaded.
+"""
 import os
 import shutil
 import subprocess
