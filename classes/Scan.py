@@ -1,6 +1,9 @@
 # Scan.py
 
-"""Scan class with variables and methods for working with a single scan."""
+"""
+Scan class with variables and methods for working with a single scan. Majority of the functionality of the application
+is here.
+"""
 import json
 import shutil
 import subprocess
