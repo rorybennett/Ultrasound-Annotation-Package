@@ -1,3 +1,6 @@
+"""
+Special dialogs for the exporting class.
+"""
 from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QLabel, QFormLayout, QLineEdit, QCheckBox
 
 
