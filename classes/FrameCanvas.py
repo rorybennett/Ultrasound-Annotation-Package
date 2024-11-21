@@ -1,3 +1,8 @@
+"""
+Custom canvas class that allows for annotating the ultrasound images using the matplotlib axes.
+
+Handles all events, updating of the images, and some special functions relating to annotations.
+"""
 import math
 
 import matplotlib
