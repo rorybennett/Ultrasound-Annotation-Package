@@ -1,3 +1,6 @@
+"""
+Util functions used by the Export.py class.
+"""
 import json
 import os
 import time
@@ -36,6 +39,19 @@ def creatennUAUSTrainingDirs(scanPlane: str, saveName: str, exportName: str):
 
 
 def getYOLOMasks(labels, mask):
+    """
+    Create a bounding box mask image. This is probably not the best way, as this was a first attempt and did well
+    enough. Many iterations later in other functions should be used to update this one day.
+
+    Parameters
+    ----------
+    labels: Box corners and label value (value, x1, y1, x2, y2)
+    mask: Comes in as an empty mask image, then box masks are added.
+
+    Returns
+    -------
+    Image of box masks.
+    """
     for l in reversed(labels):
         if len(l) > 1:
             print(l)
