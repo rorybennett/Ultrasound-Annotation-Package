@@ -612,6 +612,21 @@ def checkSaveDataDirectory(scanPath: str) -> Path:
 
     return saveDataPath
 
+def calculateCentreOfMass(points: list):
+    """
+    Calculate the centre of mass given a list of points in 2D. Assumes equal weighting and points are used as is.
+
+    Parameters
+    ----------
+    points: List of points in (x, y) coordinates.
+
+    Returns
+    -------
+    Centre of mass in (x, y) coordinates.
+    """
+    com = [sum(p[0] for p in points)/len(points), sum(p[1] for p in points)/len(points)]
+
+    return com
 
 def estimateSlopeStartAndEnd(axisAngles: list):
     """

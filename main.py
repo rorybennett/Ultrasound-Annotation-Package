@@ -164,6 +164,10 @@ class Main(QMainWindow):
         menuExtrasFlipLR = self.menuExtras.addMenu("Flip LR")
         menuExtrasFlipLR.addAction(f'Scan 1', lambda: self._flipScanLR(0)).setDisabled(True)
         menuExtrasFlipLR.addAction(f'Scan 2', lambda: self._flipScanLR(1)).setDisabled(True)
+        self.menuExtras.addSeparator()
+        menuExtrasCalculateSI = self.menuExtras.addMenu('Calculate SI')
+        menuExtrasCalculateSI.addAction(f'Scan 1', lambda: self._calculateSI(0)).setDisabled(True)
+        menuExtrasCalculateSI.addAction(f'Scan 2', lambda: self._calculateSI(1)).setDisabled(True)
 
     def _createToolBars(self, scan):
         """Create left and right toolbars (mirrored)."""
@@ -320,6 +324,10 @@ class Main(QMainWindow):
         layout.addWidget(bladderBox)
 
         return layout
+
+    def _calculateSI(self, scan: int):
+        """Use the points on the frame to estimate SI of the ellipse equation."""
+        self.scans[scan].calculateSI()
 
     def _generateBox(self, scan: int, prostateBladder: str):
         """Use the points on the frame to generate a bounding box."""

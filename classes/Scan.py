@@ -172,7 +172,8 @@ class Scan:
 
     def getPointsOnFrame(self, prostateBladder, position=None):
         """
-        Return a list of prostate points on the frame at 'position'. If position is None, use the current frame.
+        Return a list of points (prostate or bladder) on the frame at 'position'. If position is None, use the
+        current frame.
 
         :param prostateBladder: Get either prostate or bladder points.
         :param position: Index of frame.
@@ -731,6 +732,15 @@ class Scan:
                 count = sum(1 for p in self.pointsBladder if p[0] == self.frameNames[self.currentFrame - 1])
 
         return count
+
+    def calculateSI(self):
+        """
+        Estimate the SI measurement of the ellipse equation. SI is taken on the sagittal plane, but no check is done
+        to ensure the correct plane is being considered. User must just be aware.
+        """
+        bladderPoints = self.getPointsOnFrame(BLADDER)
+        bladderCoM = su.calculateCentreOfMass(bladderPoints)
+
 
     def printBulletDimensions(self):
         """
