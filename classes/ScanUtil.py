@@ -541,7 +541,6 @@ def drawSIEstimateData(axis, SIData, fd, dd):
     SIData: Dictionary of data used to display SI values
     fd: Original frame dimensions (before resizing)
     dd: Display dimension - shape of the frame, first and second value swapped.
-    todo
     """
     try:
         # Plot centre of mass of bladder as target.
@@ -731,7 +730,6 @@ def findIntersectionsOfLineAndBoundary(boundaryPoints, linePoints):
         return left_intersection
     except Exception as e:
         print(e)
-
 
 
 def calculateCentreOfMass(points: list):
