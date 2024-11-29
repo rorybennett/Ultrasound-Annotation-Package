@@ -19,6 +19,11 @@ from matplotlib.patches import Polygon
 from natsort import natsorted
 from numpy.lib.stride_tricks import sliding_window_view
 from pyquaternion import Quaternion
+from shapely.affinity import scale
+from shapely.geometry import LineString, Point
+from shapely.geometry import Polygon as PolygonShapely
+
+from classes.ErrorDialog import ErrorDialog
 
 # Rotates the '+' marker by 45 degrees. Could probably use 'x' instead.
 m = MarkerStyle('+')
@@ -523,6 +528,47 @@ def drawPointDataOnAxis(axis, points, fd, dd, colour):
         axis.plot(pointDisplay[0], pointDisplay[1], marker=m, color=colour, markersize=15)
 
 
+def drawSIEstimateData(axis, SIData, fd, dd):
+    """
+    Plot the SI estimate data onto the axis.
+        - Centre of mass of bladder (A).
+        - Bottom right point of prostate (C).
+        - Top left intersection of line AC with prostate (B).
+
+    Parameters
+    ----------
+    axis: Axis displaying frame.
+    SIData: Dictionary of data used to display SI values
+    fd: Original frame dimensions (before resizing)
+    dd: Display dimension - shape of the frame, first and second value swapped.
+    todo
+    """
+    try:
+        # Plot centre of mass of bladder as target.
+        bladderCoMDisplay = pixelsToDisplay(SIData[0], fd, dd)
+        axis.plot(bladderCoMDisplay[0], bladderCoMDisplay[1], marker='+', color='magenta', markersize=25)
+        axis.plot(bladderCoMDisplay[0], bladderCoMDisplay[1], marker='o', markerfacecolor='none', color='magenta',
+                  markersize=25)
+    except Exception as e:
+        ErrorDialog(None, 'Error drawing bladder centre of mass.', e)
+    try:
+        # Plot bottom right point of prostate as target.
+        bottomRightDisplay = pixelsToDisplay(SIData[1], fd, dd)
+        axis.plot(bottomRightDisplay[0], bottomRightDisplay[1], marker='+', color='red', markersize=25)
+        axis.plot(bottomRightDisplay[0], bottomRightDisplay[1], marker='o', markerfacecolor='none', color='red',
+                  markersize=25)
+    except Exception as e:
+        ErrorDialog(None, 'Error drawing prostate bottom right point.', e)
+    try:
+        # Plot intersection of line and top of prostate as target.
+        topProstateDisplay = pixelsToDisplay(SIData[2], fd, dd)
+        axis.plot(topProstateDisplay[0], topProstateDisplay[1], marker='+', color='yellow', markersize=25)
+        axis.plot(topProstateDisplay[0], topProstateDisplay[1], marker='o', markerfacecolor='none', color='yellow',
+                  markersize=25)
+    except Exception as e:
+        ErrorDialog(None, 'Error drawing intersection point between bladder CoM and prostate end.', e)
+
+
 def pixelsToDisplay(pointPix: list, fd: list, dd: list):
     """
     Convert a point from frame relative pixels to display coordinates. Since the frames are resized before being
@@ -612,6 +658,82 @@ def checkSaveDataDirectory(scanPath: str) -> Path:
 
     return saveDataPath
 
+
+def getBottomRightPoint(points: list, rightWeight=1, bottomWeight=1):
+    """
+    Given a list of points in 2D, (x, y), find the bottom right point with further right taking precedence over
+    lower points (concavity should favour further right points).
+
+    Parameters
+    ----------
+    points: List of points in (x, y) coordinates.
+    rightWeight: Importance of rightwardness.
+    bottomWeight: Importance of downwardness.
+
+    Returns
+    -------
+    Bottom right point.
+    """
+    bottomRight = points[0]
+    max_weighted_value = rightWeight * points[0][0] + bottomWeight * points[0][1]
+
+    for p in points:
+        weighted_value = rightWeight * p[0] + bottomWeight * p[1]
+
+        if weighted_value > max_weighted_value:
+            max_weighted_value = weighted_value
+            bottomRight = p
+
+    return bottomRight
+
+
+def findIntersectionsOfLineAndBoundary(boundaryPoints, linePoints):
+    """
+    Find the intersection between a line and the boundary line of an irregular shape. The boundary points belong
+    to the prostate. The linePoints are made up of: [BladderCoM, ProstateBottomRight]. ProstateBottomRight will
+    be on the boundary, but BladderCoM could be anywhere. If it is within the boundaryPoints the line must be
+    extended (a scale of 10 should be enough). If the bladderCoM is down and to the right of the
+    ProstateBottomRight then something will probably go wrong.
+    Parameters
+    ----------
+    boundaryPoints
+    linePoints
+
+    Returns
+    -------
+
+    """
+    try:
+        # Create a polygon (use shapely, not matplotlib).
+        polygon = PolygonShapely(boundaryPoints)
+
+        # Create a line.
+        line = LineString(linePoints)
+
+        # Check if the first point (bladder CoM) is inside the polygon
+        if polygon.contains(Point(linePoints[0])):
+            # Extend the line.
+            print('\t\tThe line between bladder CoM and prostate end needs to be extended.')
+            line = scale(line, xfact=10, yfact=10, origin=Point(linePoints[1]))
+
+        # Find the intersection points.
+        intersection = polygon.intersection(line)
+
+        # Extract the intersection points that are not the original boundary point.
+        intersectionPoints = [Point(coords) for coords in intersection.coords]
+        intersection_points = [point for point in intersectionPoints if not Point(linePoints[1]).equals(point)]
+
+        left_intersection = []
+        if intersection_points:
+            # Get the left most point.
+            leftmost_point = min(intersection_points, key=lambda point: point.x)
+            left_intersection = [leftmost_point.x, leftmost_point.y]
+        return left_intersection
+    except Exception as e:
+        print(e)
+
+
+
 def calculateCentreOfMass(points: list):
     """
     Calculate the centre of mass given a list of points in 2D. Assumes equal weighting and points are used as is.
@@ -624,9 +746,10 @@ def calculateCentreOfMass(points: list):
     -------
     Centre of mass in (x, y) coordinates.
     """
-    com = [sum(p[0] for p in points)/len(points), sum(p[1] for p in points)/len(points)]
+    com = [sum(p[0] for p in points) / len(points), sum(p[1] for p in points) / len(points)]
 
     return com
+
 
 def estimateSlopeStartAndEnd(axisAngles: list):
     """

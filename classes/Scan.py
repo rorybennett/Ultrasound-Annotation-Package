@@ -95,6 +95,8 @@ class Scan:
         self.bulletPath, self.bulletData = None, None
         # Has a Scan been loaded?
         self.loaded = False
+        # SI estimate values.
+        self.estimateSI = None
 
     def load(self, path: str, startingFrame=1):
         """
@@ -119,6 +121,7 @@ class Scan:
             self.path)
         self.ipvPath, self.ipvData = su.getIPVDataFromFile(self.path)
         self.bulletPath, self.bulletData = su.getBulletDataFromFile(self.path)
+        self.estimateSI = None
         self.loaded = True
 
     def drawFrameOnAxis(self, canvas: FrameCanvas):
@@ -738,9 +741,19 @@ class Scan:
         Estimate the SI measurement of the ellipse equation. SI is taken on the sagittal plane, but no check is done
         to ensure the correct plane is being considered. User must just be aware.
         """
-        bladderPoints = self.getPointsOnFrame(BLADDER)
-        bladderCoM = su.calculateCentreOfMass(bladderPoints)
-
+        try:
+            # Calculate bladder centre of mass (A).
+            bladderCoM = su.calculateCentreOfMass(self.getPointsOnFrame(BLADDER))
+            # Find prostate bottom right point (C).
+            prostateBottomRight = su.getBottomRightPoint(self.getPointsOnFrame(PROSTATE), 2, 1)
+            # Find intersection of prostate boundary and line AC (B).
+            intersections = su.findIntersectionsOfLineAndBoundary(self.getPointsOnFrame(PROSTATE),
+                                                                  (bladderCoM, prostateBottomRight))
+            self.estimateSI = {
+                f'{self.currentFrame}': [bladderCoM, prostateBottomRight, intersections]
+            }
+        except Exception as e:
+            ErrorDialog(None, f'Error with SI calculation.', e)
 
     def printBulletDimensions(self):
         """

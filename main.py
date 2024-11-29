@@ -328,6 +328,7 @@ class Main(QMainWindow):
     def _calculateSI(self, scan: int):
         """Use the points on the frame to estimate SI of the ellipse equation."""
         self.scans[scan].calculateSI()
+        self._updateDisplay(scan)
 
     def _generateBox(self, scan: int, prostateBladder: str):
         """Use the points on the frame to generate a bounding box."""
@@ -508,6 +509,7 @@ class Main(QMainWindow):
             self.menuExtras.menuInAction(self.menuExtras.actions()[4]).actions()[scan].setEnabled(True)
             self.menuExtras.menuInAction(self.menuExtras.actions()[4]).actions()[2].setEnabled(True)
             self.menuExtras.menuInAction(self.menuExtras.actions()[6]).actions()[scan].setEnabled(True)
+            self.menuExtras.menuInAction(self.menuExtras.actions()[8]).actions()[scan].setEnabled(True)
 
             self._updateTitle(scan)
             self._updateDisplay(scan, new=True)

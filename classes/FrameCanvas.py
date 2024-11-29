@@ -141,6 +141,9 @@ class FrameCanvas(FigureCanvasQTAgg):
             su.drawBoxOnAxis(self.axis, self.linkedScan.getBoxPointsOnFrame(Scan.BLADDER), fd, dd, 'dodgerblue')
         # Draw Bullet data on canvas if box is ticked.
         su.drawBulletDataOnAxis(self.axis, self.linkedScan.frameNames[cfi], self.linkedScan.bulletData, fd, dd)
+        # Draw SI estimate values on axis.
+        if self.linkedScan.estimateSI is not None and str(cfi + 1) in self.linkedScan.estimateSI.keys():
+            su.drawSIEstimateData(self.axis, self.linkedScan.estimateSI[f'{cfi + 1}'], fd, dd)
 
         if not new:
             self.axis.set_xlim(xLimits)
