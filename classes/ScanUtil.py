@@ -19,6 +19,7 @@ from matplotlib.patches import Polygon
 from natsort import natsorted
 from numpy.lib.stride_tricks import sliding_window_view
 from pyquaternion import Quaternion
+from shapely import MultiLineString
 from shapely.affinity import scale
 from shapely.geometry import LineString, Point
 from shapely.geometry import Polygon as PolygonShapely
@@ -558,7 +559,7 @@ def drawSIEstimateData(axis, SIData, fd, dd):
                     + (bladderCoMDisplay[1] - bottomRightDisplay[1]) ** 2)
         theta_centre = np.arctan2(bladderCoMDisplay[1] - bottomRightDisplay[1],
                                   bladderCoMDisplay[0] - bottomRightDisplay[0])
-        theta = np.linspace(theta_centre - np.pi/4, theta_centre + np.pi/4, 100)
+        theta = np.linspace(theta_centre - np.pi / 4, theta_centre + np.pi / 4, 100)
 
         x = bottomRightDisplay[0] + r * np.cos(theta)
         y = bottomRightDisplay[1] + r * np.sin(theta)
@@ -569,9 +570,9 @@ def drawSIEstimateData(axis, SIData, fd, dd):
     try:
         # Plot intersection of line and top of prostate as target.
         topProstateDisplay = pixelsToDisplay(SIData[2], fd, dd)
+        axis.plot(topProstateDisplay[0], topProstateDisplay[1], marker='o', color='yellow', markersize=25,
+                  markerfacecolor='none')
         axis.plot(topProstateDisplay[0], topProstateDisplay[1], marker='+', color='yellow', markersize=25)
-        axis.plot(topProstateDisplay[0], topProstateDisplay[1], marker='o', markerfacecolor='none', color='yellow',
-                  markersize=25)
     except Exception as e:
         ErrorDialog(None, 'Error drawing intersection point between bladder CoM and prostate end.', e)
 
@@ -713,29 +714,53 @@ def findIntersectionsOfLineAndBoundary(boundaryPoints, linePoints):
     try:
         # Create a polygon (use shapely, not matplotlib).
         polygon = PolygonShapely(boundaryPoints)
+        # Get point centre of arc and point on arc.
+        centrePoint = linePoints[1]
+        arcPoint = linePoints[0]
+        # Calculate arc radius length.
+        r = np.sqrt((arcPoint[0] - centrePoint[0]) ** 2
+                    + (arcPoint[1] - centrePoint[1]) ** 2)
+        # Generate 100 point along the arc, with arcPoint at centre.
+        thetaCentre = np.arctan2(arcPoint[1] - centrePoint[1],
+                                 arcPoint[0] - centrePoint[0])
+        theta = np.linspace(thetaCentre - np.pi / 4, thetaCentre + np.pi / 4, 100)
+        x = centrePoint[0] + r * np.cos(theta)
+        y = centrePoint[1] + r * np.sin(theta)
 
-        # Create a line.
-        line = LineString(linePoints)
+        largestPoint = []
+        largestLength = 0
+        for xPoint, yPoint in zip(x, y):
+            endPoint = [xPoint, yPoint]
 
-        # Check if the first point (bladder CoM) is inside the polygon
-        if polygon.contains(Point(linePoints[0])):
-            # Extend the line.
-            print('\t\tThe line between bladder CoM and prostate end needs to be extended.')
-            line = scale(line, xfact=10, yfact=10, origin=Point(linePoints[1]))
+            # Create a line.
+            line = LineString((centrePoint, endPoint))
 
-        # Find the intersection points.
-        intersection = polygon.intersection(line)
+            # Check if the end point is inside the polygon
+            if polygon.contains(Point(endPoint)):
+                # Extend the line.
+                print('\t\tThe line between centrePoint and endPoint needs to be extended.')
+                line = scale(line, xfact=10, yfact=10, origin=Point(centrePoint))
 
-        # Extract the intersection points that are not the original boundary point.
-        intersectionPoints = [Point(coords) for coords in intersection.coords]
-        intersection_points = [point for point in intersectionPoints if not Point(linePoints[1]).equals(point)]
+            # Find the intersection points.
+            intersection = polygon.intersection(line)
 
-        left_intersection = []
-        if intersection_points:
-            # Get the left most point.
-            leftmost_point = min(intersection_points, key=lambda point: point.x)
-            left_intersection = [leftmost_point.x, leftmost_point.y]
-        return left_intersection
+            if isinstance(intersection, MultiLineString):
+                intersection = intersection.geoms[0]
+            # Extract the intersection points that are not the original boundary point.
+            intersectionPoints = [Point(coords) for coords in intersection.coords]
+            intersectionPoints = [point for point in intersectionPoints if not Point(centrePoint).equals(point)]
+
+            if intersectionPoints:
+                # Get the left most point.
+                leftmost_point = min(intersectionPoints, key=lambda point: point.x)
+                leftIntersection = [leftmost_point.x, leftmost_point.y]
+                lineLength = np.sqrt((leftIntersection[0] - centrePoint[0]) ** 2 +
+                                     (leftIntersection[1] - centrePoint[1]) ** 2)
+                if lineLength >= largestLength:
+                    largestLength = lineLength
+                    largestPoint = leftIntersection
+
+        return largestPoint
     except Exception as e:
         print(e)
 

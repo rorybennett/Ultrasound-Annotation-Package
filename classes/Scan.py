@@ -745,7 +745,7 @@ class Scan:
             # Calculate bladder centre of mass (A).
             bladderCoM = su.calculateCentreOfMass(self.getPointsOnFrame(BLADDER))
             # Find prostate bottom right point (C).
-            prostateBottomRight = su.getBottomRightPoint(self.getPointsOnFrame(PROSTATE), 2, 1)
+            prostateBottomRight = su.getBottomRightPoint(self.getPointsOnFrame(PROSTATE), 1, 1)
             # Find intersection of prostate boundary and line AC (B).
             intersections = su.findIntersectionsOfLineAndBoundary(self.getPointsOnFrame(PROSTATE),
                                                                   (bladderCoM, prostateBottomRight))
