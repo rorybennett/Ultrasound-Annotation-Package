@@ -543,14 +543,6 @@ def drawSIEstimateData(axis, SIData, fd, dd):
     dd: Display dimension - shape of the frame, first and second value swapped.
     """
     try:
-        # Plot centre of mass of bladder as target.
-        bladderCoMDisplay = pixelsToDisplay(SIData[0], fd, dd)
-        axis.plot(bladderCoMDisplay[0], bladderCoMDisplay[1], marker='+', color='magenta', markersize=25)
-        axis.plot(bladderCoMDisplay[0], bladderCoMDisplay[1], marker='o', markerfacecolor='none', color='magenta',
-                  markersize=25)
-    except Exception as e:
-        ErrorDialog(None, 'Error drawing bladder centre of mass.', e)
-    try:
         # Plot bottom right point of prostate as target.
         bottomRightDisplay = pixelsToDisplay(SIData[1], fd, dd)
         axis.plot(bottomRightDisplay[0], bottomRightDisplay[1], marker='+', color='red', markersize=25)
@@ -558,6 +550,22 @@ def drawSIEstimateData(axis, SIData, fd, dd):
                   markersize=25)
     except Exception as e:
         ErrorDialog(None, 'Error drawing prostate bottom right point.', e)
+    try:
+        # Plot arc centred at prostate end.
+        bladderCoMDisplay = pixelsToDisplay(SIData[0], fd, dd)
+        bottomRightDisplay = pixelsToDisplay(SIData[1], fd, dd)
+        r = np.sqrt((bladderCoMDisplay[0] - bottomRightDisplay[0]) ** 2
+                    + (bladderCoMDisplay[1] - bottomRightDisplay[1]) ** 2)
+        theta_centre = np.arctan2(bladderCoMDisplay[1] - bottomRightDisplay[1],
+                                  bladderCoMDisplay[0] - bottomRightDisplay[0])
+        theta = np.linspace(theta_centre - np.pi/4, theta_centre + np.pi/4, 100)
+
+        x = bottomRightDisplay[0] + r * np.cos(theta)
+        y = bottomRightDisplay[1] + r * np.sin(theta)
+        axis.plot(x, y, linestyle='--', linewidth=1, color='magenta')
+    except Exception as e:
+        ErrorDialog(None, 'Error drawing arc of bladder CoM and prostate end.', e)
+
     try:
         # Plot intersection of line and top of prostate as target.
         topProstateDisplay = pixelsToDisplay(SIData[2], fd, dd)
