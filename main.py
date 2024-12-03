@@ -164,10 +164,6 @@ class Main(QMainWindow):
         menuExtrasFlipLR = self.menuExtras.addMenu("Flip LR")
         menuExtrasFlipLR.addAction(f'Scan 1', lambda: self._flipScanLR(0)).setDisabled(True)
         menuExtrasFlipLR.addAction(f'Scan 2', lambda: self._flipScanLR(1)).setDisabled(True)
-        self.menuExtras.addSeparator()
-        menuExtrasCalculateSI = self.menuExtras.addMenu('Calculate SI')
-        menuExtrasCalculateSI.addAction(f'Scan 1', lambda: self._calculateSI(0)).setDisabled(True)
-        menuExtrasCalculateSI.addAction(f'Scan 2', lambda: self._calculateSI(1)).setDisabled(True)
 
     def _createToolBars(self, scan):
         """Create left and right toolbars (mirrored)."""
@@ -244,6 +240,11 @@ class Main(QMainWindow):
         distributeSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         distributeSpinBox.setToolTip("Number of points in even distribution.")
         toolbar.addWidget(distributeSpinBox)
+
+        calculateSI = QPushButton('SI')
+        calculateSI.setToolTip("Calculate SI using prostate end point and bladder CoM")
+        calculateSI.clicked.connect(lambda: self._calculateSI(scan))
+        toolbar.addWidget(calculateSI)
 
         toolbar.setDisabled(True)
         toolbar.setMovable(False)
@@ -509,7 +510,6 @@ class Main(QMainWindow):
             self.menuExtras.menuInAction(self.menuExtras.actions()[4]).actions()[scan].setEnabled(True)
             self.menuExtras.menuInAction(self.menuExtras.actions()[4]).actions()[2].setEnabled(True)
             self.menuExtras.menuInAction(self.menuExtras.actions()[6]).actions()[scan].setEnabled(True)
-            self.menuExtras.menuInAction(self.menuExtras.actions()[8]).actions()[scan].setEnabled(True)
 
             self._updateTitle(scan)
             self._updateDisplay(scan, new=True)
