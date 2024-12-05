@@ -246,6 +246,11 @@ class Main(QMainWindow):
         calculateSI.clicked.connect(lambda: self._calculateSI(scan))
         toolbar.addWidget(calculateSI)
 
+        calculateRLAP = QPushButton('RL/AP')
+        calculateRLAP.setToolTip("Calculate RL and AP using ellipse fitting and prostate points")
+        calculateRLAP.clicked.connect(lambda: self._calculateRLAP(scan))
+        toolbar.addWidget(calculateRLAP)
+
         toolbar.setDisabled(True)
         toolbar.setMovable(False)
 
@@ -325,6 +330,11 @@ class Main(QMainWindow):
         layout.addWidget(bladderBox)
 
         return layout
+
+    def _calculateRLAP(self, scan: int):
+        """Use the prostate points to fit an ellipse for RL and AP dimension."""
+        self.scans[scan].calcualteRLAP()
+        self._updateDisplay(scan)
 
     def _calculateSI(self, scan: int):
         """Use the points on the frame to estimate SI of the ellipse equation."""
