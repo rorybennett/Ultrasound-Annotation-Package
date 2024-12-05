@@ -246,10 +246,19 @@ class Main(QMainWindow):
         calculateSI.clicked.connect(lambda: self._calculateSI(scan))
         toolbar.addWidget(calculateSI)
 
+
+
         calculateRLAP = QPushButton('RL/AP')
         calculateRLAP.setToolTip("Calculate RL and AP using ellipse fitting and prostate points")
-        calculateRLAP.clicked.connect(lambda: self._calculateRLAP(scan))
+        calculateRLAP.clicked.connect(lambda: self._calculateRLAP(scan, angleWeightSpinBox.value()))
         toolbar.addWidget(calculateRLAP)
+
+
+        angleWeightSpinBox = QSpinBox(minimum=1, maximum=1000, value=100)
+        angleWeightSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        angleWeightSpinBox.setToolTip("Weight applied to angle when calculating RL/AP ellipse.")
+        toolbar.addWidget(angleWeightSpinBox)
+
 
         toolbar.setDisabled(True)
         toolbar.setMovable(False)
@@ -331,9 +340,9 @@ class Main(QMainWindow):
 
         return layout
 
-    def _calculateRLAP(self, scan: int):
+    def _calculateRLAP(self, scan: int, angleWeight: int):
         """Use the prostate points to fit an ellipse for RL and AP dimension."""
-        self.scans[scan].calcualteRLAP()
+        self.scans[scan].calculateRLAP(angleWeight)
         self._updateDisplay(scan)
 
     def _calculateSI(self, scan: int):

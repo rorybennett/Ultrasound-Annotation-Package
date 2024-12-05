@@ -13,6 +13,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 from PyQt6.QtWidgets import QMainWindow
+from matplotlib import pyplot as plt
+from matplotlib.patches import Ellipse
 from pyquaternion import Quaternion
 
 from classes import FrameCanvas, Utils
@@ -97,6 +99,8 @@ class Scan:
         self.loaded = False
         # SI estimate values.
         self.estimateSI = None
+        # RL and AP ellipse.
+        self.estimateRLAP = None
 
     def load(self, path: str, startingFrame=1):
         """
@@ -122,6 +126,7 @@ class Scan:
         self.ipvPath, self.ipvData = su.getIPVDataFromFile(self.path)
         self.bulletPath, self.bulletData = su.getBulletDataFromFile(self.path)
         self.estimateSI = None
+        self.estimateRLAP = None
         self.loaded = True
 
     def drawFrameOnAxis(self, canvas: FrameCanvas):
@@ -735,6 +740,66 @@ class Scan:
                 count = sum(1 for p in self.pointsBladder if p[0] == self.frameNames[self.currentFrame - 1])
 
         return count
+
+    def calculateRLAP(self, angleWeight):
+        """
+        Estimate the RL and AP measurements of the ellipse equation. RL and AP are taken on the transverse plane,
+        but no check is done to ensure the correct plane is being considered. User must just be aware.
+
+        Parameters
+        ----------
+        angleWeight: Weight applied to desired angle (bladderCoM to prostateCoM line).
+        """
+        try:
+            # Calculate bladder centre of mass (A).
+            bladderCoM = su.calculateCentreOfMass(self.getPointsOnFrame(BLADDER))
+            bladderCoMDisplay = su.pixelsToDisplay(bladderCoM, self.frames[self.currentFrame - 1].shape,
+                                                   self.displayDimensions)
+            # Find prostate bottom right point (C).
+            prostateCoM = su.calculateCentreOfMass(self.getPointsOnFrame(PROSTATE))
+            prostateCoMDisplay = su.pixelsToDisplay(prostateCoM, self.frames[self.currentFrame - 1].shape,
+                                                    self.displayDimensions)
+            # Get all prostate points on frame.
+            prostatePoints = self.getPointsOnFrame(PROSTATE)
+            prostatePointsDisplay = [su.pixelsToDisplay(point, self.frames[self.currentFrame - 1].shape,
+                                                        self.displayDimensions) for point in prostatePoints]
+            # Fit ellipse while trying to align ellipse to line AC.
+            [[xc, yc], a, b, resultantPhi] = su.fitEllipseToPoints(prostatePointsDisplay, bladderCoMDisplay,
+                                                                   prostateCoMDisplay, angleWeight)
+            self.estimateRLAP = {f'{self.currentFrame}': [[xc, yc], a, b, resultantPhi]}
+
+            # Show points and resultant ellipse with major and minor axes to help ensure the correct values are being
+            # solved for.
+            # fig, ax = plt.subplots()
+            # cos_phi = np.cos(resultantPhi)
+            # sin_phi = np.sin(resultantPhi)
+            # x_major1 = xc + a * cos_phi
+            # y_major1 = yc + a * sin_phi
+            # x_major2 = xc - a * cos_phi
+            # y_major2 = yc - a * sin_phi
+            #
+            # x_minor1 = xc + b * sin_phi
+            # y_minor1 = yc - b * cos_phi
+            # x_minor2 = xc - b * sin_phi
+            # y_minor2 = yc + b * cos_phi
+            #
+            # x = [p[0] for p in prostatePointsDisplay]
+            # y = [p[1] for p in prostatePointsDisplay]
+            # ax.plot([bladderCoMDisplay[0], prostateCoMDisplay[0]], [bladderCoMDisplay[1], prostateCoMDisplay[1]],
+            #         marker='*')
+            # # Plot the semi-major axis
+            # ax.plot([x_major1, x_major2], [y_major1, y_major2], 'r--', lw=2)
+            #
+            # # Plot the semi-minor axis
+            # ax.plot([x_minor1, x_minor2], [y_minor1, y_minor2], 'g--', lw=2)
+            # ax.scatter(x, y, color='red', marker='o')
+            # ellipse = Ellipse(xy=(xc, yc), width=2 * a, height=2 * b, angle=np.rad2deg(resultantPhi),
+            #                   edgecolor='b', fc='None', lw=2)
+            # ax.add_patch(ellipse)
+            # ax.set_aspect('equal')
+            # plt.show()
+        except Exception as e:
+            ErrorDialog(None, f'Error with RL/AP calculation.', e)
 
     def calculateSI(self):
         """

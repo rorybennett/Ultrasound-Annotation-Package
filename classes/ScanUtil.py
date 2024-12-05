@@ -19,6 +19,7 @@ from matplotlib.patches import Polygon
 from natsort import natsorted
 from numpy.lib.stride_tricks import sliding_window_view
 from pyquaternion import Quaternion
+from scipy.optimize import minimize, Bounds
 from shapely import MultiLineString
 from shapely.affinity import scale
 from shapely.geometry import LineString, Point
@@ -529,6 +530,22 @@ def drawPointDataOnAxis(axis, points, fd, dd, colour):
         axis.plot(pointDisplay[0], pointDisplay[1], marker=m, color=colour, markersize=15)
 
 
+def drawRLAPEstimateData(axis, RLAPData):
+    try:
+        centreDisplay = RLAPData[0]
+        a = RLAPData[1]
+        b = RLAPData[2]
+        phi = RLAPData[3]
+
+        ellipse = patches.Ellipse(xy=centreDisplay, width=2 * a, height=2 * b,
+                                  angle=np.rad2deg(phi), edgecolor='r', fc='None', lw=2)
+
+        axis.add_patch(ellipse)
+
+    except Exception as e:
+        ErrorDialog(None, 'Error drawing RL/AP ellipse.', e)
+
+
 def drawSIEstimateData(axis, SIData, fd, dd):
     """
     Plot the SI estimate data onto the axis.
@@ -711,58 +728,123 @@ def findIntersectionsOfLineAndBoundary(boundaryPoints, linePoints):
     -------
 
     """
-    try:
-        # Create a polygon (use shapely, not matplotlib).
-        polygon = PolygonShapely(boundaryPoints)
-        # Get point centre of arc and point on arc.
-        centrePoint = linePoints[1]
-        arcPoint = linePoints[0]
-        # Calculate arc radius length.
-        r = np.sqrt((arcPoint[0] - centrePoint[0]) ** 2
-                    + (arcPoint[1] - centrePoint[1]) ** 2)
-        # Generate 100 point along the arc, with arcPoint at centre.
-        thetaCentre = np.arctan2(arcPoint[1] - centrePoint[1],
-                                 arcPoint[0] - centrePoint[0])
-        theta = np.linspace(thetaCentre - np.pi / 4, thetaCentre + np.pi / 4, 100)
-        x = centrePoint[0] + r * np.cos(theta)
-        y = centrePoint[1] + r * np.sin(theta)
+    # Create a polygon (use shapely, not matplotlib).
+    polygon = PolygonShapely(boundaryPoints)
+    # Get point centre of arc and point on arc.
+    centrePoint = linePoints[1]
+    arcPoint = linePoints[0]
+    # Calculate arc radius length.
+    r = np.sqrt((arcPoint[0] - centrePoint[0]) ** 2
+                + (arcPoint[1] - centrePoint[1]) ** 2)
+    # Generate 100 point along the arc, with arcPoint at centre.
+    thetaCentre = np.arctan2(arcPoint[1] - centrePoint[1],
+                             arcPoint[0] - centrePoint[0])
+    theta = np.linspace(thetaCentre - np.pi / 4, thetaCentre + np.pi / 4, 100)
+    x = centrePoint[0] + r * np.cos(theta)
+    y = centrePoint[1] + r * np.sin(theta)
 
-        largestPoint = []
-        largestLength = 0
-        for xPoint, yPoint in zip(x, y):
-            endPoint = [xPoint, yPoint]
+    largestPoint = []
+    largestLength = 0
+    for xPoint, yPoint in zip(x, y):
+        endPoint = [xPoint, yPoint]
 
-            # Create a line.
-            line = LineString((centrePoint, endPoint))
+        # Create a line.
+        line = LineString((centrePoint, endPoint))
 
-            # Check if the end point is inside the polygon
-            if polygon.contains(Point(endPoint)):
-                # Extend the line.
-                print('\t\tThe line between centrePoint and endPoint needs to be extended.')
-                line = scale(line, xfact=10, yfact=10, origin=Point(centrePoint))
+        # Check if the end point is inside the polygon
+        if polygon.contains(Point(endPoint)):
+            # Extend the line.
+            print('\t\tThe line between centrePoint and endPoint needs to be extended.')
+            line = scale(line, xfact=10, yfact=10, origin=Point(centrePoint))
 
-            # Find the intersection points.
-            intersection = polygon.intersection(line)
+        # Find the intersection points.
+        intersection = polygon.intersection(line)
 
-            if isinstance(intersection, MultiLineString):
-                intersection = intersection.geoms[0]
-            # Extract the intersection points that are not the original boundary point.
-            intersectionPoints = [Point(coords) for coords in intersection.coords]
-            intersectionPoints = [point for point in intersectionPoints if not Point(centrePoint).equals(point)]
+        if isinstance(intersection, MultiLineString):
+            intersection = intersection.geoms[0]
+        # Extract the intersection points that are not the original boundary point.
+        intersectionPoints = [Point(coords) for coords in intersection.coords]
+        intersectionPoints = [point for point in intersectionPoints if not Point(centrePoint).equals(point)]
 
-            if intersectionPoints:
-                # Get the left most point.
-                leftmost_point = min(intersectionPoints, key=lambda point: point.x)
-                leftIntersection = [leftmost_point.x, leftmost_point.y]
-                lineLength = np.sqrt((leftIntersection[0] - centrePoint[0]) ** 2 +
-                                     (leftIntersection[1] - centrePoint[1]) ** 2)
-                if lineLength >= largestLength:
-                    largestLength = lineLength
-                    largestPoint = leftIntersection
+        if intersectionPoints:
+            # Get the left most point.
+            leftmost_point = min(intersectionPoints, key=lambda point: point.x)
+            leftIntersection = [leftmost_point.x, leftmost_point.y]
+            lineLength = np.sqrt((leftIntersection[0] - centrePoint[0]) ** 2 +
+                                 (leftIntersection[1] - centrePoint[1]) ** 2)
+            if lineLength >= largestLength:
+                largestLength = lineLength
+                largestPoint = leftIntersection
 
-        return largestPoint
-    except Exception as e:
-        print(e)
+    return largestPoint
+
+
+def fitEllipseToPoints(pointsDisplay: list, bladderCoMDisplay, prostateCoMDisplay, angleWeight):
+    """
+    Using the LsqEllipse function, fit an ellipse to the points given. The line between bladderCoMDisplay and
+    prostateCoMDisplay is used to calculate the desired phi of the ellipse (vertical taken as zero).
+
+    Parameters
+    ----------
+    pointsDisplay: List of (x, y) points in display coordinates.
+    bladderCoMDisplay: Bladder center-of-mass.
+    prostateCoMDisplay: Prostate center-of-mass.
+    angleWeight: Weight applied to desired angle (bladderCoM to prostateCoM line).
+
+    Returns
+    -------
+    center, width, height, phi of the fit ellipse.
+    """
+    # Convert prostate display point into an array.
+    pointsArray = np.array(pointsDisplay)
+    # Calculate desired angle, relative to horizontal. When plotting, must add pi/2 as Ellipse is from horizontal.
+    desiredPhi = angleRelativeToVertical(prostateCoMDisplay, bladderCoMDisplay)
+
+    initialGuess = [np.mean(pointsArray[:, 0]), np.mean(pointsArray[:, 1]), 50, 30, desiredPhi]
+    # Define bounds for the parameters
+    bounds = Bounds([-np.inf, -np.inf, 0, 0, -2 * np.pi], [np.inf, np.inf, np.inf, np.inf, 2 * np.pi])
+
+    result = minimize(ellipseCostFunction, np.array(initialGuess), args=(pointsArray, desiredPhi, 1, angleWeight),
+                      bounds=bounds)
+
+    xc, yc, a, b, resultantPhi = result.x
+    return [[xc, yc], a, b, resultantPhi]
+
+
+def ellipseCostFunction(params, points, desiredPhi, pointWeight, angleWeight):
+    """
+    Cost function when trying to fit an ellipse with a desired rotation.
+
+    Parameters
+    ----------
+    params: [(x_centre, y_centre), Semi-major, Semi-minor] of ellipse.
+    points: Boundary points.
+    desiredPhi: Desired rotation of ellipse.
+    pointWeight: Weight applied to boundary points.
+    angleWeight: Weight applied to desired rotation.
+
+    Returns
+    -------
+    Cost for ellipse fitting.
+    """
+    xc, yc, a, b, phi = params
+
+    cos_phi = np.cos(phi)
+    sin_phi = np.sin(phi)
+    x, y = points[:, 0], points[:, 1]
+    cost = pointWeight * (((x - xc) * cos_phi + (y - yc) * sin_phi) ** 2 / a ** 2 +
+                          ((x - xc) * sin_phi - (y - yc) * cos_phi) ** 2 / b ** 2 - 1)
+
+    rotationConstraint = angleWeight * (phi - desiredPhi) ** 2
+
+    return np.sum(cost ** 2) + rotationConstraint
+
+
+def angleRelativeToVertical(point1, point2):
+    dx = point2[0] - point1[0]
+    dy = point2[1] - point1[1]
+    angle = np.arctan2(dy, dx)
+    return angle
 
 
 def calculateCentreOfMass(points: list):
