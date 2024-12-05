@@ -741,13 +741,14 @@ class Scan:
 
         return count
 
-    def calculateRLAP(self, angleWeight):
+    def calculateRLAP(self, pointsWeight, angleWeight):
         """
         Estimate the RL and AP measurements of the ellipse equation. RL and AP are taken on the transverse plane,
         but no check is done to ensure the correct plane is being considered. User must just be aware.
 
         Parameters
         ----------
+        pointsWeight: Weight applied to prostate points.
         angleWeight: Weight applied to desired angle (bladderCoM to prostateCoM line).
         """
         try:
@@ -765,7 +766,7 @@ class Scan:
                                                         self.displayDimensions) for point in prostatePoints]
             # Fit ellipse while trying to align ellipse to line AC.
             [[xc, yc], a, b, resultantPhi] = su.fitEllipseToPoints(prostatePointsDisplay, bladderCoMDisplay,
-                                                                   prostateCoMDisplay, angleWeight)
+                                                                   prostateCoMDisplay, pointsWeight, angleWeight)
             self.estimateRLAP = {f'{self.currentFrame}': [[xc, yc], a, b, resultantPhi]}
 
             # Show points and resultant ellipse with major and minor axes to help ensure the correct values are being

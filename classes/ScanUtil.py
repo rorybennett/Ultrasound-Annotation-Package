@@ -779,7 +779,7 @@ def findIntersectionsOfLineAndBoundary(boundaryPoints, linePoints):
     return largestPoint
 
 
-def fitEllipseToPoints(pointsDisplay: list, bladderCoMDisplay, prostateCoMDisplay, angleWeight):
+def fitEllipseToPoints(pointsDisplay: list, bladderCoMDisplay, prostateCoMDisplay, pointsWeight, angleWeight):
     """
     Using the LsqEllipse function, fit an ellipse to the points given. The line between bladderCoMDisplay and
     prostateCoMDisplay is used to calculate the desired phi of the ellipse (vertical taken as zero).
@@ -789,6 +789,7 @@ def fitEllipseToPoints(pointsDisplay: list, bladderCoMDisplay, prostateCoMDispla
     pointsDisplay: List of (x, y) points in display coordinates.
     bladderCoMDisplay: Bladder center-of-mass.
     prostateCoMDisplay: Prostate center-of-mass.
+    pointsWeight: Weight applied to prostate points.
     angleWeight: Weight applied to desired angle (bladderCoM to prostateCoM line).
 
     Returns
@@ -804,7 +805,7 @@ def fitEllipseToPoints(pointsDisplay: list, bladderCoMDisplay, prostateCoMDispla
     # Define bounds for the parameters
     bounds = Bounds([-np.inf, -np.inf, 0, 0, -2 * np.pi], [np.inf, np.inf, np.inf, np.inf, 2 * np.pi])
 
-    result = minimize(ellipseCostFunction, np.array(initialGuess), args=(pointsArray, desiredPhi, 1, angleWeight),
+    result = minimize(ellipseCostFunction, np.array(initialGuess), args=(pointsArray, desiredPhi, pointsWeight, angleWeight),
                       bounds=bounds)
 
     xc, yc, a, b, resultantPhi = result.x
