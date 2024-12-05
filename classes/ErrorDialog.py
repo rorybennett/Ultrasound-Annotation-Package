@@ -19,7 +19,8 @@ class ErrorDialog(QDialog):
 
         layout = QVBoxLayout(self)
         layout.addWidget(QLabel(f'Message: {message}'))
-        layout.addWidget(QLabel(f'Error: {type(e).__name__} at line {e.__traceback__.tb_lineno} of {f_name}.'))
+        layout.addWidget(QLabel(f'Error: {type(e).__name__} at line {e.__traceback__.tb_lineno} of {f_name}.\n'
+                                f'{e}.'))
         layout.addWidget(buttonBox)
 
         buttonBox.accepted.connect(self.accept)
