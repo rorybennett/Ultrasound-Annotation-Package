@@ -531,6 +531,18 @@ def drawPointDataOnAxis(axis, points, fd, dd, colour):
 
 
 def drawRLAPEstimateData(axis, RLAPData):
+    """
+    Draw the Rl/AP ellipse with prostate boundary end points.
+
+    Parameters
+    ----------
+    axis: Axis displaying frame.
+    RLAPData
+
+    Returns
+    -------
+
+    """
     try:
         centreDisplay = RLAPData[0]
         a = RLAPData[1]
@@ -580,16 +592,17 @@ def drawSIEstimateData(axis, SIData, fd, dd):
 
         x = bottomRightDisplay[0] + r * np.cos(theta)
         y = bottomRightDisplay[1] + r * np.sin(theta)
-        axis.plot(x, y, linestyle='--', linewidth=1, color='magenta')
+        axis.plot(x, y, linestyle='--', linewidth=1, color='red')
+        axis.plot(bladderCoMDisplay[0], bladderCoMDisplay[1], marker='o', color='red')
     except Exception as e:
-        ErrorDialog(None, 'Error drawing arc of bladder CoM and prostate end.', e)
+        ErrorDialog(None, 'Error drawing arc of bladder CoM.', e)
 
     try:
         # Plot intersection of line and top of prostate as target.
         topProstateDisplay = pixelsToDisplay(SIData[2], fd, dd)
-        axis.plot(topProstateDisplay[0], topProstateDisplay[1], marker='o', color='yellow', markersize=25,
+        axis.plot(topProstateDisplay[0], topProstateDisplay[1], marker='o', color='red', markersize=25,
                   markerfacecolor='none')
-        axis.plot(topProstateDisplay[0], topProstateDisplay[1], marker='+', color='yellow', markersize=25)
+        axis.plot(topProstateDisplay[0], topProstateDisplay[1], marker='+', color='red', markersize=25)
     except Exception as e:
         ErrorDialog(None, 'Error drawing intersection point between bladder CoM and prostate end.', e)
 
