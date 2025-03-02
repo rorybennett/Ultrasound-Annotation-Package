@@ -13,8 +13,6 @@ from pathlib import Path
 import cv2
 import numpy as np
 from PyQt6.QtWidgets import QMainWindow
-from matplotlib import pyplot as plt
-from matplotlib.patches import Ellipse
 from pyquaternion import Quaternion
 
 from classes import FrameCanvas, Utils
@@ -32,8 +30,14 @@ NAVIGATION = {
     'w': 'UP',
     's': 'DOWN',
 }
-NAV_TYPE_IMU = '-NAV-IMU-'
-NAV_TYPE_TS1 = '-NAV-TS1-'
+NAV_TYPE_IMU_50 = '-NAV-IMU-'
+NAV_TYPE_TS1_50 = '-NAV-TS1-'
+NAV_TYPE_00 = '-NAV-00-'
+NAV_TYPE_15 = '-NAV-15-'
+NAV_TYPE_30 = '-NAV-30-'
+NAV_TYPE_70 = '-NAV-70-'
+NAV_TYPE_85 = '-NAV-85-'
+NAV_TYPE_100 = '-NAV-100-'
 # Add or remove points.
 ADD_POINT = '-ADD-POINT-'
 REMOVE_POINT = '-REMOVE-POINT-'
@@ -641,6 +645,35 @@ class Scan:
             ErrorDialog(None, f'Error finding axis angle centre.', e)
 
         return indexAtPercentage
+
+    def frameAtProstatePercent(self, navType: str):
+        """
+        Travel to frames based on percentage of prostate. It is assumed that the two aped frames have been marked, with
+        the 15%, 30%, 70%, and 85% frames calculated between these ends.
+        Parameters
+        ----------
+        navType: Used for percentage to travel to between apex frames.
+
+        Returns
+        -------
+        Index of frame at given percentage.
+        """
+        try:
+            apex1Index, apex2Index = su.getIndexOfApexFrames(self.pointsProstate)
+            if navType == NAV_TYPE_00:
+                return apex1Index
+            elif navType == NAV_TYPE_15:
+                return round(apex1Index + (apex2Index - apex1Index) * (15 / 100))
+            elif navType == NAV_TYPE_30:
+                return round(apex1Index + (apex2Index - apex1Index) * (30 / 100))
+            elif navType == NAV_TYPE_70:
+                return round(apex1Index + (apex2Index - apex1Index) * (70 / 100))
+            elif navType == NAV_TYPE_85:
+                return round(apex1Index + (apex2Index - apex1Index) * (85 / 100))
+            elif navType == NAV_TYPE_100:
+                return apex2Index
+        except Exception as e:
+            ErrorDialog(None, 'Error finding frame at prostate percent.', e)
 
     def copyFramePoints(self, location: str, prostateBladder):
         """

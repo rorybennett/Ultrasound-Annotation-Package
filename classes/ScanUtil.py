@@ -818,7 +818,8 @@ def fitEllipseToPoints(pointsDisplay: list, bladderCoMDisplay, prostateCoMDispla
     # Define bounds for the parameters
     bounds = Bounds([-np.inf, -np.inf, 0, 0, -2 * np.pi], [np.inf, np.inf, np.inf, np.inf, 2 * np.pi])
 
-    result = minimize(ellipseCostFunction, np.array(initialGuess), args=(pointsArray, desiredPhi, pointsWeight, angleWeight),
+    result = minimize(ellipseCostFunction, np.array(initialGuess),
+                      args=(pointsArray, desiredPhi, pointsWeight, angleWeight),
                       bounds=bounds)
 
     xc, yc, a, b, resultantPhi = result.x
@@ -1049,6 +1050,27 @@ def getIndexOfFrameInBoxPoints(boxPoints, frameName):
         if row[0] == frameName:
             return index
     return -1
+
+
+def getIndexOfApexFrames(pointsProstate: list):
+    """
+    Find the index of the first and last frame with prostate points on it. For use in navigating to frames at a
+    certain percentage of the prostate size.
+
+    Parameters
+    ----------
+    pointsProstate: List of prostate points [frameIndex, x, y].
+
+    Returns
+    -------
+    Apex 1 index, Apex 2 index.
+    """
+    sortedByFrame = sorted(pointsProstate, key=lambda x: int(x[0]))
+
+    indexStart = int(sortedByFrame[0][0])
+    indexEnd = int(sortedByFrame[-1][0])
+
+    return indexStart, indexEnd
 
 
 def remove_readonly(func, path, excinfo):

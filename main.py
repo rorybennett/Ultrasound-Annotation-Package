@@ -27,6 +27,8 @@ from processes import PlayCine, AxisAnglePlot
 
 basedir = os.path.dirname(__file__)
 
+lr = [0, 1]  # Left and right for display.
+
 
 # noinspection PyUnresolvedReferences
 class Main(QMainWindow):
@@ -50,13 +52,13 @@ class Main(QMainWindow):
         # 2 vertical layouts.
         self.layouts = [QVBoxLayout(), QVBoxLayout()]
         # Left and Right Toolbars.
-        self.toolbars = [self._createToolBars(i) for i in [0, 1]]
+        self.toolbars = [self._createToolBars(i) for i in lr]
         # Titles.
-        self.titles = [Utils.createTitleLayout() for _ in [0, 1]]
+        self.titles = [Utils.createTitleLayout() for _ in lr]
         # Buttons above canvas.
-        self.buttons = [self._createTopButtons(i) for i in [0, 1]]
+        self.buttons = [self._createTopButtons(i) for i in lr]
         # Boxes below canvas.
-        self.boxes = [self._createBottomBoxes(i) for i in [0, 1]]
+        self.boxes = [self._createBottomBoxes(i) for i in lr]
         # Canvases for displaying frames.
         self.canvases = [FrameCanvas(updateDisplay=lambda x=i: self._updateDisplay(x),
                                      showProstatePointsCB=self.boxes[i].itemAt(0).widget(),
@@ -68,12 +70,12 @@ class Main(QMainWindow):
                                      prostatePointsCB=self.toolbars[i].actions()[0].defaultWidget(),
                                      bladderPointsCB=self.toolbars[i].actions()[1].defaultWidget(),
                                      prostateBoxCB=self.toolbars[i].actions()[2].defaultWidget(),
-                                     bladderBoxCB=self.toolbars[i].actions()[3].defaultWidget()) for i in [0, 1]]
+                                     bladderBoxCB=self.toolbars[i].actions()[3].defaultWidget()) for i in lr]
         # Canvas navigation toolbars.
-        self.navBars = [NavigationToolbar(self.canvases[i], self) for i in [0, 1]]
+        self.navBars = [NavigationToolbar(self.canvases[i], self) for i in lr]
 
         # Left and Right side.
-        for i in [0, 1]:
+        for i in lr:
             self.layouts[i].setAlignment(Qt.AlignmentFlag.AlignHCenter)
             self.layouts[i].addLayout(self.titles[i])
             self.layouts[i].addLayout(self.buttons[i])
@@ -91,11 +93,11 @@ class Main(QMainWindow):
         # Scan directory Path.
         self.scansPath = f'C:/Users/roryb/GDOffline/Research/Scans'
         # Scans.
-        self.scans = [Scan.Scan(self) for _ in [0, 1]]
+        self.scans = [Scan.Scan(self) for _ in lr]
         # Class for exporting data for training.
         self.export = Export.Export(self.scansPath)
         # Processes.
-        self.axisAngleProcess = [AxisAnglePlot.AxisAnglePlot() for _ in [0, 1]]
+        self.axisAngleProcess = [AxisAnglePlot.AxisAnglePlot() for _ in lr]
 
         self.showMaximized()
 
@@ -117,15 +119,15 @@ class Main(QMainWindow):
         self.menuLoadData.append(menuLoadData.addMenu('Load Scan 1 Data'))
         menuLoadData.addSeparator()
         self.menuLoadData.append(menuLoadData.addMenu('Load Scan 2 Data'))
-        [self.menuLoadData[i].setDisabled(True) for i in [0, 1]]
-        [self.menuLoadData[i].aboutToShow.connect(lambda x=i: self._populateLoadScanData(x)) for i in [0, 1]]
+        [self.menuLoadData[i].setDisabled(True) for i in lr]
+        [self.menuLoadData[i].aboutToShow.connect(lambda x=i: self._populateLoadScanData(x)) for i in lr]
         # Save data menu.
         self.menuSaveData = self.menuBar().addMenu("Save Data")
         self.menuSaveData.addAction('Save Scan 1 Data', lambda: self._saveData([0])).setDisabled(True)
         self.menuSaveData.addSeparator()
         self.menuSaveData.addAction('Save Scan 2 Data', lambda: self._saveData([1])).setDisabled(True)
         self.menuSaveData.addSeparator()
-        self.menuSaveData.addAction('Save Both', lambda: self._saveData([0, 1])).setDisabled(True)
+        self.menuSaveData.addAction('Save Both', lambda: self._saveData(lr)).setDisabled(True)
         # Export data menu.
         self.menuExport = self.menuBar().addMenu("Export Data")
         menuExportIPV = self.menuExport.addMenu('IPV')
@@ -281,15 +283,51 @@ class Main(QMainWindow):
 
         nav50IMUButton = QPushButton('IMU Centre')
         nav50IMUButton.setToolTip('Show frame at 50% of sweep (based on IMU data).')
-        nav50IMUButton.clicked.connect(lambda: self._onNav50Clicked(scan, Scan.NAV_TYPE_IMU))
+        nav50IMUButton.clicked.connect(lambda: self._onNavSpecialClicked(scan, Scan.NAV_TYPE_IMU_50))
         nav50IMUButton.setDisabled(True)
         layout.addWidget(nav50IMUButton)
 
+        nav0Button = QPushButton('Apex 1')
+        nav0Button.setToolTip('Show first frame of prostate.')
+        nav0Button.clicked.connect(lambda: self._onNavSpecialClicked(scan, Scan.NAV_TYPE_00))
+        nav0Button.setDisabled(True)
+        layout.addWidget(nav0Button)
+
+        nav15Button = QPushButton('15%')
+        nav15Button.setToolTip('Show frame at 15% of prostate.')
+        nav15Button.clicked.connect(lambda: self._onNavSpecialClicked(scan, Scan.NAV_TYPE_15))
+        nav15Button.setDisabled(True)
+        layout.addWidget(nav15Button)
+
+        nav30Button = QPushButton('30%')
+        nav30Button.setToolTip('Show frame at 30% of prostate.')
+        nav30Button.clicked.connect(lambda: self._onNavSpecialClicked(scan, Scan.NAV_TYPE_30))
+        nav30Button.setDisabled(True)
+        layout.addWidget(nav30Button)
+
         nav50TS1Button = QPushButton('TS1 Centre')
         nav50TS1Button.setToolTip('Show frame at 50% of prostate (based on TS1 data).')
-        nav50TS1Button.clicked.connect(lambda: self._onNav50Clicked(scan, Scan.NAV_TYPE_TS1))
+        nav50TS1Button.clicked.connect(lambda: self._onNavSpecialClicked(scan, Scan.NAV_TYPE_TS1_50))
         nav50TS1Button.setDisabled(True)
         layout.addWidget(nav50TS1Button)
+
+        nav70Button = QPushButton('70%')
+        nav70Button.setToolTip('Show frame at 70% of prostate.')
+        nav70Button.clicked.connect(lambda: self._onNavSpecialClicked(scan, Scan.NAV_TYPE_70))
+        nav70Button.setDisabled(True)
+        layout.addWidget(nav70Button)
+
+        nav85Button = QPushButton('85%')
+        nav85Button.setToolTip('Show frame at 85% of prostate.')
+        nav85Button.clicked.connect(lambda: self._onNavSpecialClicked(scan, Scan.NAV_TYPE_85))
+        nav85Button.setDisabled(True)
+        layout.addWidget(nav85Button)
+
+        nav100Button = QPushButton('Apex 2')
+        nav100Button.setToolTip('Show frame at 100% of prostate.')
+        nav100Button.clicked.connect(lambda: self._onNavSpecialClicked(scan, Scan.NAV_TYPE_100))
+        nav100Button.setDisabled(True)
+        layout.addWidget(nav100Button)
 
         axisAngleButton = QPushButton('Axis Angle Plot')
         axisAngleButton.setToolTip('Show axis angle plot.')
@@ -369,12 +407,14 @@ class Main(QMainWindow):
         """Start Axis Angle plotting process."""
         self.axisAngleProcess[scan].start(self.scans[scan])
 
-    def _onNav50Clicked(self, scan: int, navType: str):
+    def _onNavSpecialClicked(self, scan: int, navType: str):
         """Travel to the frame at 50% of scan or prostate."""
-        if navType == Scan.NAV_TYPE_IMU:
+        if navType == Scan.NAV_TYPE_IMU_50:
             self.scans[scan].navigate(self.scans[scan].frameAtScanPercent(50))
-        else:
+        elif navType == Scan.NAV_TYPE_TS1_50:
             self.scans[scan].navigate(self.scans[scan].frameAtTS1Centre())
+        else:
+            self.scans[scan].navigate(self.scans[scan].frameAtProstatePercent(navType))
         self._updateDisplay(scan)
 
     def _flipScanLR(self, scan: int):
@@ -408,7 +448,7 @@ class Main(QMainWindow):
             dialog = QMessageBox(parent=self, text=text)
             dialog.setWindowTitle('Reset Editing Data')
             dialog.exec()
-            [self._refreshScanData(i) for i in [0, 1]]
+            [self._refreshScanData(i) for i in lr]
 
     def _saveData(self, scans: list):
         """Save Scan point data. Check for overwrite"""
@@ -617,7 +657,7 @@ class Main(QMainWindow):
             self._updateDisplay(1)
 
     def contextMenuEvent(self, event):
-        for i in [0, 1]:
+        for i in lr:
             if self.scans[i].loaded and self.canvases[i].underMouse():
                 menu = QMenu()
                 menuPoints = menu.addMenu('Clear')
