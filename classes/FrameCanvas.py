@@ -13,6 +13,11 @@ from classes import Scan
 from classes import ScanUtil as su, Utils
 
 matplotlib.use('Qt5Agg')
+# Special navigation commands after both apex have been marked.
+navs = ['-NAV-15-',
+        '-NAV-30-',
+        '-NAV-70-',
+        '-NAV-85-']
 
 
 class FrameCanvas(FigureCanvasQTAgg):
@@ -147,6 +152,9 @@ class FrameCanvas(FigureCanvasQTAgg):
         # Draw RL and AP estimate values on axis.
         if self.linkedScan.estimateRLAP is not None and str(cfi + 1) in self.linkedScan.estimateRLAP.keys():
             su.drawRLAPEstimateData(self.axis, self.linkedScan.estimateRLAP[f'{cfi + 1}'])
+        # Indicate frame for marking if Apex 1 and Apex 2 are already marked.
+        if self.linkedScan.areApexMarked() and cfi + 1 in [self.linkedScan.frameAtProstatePercent(i) for i in navs]:
+            self.axis.text(120, 300, f'!!!Mark Frame!!!', color='red', fontweight='bold')
 
         if not new:
             self.axis.set_xlim(xLimits)

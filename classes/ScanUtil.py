@@ -530,6 +530,7 @@ def drawPointDataOnAxis(axis, points, fd, dd, colour):
         axis.plot(pointDisplay[0], pointDisplay[1], marker=m, color=colour, markersize=15)
 
 
+
 def drawRLAPEstimateData(axis, RLAPData):
     """
     Draw the Rl/AP ellipse with prostate boundary end points.

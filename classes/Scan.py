@@ -675,6 +675,23 @@ class Scan:
         except Exception as e:
             ErrorDialog(None, 'Error finding frame at prostate percent.', e)
 
+    def areApexMarked(self):
+        """
+        Check if both apex have been marked. If they have, return True, else False. This is tested by comparing
+        the first and last frames with points with the TS1 centre frame. If any of the apex frames are the same
+        as the TS1 centre frame then it means an apex is missing.
+
+        Returns
+        -------
+        True if both apex are marked, else False.
+        """
+        apex1Index, apex2Index = su.getIndexOfApexFrames(self.pointsProstate)
+        ts1Index = int(self.frameAtTS1Centre())
+
+        if apex1Index != ts1Index and apex2Index != ts1Index:
+            return True
+        return False
+
     def copyFramePoints(self, location: str, prostateBladder):
         """
         Copy frame points from previous or next frame on to current frame. Deletes any points on current frame
