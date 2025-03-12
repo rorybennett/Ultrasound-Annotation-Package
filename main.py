@@ -264,6 +264,16 @@ class Main(QMainWindow):
         angleWeightSpinBox.setToolTip("Weight applied to angle when calculating RL/AP ellipse.")
         toolbar.addWidget(angleWeightSpinBox)
 
+        generateAllProstateBox = QPushButton("Generate\nAll\nProstate\nBoxes")
+        generateAllProstateBox.setToolTip("Generate all prostate bounding boxes using prostate points (interpolate).")
+        generateAllProstateBox.clicked.connect(lambda: self._generateAllBoxes(scan, Scan.PROSTATE_BOX))
+        toolbar.addWidget(generateAllProstateBox)
+
+        generateAllBladderBox = QPushButton("Generate\nAll\nBladder\nBoxes")
+        generateAllBladderBox.setToolTip("Generate all bladder bounding boxes using prostate points (interpolate).")
+        generateAllBladderBox.clicked.connect(lambda: self._generateAllBoxes(scan, Scan.BLADDER_BOX))
+        toolbar.addWidget(generateAllBladderBox)
+
         toolbar.setDisabled(True)
         toolbar.setMovable(False)
 
@@ -388,6 +398,11 @@ class Main(QMainWindow):
     def _calculateSI(self, scan: int):
         """Use the points on the frame to estimate SI of the ellipse equation."""
         self.scans[scan].calculateSI()
+        self._updateDisplay(scan)
+
+    def _generateAllBoxes(self, scan: int, prostateBladder: str):
+        """Generate boxes across all frames as estimates."""
+        self.scans[scan].generateAllBoxes(prostateBladder)
         self._updateDisplay(scan)
 
     def _generateBox(self, scan: int, prostateBladder: str):

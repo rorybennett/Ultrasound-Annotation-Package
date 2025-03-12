@@ -8,6 +8,7 @@ import json
 import shutil
 import subprocess
 import time
+from collections import defaultdict
 from pathlib import Path
 
 import cv2
@@ -354,6 +355,61 @@ class Scan:
                 else:
                     self.boxBladder.append([frameName, l, t, r, b])
             self.__saveToDisk(SAVE_POINT_DATA)
+
+    def generateAllBoxes(self, prostateBladder):
+        """
+        Generate boxes on all frames with points, then draw boxes on frames without points that are estimated based on
+        boxes drawn on frames with points.
+
+        Parameters
+        ----------
+        prostateBladder: Prostate or Bladder boxes.
+        """
+        # Get frames with points, either prostate points or bladder points.
+        framesWithPoints = self.pointsProstate if prostateBladder == PROSTATE_BOX else self.pointsBladder
+        # Ensure sorted by frame number.
+        framesWithPoints = sorted(framesWithPoints, key=lambda x: int(x[0]))
+        # Group points by frame number.
+        pointsByFrame = defaultdict(list)
+        for frame, x, y in framesWithPoints:
+            pointsByFrame[frame].append((x, y))
+        # Get bounding boxes (+/- 5 pixels all round).
+        boxes = {}
+        for frame, points in pointsByFrame.items():
+            xMin = min(x for x, y in points) - 5
+            yMin = min(y for x, y in points) - 5
+            xMax = max(x for x, y in points) + 5
+            yMax = max(y for x, y in points) + 5
+            boxes[frame] = (xMin, yMin, xMax, yMax)
+        # Convert frame number to int.
+        frameNumbers = sorted(map(int, boxes.keys()))
+        boxes = {int(k): v for k, v in boxes.items()}
+        # Generate bounding boxes in between known boxes.
+        for i in range(len(frameNumbers) - 1):
+            frameStart, frameEnd = frameNumbers[i], frameNumbers[i + 1]
+            x1Start, y1Start, x2Start, y2Start = boxes[frameStart]
+            x1End, y1End, x2End, y2End = boxes[frameEnd]
+
+            missingFrames = [frame for frame in range(frameStart + 1, frameEnd)]
+
+            for idx, frame in enumerate(missingFrames):
+                # Position between current start and end frames.
+                t = (idx + 1) / (len(missingFrames) + 1)
+                # Linear interpolation
+                x1 = int(np.round((1 - t) * x1Start + t * x1End))
+                y1 = int(np.round((1 - t) * y1Start + t * y1End))
+                x2 = int(np.round((1 - t) * x2Start + t * x2End))
+                y2 = int(np.round((1 - t) * y2Start + t * y2End))
+                boxes[frame] = (x1, y1, x2, y2)
+
+        finalBoxes = [[str(img), x1, y1, x2, y2] for img, (x1, y1, x2, y2) in sorted(boxes.items())]
+
+        if prostateBladder == PROSTATE_BOX:
+            self.boxProstate = finalBoxes
+        elif prostateBladder == BLADDER_BOX:
+            self.boxBladder = finalBoxes
+
+        self.__saveToDisk(SAVE_POINT_DATA)
 
     def flipLR(self):
         """
