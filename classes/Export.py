@@ -10,6 +10,7 @@ This worked at one point, but not all of it may function 100% at the moment. Cur
 
 Export are based on data in the Save Data directory, and not what is currently loaded.
 """
+import glob
 import os
 import shutil
 import subprocess
@@ -105,6 +106,69 @@ class Export:
                         print(f'{src} error: {e}')
         print(f'\tExporting completed.')
         return
+
+    def exportYOLO3DAUSData(self, scanPlane):
+        """ """
+        print(f'\tExporting {scanPlane} AUS frames for YOLO 3D inference:', end=' ')
+        # Get Save prefix.
+        dlg = ExportDialogs().YOLODialog(scanPlane)
+        if not dlg:
+            print(f'\tCreate {scanPlane} YOLO Data Cancelled.')
+            return
+        prefix, prostate, bladder, exportName = dlg
+        # Create export directory.
+        imagesPath, labelsPath = eu.createYOLOTrainingDirs(scanPlane, prefix, exportName)
+        print(imagesPath)
+        for patient in self.patients:
+            try:
+                print(f'\t\tPatient {patient}...', end=' ')
+                scanPath = f'{self.scansPath}/{patient}/AUS/{scanPlane}'
+                scanDirs = Path(scanPath).iterdir()
+                for scan in scanDirs:
+                    # Some files are .avi, they can be skipped.
+                    if scan.is_file():
+                        continue
+                    # Get save directory with given prefix.
+                    scanPath = scan.as_posix()
+                    saveDir = eu.getSaveDirName(scanPath, prefix)
+                    if not saveDir:
+                        print(f"{prefix} not found in {'/'.join(scanPath.split('/')[-4:])}, skipping.", end=' ')
+                        continue
+                    pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.json'
+                    # Get box data from file.
+                    _, _, prostateBoxes, bladderBoxes = eu.getPointAndBoxData(pointDataPath)
+                    if prostateBoxes is None:
+                        print(f'No frames with prostate boxes...', end=' ')
+                    if bladderBoxes is None:
+                        print(f'No frames with bladder boxes...', end=' ')
+
+                    prostateBoxes = {int(sublist[0]): sublist for sublist in prostateBoxes}
+                    bladderBoxes = {int(sublist[0]): sublist for sublist in bladderBoxes}
+                    # Get all frames.
+                    allFrames = sorted(glob.glob(f'{scanPath}/*.png'))
+                    # Loop through all frames.
+                    for framePath in allFrames:
+                        frame = cv2.imread(framePath, cv2.IMREAD_UNCHANGED)
+                        frameNumber = int(os.path.splitext(os.path.basename(framePath))[0])
+                        saveName = f'{scanPlane[0].lower()}P{patient}F{frameNumber.__str__()}'
+                        labelText = ''
+                        # Check if frame has a prostate box.
+                        if frameNumber in prostateBoxes and prostate:
+                            frameProstateBox = prostateBoxes[frameNumber]
+                            yoloBoxes = eu.getYOLOBoxes(frameProstateBox[1:], frame.shape)
+                            labelText += f'0 {yoloBoxes[0]} {yoloBoxes[1]} {yoloBoxes[2]} {yoloBoxes[3]}\n'
+                        # Check if frame has a bladder box.
+                        if frameNumber in bladderBoxes and bladder:
+                            frameBladderBox = bladderBoxes[frameNumber]
+                            yoloBoxes = eu.getYOLOBoxes(frameBladderBox[1:], frame.shape)
+                            labelText += f'1 {yoloBoxes[0]} {yoloBoxes[1]} {yoloBoxes[2]} {yoloBoxes[3]}'
+                        # Save frame as .png.
+                        cv2.imwrite(f'{imagesPath}/{saveName}.png', frame)
+                        with open(f'{labelsPath}/{saveName}.txt', 'w') as labelFile:
+                            labelFile.write(labelText)
+                print(f'Patient {patient} Complete.')
+            except Exception as e:
+                print(f'Error creating YOLO {scanPlane} AUS data for patient {patient}.', e)
 
     def exportYOLOAUSData(self, scanPlane):
         """Export AUS frames for YOLO inference."""
