@@ -356,7 +356,7 @@ class Scan:
                     self.boxBladder.append([frameName, l, t, r, b])
             self.__saveToDisk(SAVE_POINT_DATA)
 
-    def generateAllBoxes(self, prostateBladder):
+    def interpolateAllBoxes(self, prostateBladder):
         """
         Generate boxes on all frames with points, then draw boxes on frames without points that are estimated based on
         boxes drawn on frames with points.
@@ -408,6 +408,96 @@ class Scan:
             self.boxProstate = finalBoxes
         elif prostateBladder == BLADDER_BOX:
             self.boxBladder = finalBoxes
+
+        self.__saveToDisk(SAVE_POINT_DATA)
+
+    def interpolateAllPoints(self, prostateBladder):
+        """
+        Interpolate points onto frames that don't have any, using boundary spline interpolation to match the number of points
+        to the end frame.
+
+        Parameters
+        ----------
+        prostateBladder: Selects whether to use prostate or bladder point data.
+        """
+        framesWithPoints = self.pointsProstate if prostateBladder == PROSTATE else self.pointsBladder
+
+        pointsByFrame = defaultdict(list)
+        for frame, x, y in framesWithPoints:
+            pointsByFrame[int(frame)].append((x, y))
+
+        frameNumbers = sorted(pointsByFrame.keys())
+        allPoints = []
+
+        for i in range(len(frameNumbers) - 1):
+            startFrame = frameNumbers[i]
+            endFrame = frameNumbers[i + 1]
+            pointsStart = pointsByFrame[startFrame]
+            pointsEnd = pointsByFrame[endFrame]
+
+            # Sort the points for both start and end frames before interpolation (necessary, sorted by angle).
+            # todo maybe sort using Utils.sortPoints as angle fails with sharp corners
+            pointsStart = su.sortPointsByAngle(pointsStart)
+            pointsEnd = su.sortPointsByAngle(pointsEnd)
+
+            # Add original points for start frame (since overwriting points at the end).
+            for x, y in pointsStart:
+                allPoints.append([str(startFrame), int(x), int(y)])
+
+            # Convert points to numpy arrays for easier manipulation.
+            pointsStart = np.array(pointsStart)
+            pointsEnd = np.array(pointsEnd)
+
+            # Fit a spline to the boundary points in both start and end frames.
+            tck_start_x, u_start_x = su.fit_spline_to_boundary(pointsStart[:, 0])
+            tck_start_y, u_start_y = su.fit_spline_to_boundary(pointsStart[:, 1])
+
+            tck_end_x, u_end_x = su.fit_spline_to_boundary(pointsEnd[:, 0])
+            tck_end_y, u_end_y = su.fit_spline_to_boundary(pointsEnd[:, 1])
+
+            # Interpolate boundary size by morphing the splines.
+            numInterpFrames = endFrame - startFrame - 1
+            numPointsStart = len(pointsStart)
+            numPointsEnd = len(pointsEnd)
+
+            # Number of points to generate in interpolated frames.
+            numPointsInterp = np.linspace(numPointsStart, numPointsEnd, numInterpFrames + 2)[1:-1]
+            numPointsInterp = np.round(numPointsInterp).astype(int)
+
+            for j, numPoints in enumerate(numPointsInterp):
+                frameNum = startFrame + j + 1
+
+                # Interpolate between start and end spline with respect to boundary shape.
+                t = (j + 1) / (numInterpFrames + 1)
+
+                # Make sure the splines are evaluated at the same parameterization (same number of points).
+                common_u = np.linspace(0, 1, numPoints)
+
+                interp_x_start = tck_start_x(common_u)
+                interp_y_start = tck_start_y(common_u)
+                interp_x_end = tck_end_x(common_u)
+                interp_y_end = tck_end_y(common_u)
+
+                # Morph the splines towards each other using the interpolation factor.
+                interp_x = (1 - t) * interp_x_start + t * interp_x_end
+                interp_y = (1 - t) * interp_y_start + t * interp_y_end
+
+                # Add interpolated points to allPoints
+                for k in range(numPoints):
+                    allPoints.append([str(frameNum), int(round(interp_x[k])), int(round(interp_y[k]))])
+
+        # Add points from last frame
+        for x, y in pointsByFrame[frameNumbers[-1]]:
+            allPoints.append([str(frameNumbers[-1]), x, y])
+
+        # Sort final result
+        allPoints = sorted(allPoints, key=lambda x: int(x[0]))
+
+        # Save back to class
+        if prostateBladder == PROSTATE:
+            self.pointsProstate = allPoints
+        elif prostateBladder == BLADDER:
+            self.pointsBladder = allPoints
 
         self.__saveToDisk(SAVE_POINT_DATA)
 

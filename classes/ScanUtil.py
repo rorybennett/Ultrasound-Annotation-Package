@@ -19,6 +19,7 @@ from matplotlib.patches import Polygon
 from natsort import natsorted
 from numpy.lib.stride_tricks import sliding_window_view
 from pyquaternion import Quaternion
+from scipy.interpolate import CubicSpline
 from scipy.optimize import minimize, Bounds
 from shapely import MultiLineString
 from shapely.affinity import scale
@@ -528,7 +529,6 @@ def drawPointDataOnAxis(axis, points, fd, dd, colour):
         pointDisplay = pixelsToDisplay(point, fd, dd)
 
         axis.plot(pointDisplay[0], pointDisplay[1], marker=m, color=colour, markersize=15)
-
 
 
 def drawRLAPEstimateData(axis, RLAPData):
@@ -1072,6 +1072,47 @@ def getIndexOfApexFrames(pointsProstate: list):
     indexEnd = int(sortedByFrame[-1][0])
 
     return indexStart, indexEnd
+
+
+def fit_spline_to_boundary(points):
+    """
+    Fit a spline to the given points (boundary).
+    Returns the spline parameters and the parameterized boundary points (u).
+    """
+    points = np.append(points, points[0])
+    n = len(points)
+    u = np.linspace(0, 1, n)  # Parameterize the points uniformly along the boundary
+    tck = CubicSpline(u, points, bc_type='natural')  # Natural boundary conditions
+    return tck, u
+
+def interpolate_spline(tck_start, tck_end, u_start, u_end, t, numPoints):
+    """
+    Interpolate between two splines (start and end) using the interpolation factor t.
+    Returns the interpolated points along the boundary.
+    """
+    # Interpolate between start and end splines
+    interp_x_start = tck_start(u_start)
+    interp_x_end = tck_end(u_end)
+
+    # Morph the splines towards each other using the interpolation factor
+    interp_x = (1 - t) * interp_x_start + t * interp_x_end
+    return interp_x
+
+def sortPointsByAngle(points):
+    # Convert points to a numpy array
+    points = np.array(points)
+
+    # Calculate the centroid of the points
+    centroid = np.mean(points, axis=0)
+
+    # Calculate the angle of each point relative to the centroid
+    angles = np.arctan2(points[:, 1] - centroid[1], points[:, 0] - centroid[0])
+
+    # Sort the points by the angle
+    sorted_indices = np.argsort(angles)
+    sorted_points = points[sorted_indices]
+
+    return sorted_points
 
 
 def remove_readonly(func, path, excinfo):

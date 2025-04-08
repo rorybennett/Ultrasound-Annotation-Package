@@ -169,6 +169,22 @@ class Main(QMainWindow):
         menuExtrasFlipLR = self.menuExtras.addMenu("Flip LR")
         menuExtrasFlipLR.addAction(f'Scan 1', lambda: self._flipScanLR(0)).setDisabled(True)
         menuExtrasFlipLR.addAction(f'Scan 2', lambda: self._flipScanLR(1)).setDisabled(True)
+        self.menuExtras.addSeparator()
+        menuExtrasGenerateBoxes = self.menuExtras.addMenu("Generate Boxes")
+        menuExtrasGenerateAllBoxesScan1 = menuExtrasGenerateBoxes.addMenu("Scan 1")
+        menuExtrasGenerateAllBoxesScan1.addAction('Prostate Boxes', lambda: self._generateAllBoxes(0, Scan.PROSTATE_BOX))
+        menuExtrasGenerateAllBoxesScan1.addAction('Bladder Boxes', lambda: self._generateAllBoxes(0, Scan.BLADDER_BOX))
+        menuExtrasGenerateAllBoxesScan2 = menuExtrasGenerateBoxes.addMenu("Scan 2")
+        menuExtrasGenerateAllBoxesScan2.addAction('Prostate Boxes', lambda: self._generateAllBoxes(1, Scan.PROSTATE_BOX))
+        menuExtrasGenerateAllBoxesScan2.addAction('Bladder Boxes', lambda: self._generateAllBoxes(1, Scan.BLADDER_BOX))
+        self.menuExtras.addSeparator()
+        menuExtrasGeneratePoints = self.menuExtras.addMenu("Generate Points")
+        menuExtrasGenerateAllPointsScan1 = menuExtrasGeneratePoints.addMenu("Scan 1")
+        menuExtrasGenerateAllPointsScan1.addAction('Prostate Points', lambda: self._generateAllPoints(0, Scan.PROSTATE))
+        menuExtrasGenerateAllPointsScan1.addAction('Bladder Points', lambda: self._generateAllPoints(0, Scan.BLADDER))
+        menuExtrasGenerateAllPointsScan2 = menuExtrasGeneratePoints.addMenu("Scan 2")
+        menuExtrasGenerateAllPointsScan2.addAction('Prostate Points', lambda: self._generateAllPoints(1, Scan.PROSTATE))
+        menuExtrasGenerateAllPointsScan2.addAction('Bladder Points', lambda: self._generateAllPoints(1, Scan.BLADDER))
 
     def _createToolBars(self, scan):
         """Create left and right toolbars (mirrored)."""
@@ -266,16 +282,6 @@ class Main(QMainWindow):
         angleWeightSpinBox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         angleWeightSpinBox.setToolTip("Weight applied to angle when calculating RL/AP ellipse.")
         toolbar.addWidget(angleWeightSpinBox)
-
-        generateAllProstateBox = QPushButton("Generate\nAll\nProstate\nBoxes")
-        generateAllProstateBox.setToolTip("Generate all prostate bounding boxes using prostate points (interpolate).")
-        generateAllProstateBox.clicked.connect(lambda: self._generateAllBoxes(scan, Scan.PROSTATE_BOX))
-        toolbar.addWidget(generateAllProstateBox)
-
-        generateAllBladderBox = QPushButton("Generate\nAll\nBladder\nBoxes")
-        generateAllBladderBox.setToolTip("Generate all bladder bounding boxes using prostate points (interpolate).")
-        generateAllBladderBox.clicked.connect(lambda: self._generateAllBoxes(scan, Scan.BLADDER_BOX))
-        toolbar.addWidget(generateAllBladderBox)
 
         toolbar.setDisabled(True)
         toolbar.setMovable(False)
@@ -403,9 +409,14 @@ class Main(QMainWindow):
         self.scans[scan].calculateSI()
         self._updateDisplay(scan)
 
+    def _generateAllPoints(self, scan: int, prostateBladder: str):
+        """Generate points across all frames as estimates (interpolated)."""
+        self.scans[scan].interpolateAllPoints(prostateBladder)
+        self._updateDisplay(scan)
+
     def _generateAllBoxes(self, scan: int, prostateBladder: str):
         """Generate boxes across all frames as estimates."""
-        self.scans[scan].generateAllBoxes(prostateBladder)
+        self.scans[scan].interpolateAllBoxes(prostateBladder)
         self._updateDisplay(scan)
 
     def _generateBox(self, scan: int, prostateBladder: str):
