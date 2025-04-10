@@ -198,7 +198,7 @@ def distributePoints(pointsPix, count):
         Return all points, distributed evenly and in order.
     """
     # Sort points using wandering salesperson.
-    pointsPix = sortPoints(pointsPix)
+    pointsPix = sortBoundaryClockwise(pointsPix)
     # Convert to array.
     pointsPix = np.asfarray(pointsPix)
     # Add extra point on end to complete spline.
@@ -217,37 +217,43 @@ def distributePoints(pointsPix, count):
     return endPointsPix
 
 
-def sortPoints(points):
-    """
-    Sort points using wandering salesperson technique. Start with a random point, then next point is the nearest
-    point by straight line distance.
+def sortBoundaryClockwise(points):
+    # Step 1: Find the top-left point.
+    start_point = min(points, key=lambda p: (p[1], p[0]))
+    ordered_points = [start_point]
 
-    Parameters
-    ----------
-    points: List of points (x, y) to be sorted.
+    # Step 2: Remaining points
+    temp_points = [p for p in points if p != start_point]
 
-    Returns
-    -------
-    Ordered list of points.
-    """
-    # All points except the starting point.
-    temp_points = points[1:]
-    # Points in the correct order.
-    ordered_points = [points[0]]
-    while len(ordered_points) < len(points):
-        # Distance from current point to all other points.
-        distances = [math.dist(ordered_points[-1], j) for j in temp_points]
-        # Distances sorted from lowest (nearest) to highest (furthest).
-        sorted_distances = sorted(distances)
+    # Step 3: First step — choose clockwise direction (to the right or down-right).
+    def angle(p1, p2):
+        dx = p2[0] - p1[0]
+        dy = p2[1] - p1[1]
+        return math.atan2(dy, dx)  # radians
 
-        if len(sorted_distances) > 0:
-            smallest_distance = sorted_distances[0]
-            # Index of smallest distance in un-sorted list.
-            min_distance_index = distances.index(smallest_distance)
+    # Compute distances from start to all others.
+    distances = [(math.dist(start_point, p), p) for p in temp_points]
+    distances.sort(key=lambda x: x[0])
 
-            ordered_points.append(list(temp_points[min_distance_index]))
-            # Remove point that was just classified as nearest.
-            temp_points = [x for x in temp_points if x != ordered_points[-1]]
+    # Try nearest few, prefer ones to the right.
+    for _, candidate in distances[:10]:
+        a = angle(start_point, candidate)
+        if -math.pi / 4 < a < math.pi / 4:
+            next_point = candidate
+            break
+    else:
+        # fallback: just take the nearest
+        next_point = distances[0][1]
+
+    ordered_points.append(next_point)
+    temp_points.remove(next_point)
+
+    # Step 4: Nearest-neighbor as usual
+    while temp_points:
+        current = ordered_points[-1]
+        next_point = min(temp_points, key=lambda p: math.dist(current, p))
+        ordered_points.append(next_point)
+        temp_points.remove(next_point)
 
     return ordered_points
 

@@ -1085,6 +1085,7 @@ def fit_spline_to_boundary(points):
     tck = CubicSpline(u, points, bc_type='natural')  # Natural boundary conditions
     return tck, u
 
+
 def interpolate_spline(tck_start, tck_end, u_start, u_end, t, numPoints):
     """
     Interpolate between two splines (start and end) using the interpolation factor t.
@@ -1097,22 +1098,6 @@ def interpolate_spline(tck_start, tck_end, u_start, u_end, t, numPoints):
     # Morph the splines towards each other using the interpolation factor
     interp_x = (1 - t) * interp_x_start + t * interp_x_end
     return interp_x
-
-def sortPointsByAngle(points):
-    # Convert points to a numpy array
-    points = np.array(points)
-
-    # Calculate the centroid of the points
-    centroid = np.mean(points, axis=0)
-
-    # Calculate the angle of each point relative to the centroid
-    angles = np.arctan2(points[:, 1] - centroid[1], points[:, 0] - centroid[0])
-
-    # Sort the points by the angle
-    sorted_indices = np.argsort(angles)
-    sorted_points = points[sorted_indices]
-
-    return sorted_points
 
 
 def remove_readonly(func, path, excinfo):

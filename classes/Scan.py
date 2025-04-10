@@ -435,10 +435,9 @@ class Scan:
             pointsStart = pointsByFrame[startFrame]
             pointsEnd = pointsByFrame[endFrame]
 
-            # Sort the points for both start and end frames before interpolation (necessary, sorted by angle).
-            # todo maybe sort using Utils.sortPoints as angle fails with sharp corners
-            pointsStart = su.sortPointsByAngle(pointsStart)
-            pointsEnd = su.sortPointsByAngle(pointsEnd)
+            # Sort the points for both start and end frames before interpolation (necessary).
+            pointsStart = Utils.sortBoundaryClockwise(pointsStart)
+            pointsEnd = Utils.sortBoundaryClockwise(pointsEnd)
 
             # Add original points for start frame (since overwriting points at the end).
             for x, y in pointsStart:
