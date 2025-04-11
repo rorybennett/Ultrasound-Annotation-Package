@@ -1099,6 +1099,27 @@ def interpolate_spline(tck_start, tck_end, u_start, u_end, t, numPoints):
     interp_x = (1 - t) * interp_x_start + t * interp_x_end
     return interp_x
 
+def plot_points_with_labels(points, color='blue', label='Points'):
+    """
+    Debugging the order in which points are being sorted in the sortClockWise function.
+
+    Parameters
+    ----------
+    points
+    color
+    label
+
+    Returns
+    -------
+
+    """
+    xs, ys = zip(*points)
+    plt.scatter(xs, ys, c=color, label=label)
+
+    # Annotate each point with its index
+    for i, (x, y) in enumerate(points):
+        plt.text(x + 1, y + 1, str(i), fontsize=9, color=color)
+
 
 def remove_readonly(func, path, excinfo):
     """
@@ -1106,3 +1127,5 @@ def remove_readonly(func, path, excinfo):
     """
     os.chmod(path, stat.S_IWRITE)
     func(path)
+
+

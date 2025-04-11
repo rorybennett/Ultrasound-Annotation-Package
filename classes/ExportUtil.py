@@ -1,6 +1,7 @@
 """
 Util functions used by the Export.py class.
 """
+import glob
 import json
 import os
 import time
@@ -13,7 +14,32 @@ from classes import Scan
 from classes.ErrorDialog import ErrorDialog
 
 
-def creatennUAUSTrainingDirs(scanPlane: str, saveName: str, exportName: str):
+def creatennUNet3DAUSTrainingDirs(scanPlane: str, saveName: str, exportName: str):
+    """
+    Create directories using nn-UNet training structure.
+
+    Args:
+        scanPlane: Plane of scan.
+        saveName: Save name used in SaveData.
+        exportName: Name to be included in folder.
+
+    Returns:
+        String to main directory if successful, else False.
+    """
+    # Create new, empty directories.
+    try:
+        dataPath = f"Export/nnUNet3D/{saveName}/{int(time.time())}_{scanPlane[0].lower()}AUS{exportName if exportName else '-'}"
+        imagesPath = Path(f'{dataPath}/imagesTr')
+        imagesPath.mkdir(parents=True, exist_ok=False)
+        labelsPath = Path(f'{dataPath}/labelsTr')
+        labelsPath.mkdir(parents=True, exist_ok=False)
+        return imagesPath, labelsPath
+    except FileExistsError as e:
+        ErrorDialog(None, 'Error creating nnUNet 3D export directories.', e)
+        return False
+
+
+def creatennUNetAUSTrainingDirs(scanPlane: str, saveName: str, exportName: str):
     """
     Create directories using nn-UNet training structure.
 

@@ -12,6 +12,7 @@ import numpy as np
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QSpacerItem, QSizePolicy
+from matplotlib import pyplot as plt
 from matplotlib.patches import Polygon
 from scipy.interpolate import splprep, splev
 
@@ -188,7 +189,7 @@ def organiseClockwise(points: np.array):
 
 def distributePoints(pointsPix, count):
     """
-    Distribute points evenly around a spline generated from the original points. Point order is NOT corrected.
+    Distribute points evenly around a spline generated from the original points. Point order is corrected.
 
     Args:
         pointsPix: Points in pixel coordinates.
@@ -197,7 +198,7 @@ def distributePoints(pointsPix, count):
     Return:
         Return all points, distributed evenly and in order.
     """
-    # Sort points using wandering salesperson.
+    # Sort points using wandering salesperson (greedy neighbour?).
     pointsPix = sortBoundaryClockwise(pointsPix)
     # Convert to array.
     pointsPix = np.asfarray(pointsPix)
@@ -208,7 +209,7 @@ def distributePoints(pointsPix, count):
     # Extract points from polygon.
     xs, ys = poly.xy.T
     # Evenly space points along spline line.
-    xn, yn = interpolate(xs, ys, len(xs) if len(xs) > count else count + 1)
+    xn, yn = interpolate(xs, ys, count + 1)
     if xn is None:
         return
     # Get all points except the last one, which is a repeat.
@@ -219,7 +220,7 @@ def distributePoints(pointsPix, count):
 
 def sortBoundaryClockwise(points):
     # Step 1: Find the top-left point.
-    start_point = min(points, key=lambda p: (p[1], p[0]))
+    start_point = min(points, key=lambda p: math.hypot(p[0], p[1]))
     ordered_points = [start_point]
 
     # Step 2: Remaining points
@@ -235,20 +236,25 @@ def sortBoundaryClockwise(points):
     distances = [(math.dist(start_point, p), p) for p in temp_points]
     distances.sort(key=lambda x: x[0])
 
-    # Try nearest few, prefer ones to the right.
-    for _, candidate in distances[:10]:
+    # Among nearest few, filter by angle, then choose the closest one in that direction.
+    candidates = []
+    for dist, candidate in distances[:10]:
         a = angle(start_point, candidate)
-        if -math.pi / 4 < a < math.pi / 4:
-            next_point = candidate
-            break
+        # If the point is between -90 deg and 60ish deg add it to the list. This seems to work.
+        if math.radians(-80) < a < math.radians(20):
+            candidates.append((dist, candidate))
+
+    if candidates:
+        # Choose the closest point in the rightward direction.
+        next_point = min(candidates, key=lambda x: x[0])[1]
     else:
-        # fallback: just take the nearest
+        # Fallback: just take the absolute nearest.
         next_point = distances[0][1]
 
     ordered_points.append(next_point)
     temp_points.remove(next_point)
 
-    # Step 4: Nearest-neighbor as usual
+    # Step 4: Nearest-neighbor as usual.
     while temp_points:
         current = ordered_points[-1]
         next_point = min(temp_points, key=lambda p: math.dist(current, p))

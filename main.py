@@ -136,6 +136,9 @@ class Main(QMainWindow):
         menuExportnnU = self.menuExport.addMenu('nnUNet')
         menuExportnnU.addAction('Transverse', lambda: self.export.exportnnUNetAUSData(Scan.PLANE_TRANSVERSE))
         menuExportnnU.addAction('Sagittal', lambda: self.export.exportnnUNetAUSData(Scan.PLANE_SAGITTAL))
+        menuExportnnU = self.menuExport.addMenu('nnUNet 3D')
+        menuExportnnU.addAction('Transverse', lambda: self.export.exportnnUNet3DAUSData(Scan.PLANE_TRANSVERSE))
+        menuExportnnU.addAction('Sagittal', lambda: self.export.exportnnUNet3DAUSData(Scan.PLANE_SAGITTAL))
         menuExportYOLO = self.menuExport.addMenu('YOLO')
         menuExportYOLO.addAction('Transverse', lambda: self.export.exportYOLOAUSData(Scan.PLANE_TRANSVERSE))
         menuExportYOLO.addAction('Sagittal', lambda: self.export.exportYOLOAUSData(Scan.PLANE_SAGITTAL))
@@ -668,6 +671,8 @@ class Main(QMainWindow):
                 self._flipScanLR(0)
             elif event.key() == Qt.Key.Key_D:
                 self.toolbars[0].actions()[12].trigger()
+            elif event.key() == Qt.Key.Key_B:
+                self._clearFramePoints(0, Scan.BLADDER)
             self._updateDisplay(0)
 
         elif self.scans[1].loaded and self.canvases[1].underMouse():
@@ -683,6 +688,8 @@ class Main(QMainWindow):
                 self._flipScanLR(1)
             elif event.key() == Qt.Key.Key_D:
                 self.toolbars[1].actions()[12].trigger()
+            elif event.key() == Qt.Key.Key_B:
+                self._clearFramePoints(1, Scan.BLADDER)
             self._updateDisplay(1)
 
     def contextMenuEvent(self, event):

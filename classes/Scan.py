@@ -14,6 +14,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 from PyQt6.QtWidgets import QMainWindow
+from matplotlib import pyplot as plt
 from pyquaternion import Quaternion
 
 from classes import FrameCanvas, Utils
@@ -439,6 +440,8 @@ class Scan:
             pointsStart = Utils.sortBoundaryClockwise(pointsStart)
             pointsEnd = Utils.sortBoundaryClockwise(pointsEnd)
 
+            # Assuming pointsStart and pointsEnd are already sorted
+
             # Add original points for start frame (since overwriting points at the end).
             for x, y in pointsStart:
                 allPoints.append([str(startFrame), int(x), int(y)])
@@ -446,6 +449,20 @@ class Scan:
             # Convert points to numpy arrays for easier manipulation.
             pointsStart = np.array(pointsStart)
             pointsEnd = np.array(pointsEnd)
+
+            # Code for debugging the sortBoundaryClockwise function.
+            # if startFrame in [1]:
+            #     plt.figure(figsize=(10, 8))
+            #
+            #     su.plot_points_with_labels(pointsStart, color='red', label='Start')
+            #     su.plot_points_with_labels(pointsEnd, color='green', label='End')
+            #
+            #     plt.legend()
+            #     plt.axis('equal')  # Keep shape proportions
+            #     # plt.gca().invert_yaxis()  # Flip Y-axis to match image coordinates (top-down)
+            #     plt.title(f"Boundary Points Order Visualization (Y-axis flipped) (F{frameNumbers}")
+            #     plt.grid(True)
+            #     plt.show()
 
             # Fit a spline to the boundary points in both start and end frames.
             tck_start_x, u_start_x = su.fit_spline_to_boundary(pointsStart[:, 0])
@@ -481,8 +498,8 @@ class Scan:
                 interp_x = (1 - t) * interp_x_start + t * interp_x_end
                 interp_y = (1 - t) * interp_y_start + t * interp_y_end
 
-                # Add interpolated points to allPoints
-                for k in range(numPoints):
+                # Add interpolated points to allPoints (drop last point).
+                for k in range(numPoints - 1):
                     allPoints.append([str(frameNum), int(round(interp_x[k])), int(round(interp_y[k]))])
 
         # Add points from last frame

@@ -257,7 +257,7 @@ class Export:
             return
         prefix, prostate, bladder, exportName = dlg
         # Create directories for AUS training data.
-        imagesPath, labelsPath = eu.creatennUAUSTrainingDirs(scanPlane, prefix, exportName)
+        imagesPath, labelsPath = eu.creatennUNetAUSTrainingDirs(scanPlane, prefix, exportName)
         print(imagesPath)
         # Create training data from each patient.
 
@@ -324,6 +324,83 @@ class Export:
             except Exception as e:
                 print(f'Error creating nnUNet + YOLO {scanPlane} AUS data for patient {patient}.', e)
 
+    def exportnnUNet3DAUSData(self, scanPlane: str):
+        """Export AUS frames for nn-Unet 3D inference, either sagittal or transverse."""
+        print(f'\tExporting {scanPlane} AUS frames for nn-UNet 3D inference:', end=' ')
+        sp = scanPlane[0].lower()
+        # Get Save prefix.
+        # dlg = ExportDialogs().nnUNetDialog(scanPlane)
+        # if not dlg:
+        #     print(f'\tCreate {scanPlane} nnUNet 3D Data Cancelled.')
+        #     return
+        # prefix, prostate, bladder, exportName = dlg
+        prefix = '3d full pb'
+        prostate = True
+        bladder = True
+        exportName = 'prostateBladder'
+        # Create directories for AUS training data.
+        imagesPath, labelsPath = eu.creatennUNet3DAUSTrainingDirs(scanPlane, prefix, exportName)
+        print(imagesPath)
+        # Create training data from each patient.
+        for patient in self.patients:
+            try:
+                print(f'\t\tPatient {patient}...', end=' ')
+                scanPath = f'{self.scansPath}/{patient}/AUS/{scanPlane}'
+                scanDirs = Path(scanPath).iterdir()
+                for scan in scanDirs:
+                    # Some files are .avi, they can be skipped.
+                    if scan.is_file():
+                        continue
+                    # Get save directory with given prefix.
+                    scanPath = scan.as_posix()
+                    saveDir = eu.getSaveDirName(scanPath, prefix)
+                    if not saveDir:
+                        print(f'\t{prefix} not found in {scanPath}. Skipping...')
+                        continue
+                    # Path to PointData.json file.
+                    pointDataPath = f'{scanPath}/Save Data/{saveDir}/PointData.json'
+                    # Get point data from file.
+                    prostatePoints, bladderPoints, _, _ = eu.getPointAndBoxData(pointDataPath)
+
+                    # Save each frame, regardless of whether there are points on it or not.
+                    frames = [cv2.imread(framePath, cv2.IMREAD_GRAYSCALE) for framePath in natsort.natsorted(glob.glob(f'{scanPath}/*.png'))]
+
+                    for index, frame in enumerate(frames):
+                        # Get prostate and bladder points for current frame.
+                        frameProstatePoints = [p for p in prostatePoints if p[0] == (index + 1).__str__()]
+                        frameBladderPoints = [p for p in bladderPoints if p[0] == (index + 1).__str__()]
+
+                        # Create prostate and bladder masks.
+                        pMask, bMask = None, None
+                        if prostate and len(frameProstatePoints) > 0:
+                            prostatePolygon = [[i[1], i[2]] for i in frameProstatePoints]
+                            prostatePolygon = [(i[0], i[1]) for i in Utils.distributePoints(prostatePolygon, len(prostatePolygon))]
+                            prostateImg = Image.new('L', (frame.shape[1], frame.shape[0]))
+                            ImageDraw.Draw(prostateImg).polygon(prostatePolygon, fill=1)
+                            pMask = np.array(prostateImg)
+
+                        if bladder and len(frameBladderPoints) > 0:
+                            bladderPolygon = [[i[1], i[2]] for i in frameBladderPoints]
+                            bladderPolygon = [(i[0], i[1]) for i in Utils.distributePoints(bladderPolygon, len(bladderPolygon))]
+                            bladderImg = Image.new('L', (frame.shape[1], frame.shape[0]))
+                            ImageDraw.Draw(bladderImg).polygon(bladderPolygon, fill=1)
+                            bMask = np.array(bladderImg)
+
+                        # Combine masks and make overlaps only equal to prostate (prostate takes precedence).
+                        if pMask is None and bMask is None:
+                            finalMask = np.zeros_like(frame)
+                        else:
+                            finalMask = cv2.bitwise_or(pMask if pMask is not None else np.zeros_like(bMask),
+                                                       bMask if bMask is not None else np.zeros_like(pMask))
+                            finalMask[finalMask > 2] = 1
+
+                        cv2.imwrite(f'{imagesPath}/{sp}_P{patient}F{index + 1}_0000.png', frame)
+                        cv2.imwrite(f'{labelsPath}/{sp}_P{patient}F{index + 1}.png', finalMask)
+
+                print('Complete.')
+            except WindowsError as e:
+                print(f'Error creating nnUNet 3D {scanPlane} AUS data for patient {patient}.', e)
+
     def exportnnUNetAUSData(self, scanPlane: str):
         """Export AUS frames for nn-Unet inference, either sagittal or transverse."""
         print(f'\tExporting {scanPlane} AUS frames for nn-UNet inference:', end=' ')
@@ -335,7 +412,7 @@ class Export:
             return
         prefix, prostate, bladder, exportName = dlg
         # Create directories for AUS training data.
-        imagesPath, labelsPath = eu.creatennUAUSTrainingDirs(scanPlane, prefix, exportName)
+        imagesPath, labelsPath = eu.creatennUNetAUSTrainingDirs(scanPlane, prefix, exportName)
         print(imagesPath)
         # Create training data from each patient.
         for patient in self.patients:
