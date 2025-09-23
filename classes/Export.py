@@ -329,15 +329,12 @@ class Export:
         print(f'\tExporting {scanPlane} AUS frames for nn-UNet 3D inference:', end=' ')
         sp = scanPlane[0].lower()
         # Get Save prefix.
-        # dlg = ExportDialogs().nnUNetDialog(scanPlane)
-        # if not dlg:
-        #     print(f'\tCreate {scanPlane} nnUNet 3D Data Cancelled.')
-        #     return
-        # prefix, prostate, bladder, exportName = dlg
-        prefix = '3d full pb'
-        prostate = True
-        bladder = True
-        exportName = 'prostateBladder'
+        dlg = ExportDialogs().nnUNetDialog(scanPlane)
+        if not dlg:
+            print(f'\tCreate {scanPlane} nnUNet 3D Data Cancelled.')
+            return
+        prefix, prostate, bladder, exportName = dlg
+
         # Create directories for AUS training data.
         imagesPath, labelsPath = eu.creatennUNet3DAUSTrainingDirs(scanPlane, prefix, exportName)
         print(imagesPath)
@@ -345,6 +342,7 @@ class Export:
         for patient in self.patients:
             try:
                 print(f'\t\tPatient {patient}...', end=' ')
+
                 scanPath = f'{self.scansPath}/{patient}/AUS/{scanPlane}'
                 scanDirs = Path(scanPath).iterdir()
                 for scan in scanDirs:
@@ -383,7 +381,7 @@ class Export:
                             bladderPolygon = [[i[1], i[2]] for i in frameBladderPoints]
                             bladderPolygon = [(i[0], i[1]) for i in Utils.distributePoints(bladderPolygon, len(bladderPolygon))]
                             bladderImg = Image.new('L', (frame.shape[1], frame.shape[0]))
-                            ImageDraw.Draw(bladderImg).polygon(bladderPolygon, fill=1)
+                            ImageDraw.Draw(bladderImg).polygon(bladderPolygon, fill=2)
                             bMask = np.array(bladderImg)
 
                         # Combine masks and make overlaps only equal to prostate (prostate takes precedence).

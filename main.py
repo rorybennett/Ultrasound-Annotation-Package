@@ -91,7 +91,7 @@ class Main(QMainWindow):
         self._createMainMenu()
 
         # Scan directory Path.
-        self.scansPath = f'C:/Users/roryb/GDOffline/Research/Scans'
+        self.scansPath = f'C:/Users/Rory/GDOffline/Research/Scans'
         # Scans.
         self.scans = [Scan.Scan(self) for _ in lr]
         # Class for exporting data for training.
