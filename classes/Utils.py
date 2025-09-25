@@ -201,7 +201,7 @@ def distributePoints(pointsPix, count):
     # Sort points using wandering salesperson (greedy neighbour?).
     pointsPix = sortBoundaryClockwise(pointsPix)
     # Convert to array.
-    pointsPix = np.asfarray(pointsPix)
+    pointsPix = np.asarray(pointsPix, dtype=float)
     # Add extra point on end to complete spline.
     pointsPix = np.append(pointsPix, [pointsPix[0, :]], axis=0)
     # Polygon, acting as spline.
