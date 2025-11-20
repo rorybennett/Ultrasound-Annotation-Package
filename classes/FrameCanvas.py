@@ -23,7 +23,7 @@ navs = ['-NAV-15-',
 class FrameCanvas(FigureCanvasQTAgg):
 
     def __init__(self, updateDisplay, showProstatePointsCB, showBladderPointsCB, showProstateMaskCB, showBladderMaskCB,
-                 showProstateBoxCB, showBladderBoxCB, prostatePointsCB, bladderPointsCB, prostateBoxCB, bladderBoxCB):
+                 showProstateBoxCB, showBladderBoxCB, showMarkUpCB, prostatePointsCB, bladderPointsCB, prostateBoxCB, bladderBoxCB):
         """Canvas for drawing frame and related point data."""
         # Related Scan object.
         self.linkedScan: Scan = None
@@ -40,6 +40,7 @@ class FrameCanvas(FigureCanvasQTAgg):
         self.showBladderMask = showBladderMaskCB
         self.showProstateBox = showProstateBoxCB
         self.showBladderBox = showBladderBoxCB
+        self.showMarkUpCB = showMarkUpCB
         # Create bounding boxes.
         self.prostateBoundingBox = prostateBoxCB
         self.bladderBoundingBox = bladderBoxCB
@@ -120,7 +121,8 @@ class FrameCanvas(FigureCanvasQTAgg):
         if not new:
             xLimits = self.axis.get_xlim()
             yLimits = self.axis.get_ylim()
-        self.linkedScan.drawFrameOnAxis(self)
+
+        self.linkedScan.drawFrameOnAxis(self, self.showMarkUpCB.isChecked())
 
         # self.background = self.copy_from_bbox(self.axis.bbox)
         cfi = self.linkedScan.currentFrame - 1

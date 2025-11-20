@@ -135,12 +135,13 @@ class Scan:
         self.estimateRLAP = None
         self.loaded = True
 
-    def drawFrameOnAxis(self, canvas: FrameCanvas):
+    def drawFrameOnAxis(self, canvas: FrameCanvas, showScanDetails: bool):
         """
         Draw the current frame on the provided canvas with all Scan details drawn on.
 
         Args:
             canvas: Canvas to draw frame on.
+            showScanDetails: Whether or not to show the Scan details.
         """
         axis = canvas.axis
         cfi = self.currentFrame - 1
@@ -157,11 +158,12 @@ class Scan:
         # Prepare axis and draw frame.
         su.drawFrameOnAxis(axis, frame)
         # Draw scan details on axis.
-        su.drawScanDataOnAxis(axis, frameNumber=cfi + 1, frameCount=count, depths=depths, imuOff=imuOffset,
-                              imuPos=imuPosition, dd=dd, frameProstatePoints=self.countFramePoints(PROSTATE),
-                              frameBladderPoints=self.countFramePoints(BLADDER),
-                              totalProstatePoints=len(self.pointsProstate), totalProstateBoxes=len(self.boxProstate),
-                              totalBladderPoints=len(self.pointsBladder), totalBladderBoxes=len(self.boxBladder))
+        if showScanDetails:
+            su.drawScanDataOnAxis(axis, frameNumber=cfi + 1, frameCount=count, depths=depths, imuOff=imuOffset,
+                                  imuPos=imuPosition, dd=dd, frameProstatePoints=self.countFramePoints(PROSTATE),
+                                  frameBladderPoints=self.countFramePoints(BLADDER),
+                                  totalProstatePoints=len(self.pointsProstate), totalProstateBoxes=len(self.boxProstate),
+                                  totalBladderPoints=len(self.pointsBladder), totalBladderBoxes=len(self.boxBladder))
 
     def getBoxPointsOnFrame(self, prostateBladder, position=None):
         """
@@ -449,20 +451,6 @@ class Scan:
             # Convert points to numpy arrays for easier manipulation.
             pointsStart = np.array(pointsStart)
             pointsEnd = np.array(pointsEnd)
-
-            # Code for debugging the sortBoundaryClockwise function.
-            # if startFrame in [1]:
-            #     plt.figure(figsize=(10, 8))
-            #
-            #     su.plot_points_with_labels(pointsStart, color='red', label='Start')
-            #     su.plot_points_with_labels(pointsEnd, color='green', label='End')
-            #
-            #     plt.legend()
-            #     plt.axis('equal')  # Keep shape proportions
-            #     # plt.gca().invert_yaxis()  # Flip Y-axis to match image coordinates (top-down)
-            #     plt.title(f"Boundary Points Order Visualization (Y-axis flipped) (F{frameNumbers}")
-            #     plt.grid(True)
-            #     plt.show()
 
             # Fit a spline to the boundary points in both start and end frames.
             tck_start_x, u_start_x = su.fit_spline_to_boundary(pointsStart[:, 0])

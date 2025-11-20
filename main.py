@@ -67,6 +67,7 @@ class Main(QMainWindow):
                                      showBladderMaskCB=self.boxes[i].itemAt(3).widget(),
                                      showProstateBoxCB=self.boxes[i].itemAt(4).widget(),
                                      showBladderBoxCB=self.boxes[i].itemAt(5).widget(),
+                                     showMarkUpCB=self.boxes[i].itemAt(6).widget(),
                                      prostatePointsCB=self.toolbars[i].actions()[0].defaultWidget(),
                                      bladderPointsCB=self.toolbars[i].actions()[1].defaultWidget(),
                                      prostateBoxCB=self.toolbars[i].actions()[2].defaultWidget(),
@@ -399,6 +400,12 @@ class Main(QMainWindow):
         bladderBox.stateChanged.connect(lambda: self._updateDisplay(scan))
         bladderBox.setDisabled(True)
         layout.addWidget(bladderBox)
+
+        markup = QCheckBox('Show Markup')
+        markup.setChecked(True)
+        markup.stateChanged.connect(lambda: self._updateDisplay(scan))
+        markup.setDisabled(True)
+        layout.addWidget(markup)
 
         return layout
 

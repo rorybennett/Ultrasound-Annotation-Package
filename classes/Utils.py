@@ -240,7 +240,7 @@ def sortBoundaryClockwise(points):
     candidates = []
     for dist, candidate in distances[:10]:
         a = angle(start_point, candidate)
-        # If the point is between -90 deg and 60ish deg add it to the list. This seems to work.
+        # If the point is between -80 deg and 20ish deg add it to the list. This seems to work.
         if math.radians(-80) < a < math.radians(20):
             candidates.append((dist, candidate))
 
